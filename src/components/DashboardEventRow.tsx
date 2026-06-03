@@ -1,0 +1,155 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import type { Genre, EventType } from "@/types/database";
+
+const GENRE_LABELS: Record<Genre, string> = {
+  poetry: "Poetry",
+  fiction: "Fiction",
+  nonfiction: "Nonfiction",
+  essay: "Essay",
+  hybrid_experimental: "Hybrid / Exp.",
+  translation: "Translation",
+  ya: "YA",
+  craft_talk: "Craft Talk",
+  open_mic: "Open Mic",
+  mixed: "Mixed",
+};
+
+interface Props {
+  event: {
+    id: string;
+    title: string;
+    genre: Genre;
+    event_type: EventType;
+    date_time: string;
+    location_name: string | null;
+    virtual_url: string | null;
+    rsvp_enabled: boolean;
+    open_mic: boolean;
+  };
+  divider?: boolean;
+  isPast?: boolean;
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+export default function DashboardEventRow({ event, divider, isPast }: Props) {
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [, startTransition] = useTransition();
+  const router = useRouter();
+  const supabase = createClient();
+
+  async function handleDelete() {
+    setDeleting(true);
+    await supabase.from("events").delete().eq("id", event.id);
+    startTransition(() => router.refresh());
+  }
+
+  return (
+    <div
+      className={`px-5 py-4 flex items-start gap-4 ${
+        divider ? "border-b border-cream/10" : ""
+      }`}
+    >
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
+          <span className="px-2 py-0.5 rounded-full bg-orange/15 text-orange text-xs font-medium">
+            {GENRE_LABELS[event.genre]}
+          </span>
+          {event.event_type === "virtual" && (
+            <span className="px-2 py-0.5 rounded-full bg-cream/10 text-cream-muted text-xs">
+              Virtual
+            </span>
+          )}
+          {event.open_mic && (
+            <span className="px-2 py-0.5 rounded-full bg-cream/10 text-cream-muted text-xs">
+              Open mic
+            </span>
+          )}
+          {event.rsvp_enabled && (
+            <span className="px-2 py-0.5 rounded-full bg-cream/10 text-cream-muted text-xs">
+              RSVPs on
+            </span>
+          )}
+        </div>
+
+        <Link
+          href={`/events/${event.id}`}
+          className="text-cream font-medium hover:text-orange transition line-clamp-1"
+        >
+          {event.title}
+        </Link>
+
+        <p className="text-cream-muted text-xs mt-0.5">
+          {formatDate(event.date_time)}
+          {event.event_type === "in_person" && event.location_name && (
+            <> · {event.location_name}</>
+          )}
+        </p>
+      </div>
+
+      {/* Actions */}
+      {!isPast && (
+        <div className="flex items-center gap-2 shrink-0">
+          {confirming ? (
+            <>
+              <span className="text-cream-muted text-xs">Delete?</span>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="text-orange text-xs border border-orange/40 rounded-full px-3 py-1 hover:bg-orange/10 transition disabled:opacity-60"
+              >
+                {deleting ? "…" : "Yes, delete"}
+              </button>
+              <button
+                onClick={() => setConfirming(false)}
+                className="text-cream-muted text-xs border border-cream/20 rounded-full px-3 py-1 hover:text-cream transition"
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                href={`/events/${event.id}/edit`}
+                className="text-cream-muted text-xs border border-cream/20 rounded-full px-3 py-1.5 hover:text-cream hover:border-cream/40 transition"
+              >
+                Edit
+              </Link>
+              <button
+                onClick={() => setConfirming(true)}
+                className="text-cream-muted text-xs border border-cream/20 rounded-full px-3 py-1.5 hover:text-orange hover:border-orange/40 transition"
+              >
+                Delete
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {isPast && (
+        <Link
+          href={`/events/${event.id}`}
+          className="text-cream-muted text-xs border border-cream/20 rounded-full px-3 py-1.5 hover:text-cream hover:border-cream/40 transition shrink-0"
+        >
+          View
+        </Link>
+      )}
+    </div>
+  );
+}

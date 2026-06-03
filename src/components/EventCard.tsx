@@ -1,0 +1,163 @@
+import Link from "next/link";
+import type { Genre, EventType } from "@/types/database";
+import SaveButton from "./SaveButton";
+
+interface EventCardProps {
+  event: {
+    id: string;
+    title: string;
+    description: string | null;
+    genre: Genre;
+    event_type: EventType;
+    date_time: string;
+    location_name: string | null;
+    virtual_url: string | null;
+    open_mic: boolean;
+    organizer: { id: string; name: string } | { id: string; name: string }[] | null;
+  };
+  savedEventIds?: Set<string>;
+  rsvpEventIds?: Set<string>;
+}
+
+const GENRE_LABELS: Record<Genre, string> = {
+  poetry: "Poetry",
+  fiction: "Fiction",
+  nonfiction: "Nonfiction",
+  essay: "Essay",
+  hybrid_experimental: "Hybrid / Exp.",
+  translation: "Translation",
+  ya: "YA",
+  craft_talk: "Craft Talk",
+  open_mic: "Open Mic",
+  mixed: "Mixed",
+};
+
+function formatDate(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function formatTime(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+export default function EventCard({
+  event,
+  savedEventIds,
+  rsvpEventIds,
+}: EventCardProps) {
+  const organizer = Array.isArray(event.organizer)
+    ? event.organizer[0]
+    : event.organizer;
+
+  const isSaved = savedEventIds?.has(event.id) ?? false;
+  const isRsvp = rsvpEventIds?.has(event.id) ?? false;
+
+  return (
+    <div className="relative bg-navy-light border border-cream/10 rounded-2xl p-5 flex flex-col gap-3 hover:border-cream/25 transition group">
+      {/* Save button */}
+      <div className="absolute top-4 right-4">
+        <SaveButton eventId={event.id} initialSaved={isSaved} />
+      </div>
+
+      {/* Genre + type pills */}
+      <div className="flex gap-2 flex-wrap pr-8">
+        <span className="px-2.5 py-0.5 rounded-full bg-orange/15 text-orange text-xs font-medium">
+          {GENRE_LABELS[event.genre]}
+        </span>
+        {event.open_mic && (
+          <span className="px-2.5 py-0.5 rounded-full bg-cream/10 text-cream-muted text-xs">
+            Open mic
+          </span>
+        )}
+        {event.event_type === "virtual" && (
+          <span className="px-2.5 py-0.5 rounded-full bg-cream/10 text-cream-muted text-xs">
+            Virtual
+          </span>
+        )}
+        {isRsvp && (
+          <span className="px-2.5 py-0.5 rounded-full bg-orange/30 text-orange text-xs font-medium">
+            RSVP'd
+          </span>
+        )}
+      </div>
+
+      {/* Title */}
+      <Link href={`/events/${event.id}`} className="block">
+        <h2 className="font-serif text-lg text-cream leading-snug group-hover:text-orange transition line-clamp-2">
+          {event.title}
+        </h2>
+      </Link>
+
+      {/* Date + location */}
+      <div className="space-y-1 text-sm text-cream-muted">
+        <div className="flex items-center gap-1.5">
+          <CalendarIcon />
+          <span>
+            {formatDate(event.date_time)} · {formatTime(event.date_time)}
+          </span>
+        </div>
+        {event.event_type === "in_person" && event.location_name && (
+          <div className="flex items-center gap-1.5">
+            <PinIcon />
+            <span className="truncate">{event.location_name}</span>
+          </div>
+        )}
+        {event.event_type === "virtual" && (
+          <div className="flex items-center gap-1.5">
+            <GlobeIcon />
+            <span>Online event</span>
+          </div>
+        )}
+      </div>
+
+      {/* Organizer */}
+      {organizer && (
+        <div className="mt-auto pt-2 border-t border-cream/10">
+          <Link
+            href={`/organizers/${organizer.id}`}
+            className="text-cream-muted text-xs hover:text-cream transition"
+          >
+            {organizer.name}
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M16 2v4M8 2v4M3 10h18" />
+    </svg>
+  );
+}
+
+function PinIcon() {
+  return (
+    <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path d="M12 21C12 21 5 13.5 5 8.5a7 7 0 0 1 14 0c0 5-7 12.5-7 12.5z" />
+      <circle cx="12" cy="8.5" r="2.5" />
+    </svg>
+  );
+}
+
+function GlobeIcon() {
+  return (
+    <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+    </svg>
+  );
+}
