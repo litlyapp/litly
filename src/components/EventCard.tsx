@@ -13,6 +13,9 @@ interface EventCardProps {
     location_name: string | null;
     virtual_url: string | null;
     open_mic: boolean;
+    is_imported?: boolean;
+    source_url?: string | null;
+    source_name?: string | null;
     organizer: { id: string; name: string } | { id: string; name: string }[] | null;
   };
   savedEventIds?: Set<string>;
@@ -120,15 +123,26 @@ export default function EventCard({
         )}
       </div>
 
-      {/* Organizer */}
-      {organizer && (
-        <div className="mt-auto pt-2 border-t border-cream/10">
-          <Link
-            href={`/organizers/${organizer.id}`}
-            className="text-cream-muted text-xs hover:text-cream transition"
-          >
-            {organizer.name}
-          </Link>
+      {/* Organizer or imported source */}
+      {(organizer || event.is_imported) && (
+        <div className="mt-auto pt-2 border-t border-cream/10 flex items-center justify-between gap-2">
+          {organizer && (
+            <Link
+              href={`/organizers/${organizer.id}`}
+              className="text-cream-muted text-xs hover:text-cream transition truncate"
+            >
+              {organizer.name}
+            </Link>
+          )}
+          {event.is_imported && event.source_name && (
+            <span className="text-cream-muted/50 text-xs shrink-0">
+              via {event.source_url ? (
+                <a href={event.source_url} target="_blank" rel="noopener noreferrer" className="hover:text-cream-muted transition">
+                  {event.source_name}
+                </a>
+              ) : event.source_name}
+            </span>
+          )}
         </div>
       )}
     </div>

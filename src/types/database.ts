@@ -106,6 +106,9 @@ export type Database = {
           open_mic: boolean;
           featured_readers: FeaturedReader[] | null;
           rsvp_enabled: boolean;
+          is_imported: boolean;
+          source_url: string | null;
+          source_name: string | null;
           created_at: string;
         };
         Insert: {
@@ -125,6 +128,9 @@ export type Database = {
           open_mic?: boolean;
           featured_readers?: FeaturedReader[] | null;
           rsvp_enabled?: boolean;
+          is_imported?: boolean;
+          source_url?: string | null;
+          source_name?: string | null;
           created_at?: string;
         };
         Update: {
@@ -142,6 +148,9 @@ export type Database = {
           open_mic?: boolean;
           featured_readers?: FeaturedReader[] | null;
           rsvp_enabled?: boolean;
+          is_imported?: boolean;
+          source_url?: string | null;
+          source_name?: string | null;
         };
         Relationships: [
           {
