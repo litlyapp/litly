@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import DateTimePicker from "./DateTimePicker";
+import BannerUpload from "./BannerUpload";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Genre, EventType, FeaturedReader } from "@/types/database";
@@ -34,6 +35,7 @@ interface EventData {
   open_mic: boolean;
   featured_readers: FeaturedReader[] | null;
   rsvp_enabled: boolean;
+  banner_url?: string | null;
 }
 
 interface Props {
@@ -85,6 +87,10 @@ export default function EventForm({ organizerId, initialData, eventId }: Props) 
     open_mic: initialData?.open_mic ?? false,
     rsvp_enabled: initialData?.rsvp_enabled ?? false,
   });
+
+  const [bannerUrl, setBannerUrl] = useState<string | null>(
+    initialData?.banner_url ?? null
+  );
 
   const [readers, setReaders] = useState<FeaturedReader[]>(
     initialData?.featured_readers ?? []
@@ -184,6 +190,7 @@ export default function EventForm({ organizerId, initialData, eventId }: Props) 
         ? readers.filter((r) => r.name.trim())
         : null,
       rsvp_enabled: form.rsvp_enabled,
+      banner_url: bannerUrl,
     };
 
     if (isEditing) {
@@ -235,6 +242,9 @@ export default function EventForm({ organizerId, initialData, eventId }: Props) 
           className={inputClass}
         />
       </div>
+
+      {/* Banner */}
+      <BannerUpload value={bannerUrl} onChange={setBannerUrl} />
 
       {/* Description */}
       <div>

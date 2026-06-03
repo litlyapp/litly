@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import type { Genre } from "@/types/database";
 import SaveButton from "@/components/SaveButton";
@@ -97,6 +98,19 @@ export default async function EventDetailPage({
           ← Events
         </Link>
       </div>
+
+      {/* Banner */}
+      {event.banner_url && (
+        <div className="relative w-full h-64 rounded-2xl overflow-hidden mb-6">
+          <Image
+            src={event.banner_url}
+            alt={event.title}
+            fill
+            className="object-cover"
+            priority
+          />
+        </div>
+      )}
 
       {/* Header */}
       <div className="bg-navy-light border border-cream/10 rounded-2xl p-8 mb-6">

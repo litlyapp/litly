@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { Genre, EventType } from "@/types/database";
 import SaveButton from "./SaveButton";
 
@@ -16,6 +17,7 @@ interface EventCardProps {
     is_imported?: boolean;
     source_url?: string | null;
     source_name?: string | null;
+    banner_url?: string | null;
     organizer: { id: string; name: string } | { id: string; name: string }[] | null;
   };
   savedEventIds?: Set<string>;
@@ -66,9 +68,22 @@ export default function EventCard({
   const isRsvp = rsvpEventIds?.has(event.id) ?? false;
 
   return (
-    <div className="relative bg-navy-light border border-cream/10 rounded-2xl p-5 flex flex-col gap-3 hover:border-cream/25 transition group">
+    <div className="relative bg-navy-light border border-cream/10 rounded-2xl overflow-hidden flex flex-col gap-3 hover:border-cream/25 transition group">
+      {/* Banner image */}
+      {event.banner_url && (
+        <div className="relative w-full h-36 shrink-0">
+          <Image
+            src={event.banner_url}
+            alt={event.title}
+            fill
+            className="object-cover"
+          />
+        </div>
+      )}
+
+      <div className="relative p-5 flex flex-col gap-3 flex-1">
       {/* Save button */}
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-0 right-4">
         <SaveButton eventId={event.id} initialSaved={isSaved} />
       </div>
 
@@ -145,6 +160,7 @@ export default function EventCard({
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }
