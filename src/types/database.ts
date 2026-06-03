@@ -109,6 +109,7 @@ export type Database = {
           source_url: string | null;
           source_name: string | null;
           banner_url: string | null;
+          ticket_url: string | null;
           created_at: string;
         };
         Insert: {
@@ -132,6 +133,7 @@ export type Database = {
           source_url?: string | null;
           source_name?: string | null;
           banner_url?: string | null;
+          ticket_url?: string | null;
           created_at?: string;
         };
         Update: {
@@ -153,6 +155,7 @@ export type Database = {
           source_url?: string | null;
           source_name?: string | null;
           banner_url?: string | null;
+          ticket_url?: string | null;
         };
         Relationships: [
           {

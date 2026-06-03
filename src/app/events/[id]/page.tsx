@@ -168,9 +168,23 @@ export default async function EventDetailPage({
           )}
         </div>
 
-        {/* RSVP */}
-        {event.rsvp_enabled && !isPast && (
-          <RsvpButton eventId={event.id} initialRsvp={isRsvp} user={user} />
+        {/* Tickets + RSVP */}
+        {!isPast && (event.ticket_url || event.rsvp_enabled) && (
+          <div className="flex flex-wrap gap-3">
+            {event.ticket_url && (
+              <a
+                href={event.ticket_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-orange text-cream font-semibold px-6 py-2.5 rounded-full hover:bg-orange/90 transition"
+              >
+                Get tickets ↗
+              </a>
+            )}
+            {event.rsvp_enabled && (
+              <RsvpButton eventId={event.id} initialRsvp={isRsvp} user={user} />
+            )}
+          </div>
         )}
       </div>
 

@@ -24,6 +24,7 @@ interface EventData {
   featured_readers: FeaturedReader[] | null;
   rsvp_enabled: boolean;
   banner_url?: string | null;
+  ticket_url?: string | null;
 }
 
 interface Props {
@@ -73,6 +74,7 @@ export default function EventForm({ organizerId, initialData, eventId }: Props) 
     virtual_url: initialData?.virtual_url ?? "",
     open_mic: initialData?.open_mic ?? false,
     rsvp_enabled: initialData?.rsvp_enabled ?? false,
+    ticket_url: initialData?.ticket_url ?? "",
   });
 
   const [genres, setGenres] = useState<Genre[]>(
@@ -188,6 +190,7 @@ export default function EventForm({ organizerId, initialData, eventId }: Props) 
         ? readers.filter((r) => r.name.trim())
         : null,
       rsvp_enabled: form.rsvp_enabled,
+      ticket_url: form.ticket_url.trim() || null,
       banner_url: bannerUrl,
     };
 
@@ -388,7 +391,7 @@ export default function EventForm({ organizerId, initialData, eventId }: Props) 
         </div>
       )}
 
-      {/* Toggles */}
+      {/* Toggles + ticket link */}
       <div className="space-y-4">
         <label className="flex items-center gap-4 cursor-pointer">
           <Toggle
@@ -398,10 +401,24 @@ export default function EventForm({ organizerId, initialData, eventId }: Props) 
           <div>
             <span className="text-cream text-sm font-medium">Enable RSVPs</span>
             <p className="text-cream-muted text-xs">
-              Attendees can RSVP through litly.
+              Free attendance tracked through litly.
             </p>
           </div>
         </label>
+
+        <div>
+          <label className={labelClass}>Ticket link (optional)</label>
+          <input
+            type="url"
+            placeholder="https://eventbrite.com/… or your own ticketing page"
+            value={form.ticket_url}
+            onChange={(e) => set("ticket_url", e.target.value)}
+            className={inputClass}
+          />
+          <p className="text-cream-muted/60 text-xs mt-1">
+            Paid or external ticketing — litly will show a "Get tickets" button linking here.
+          </p>
+        </div>
       </div>
 
       {/* Featured readers */}

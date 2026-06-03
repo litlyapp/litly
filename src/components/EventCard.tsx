@@ -19,6 +19,7 @@ interface EventCardProps {
     source_url?: string | null;
     source_name?: string | null;
     banner_url?: string | null;
+    ticket_url?: string | null;
     organizer: { id: string; name: string } | { id: string; name: string }[] | null;
   };
   savedEventIds?: Set<string>;
@@ -86,6 +87,11 @@ export default function EventCard({
         {event.event_type === "virtual" && (
           <span className="px-2.5 py-0.5 rounded-full bg-cream/10 text-cream-muted text-xs">
             Virtual
+          </span>
+        )}
+        {event.ticket_url && (
+          <span className="px-2.5 py-0.5 rounded-full bg-cream/10 text-cream-muted text-xs">
+            Ticketed
           </span>
         )}
         {isRsvp && (
