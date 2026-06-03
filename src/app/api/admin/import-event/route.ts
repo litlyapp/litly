@@ -10,38 +10,23 @@ export async function POST(request: Request) {
 
   const supabase = await createClient();
 
-  // Find or create the "litly imports" organizer profile
+  // Find the organizer profile for the logged-in user
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
   let { data: profile } = await supabase
     .from("organizer_profiles")
     .select("id")
-    .eq("name", "litly imports")
+    .eq("user_id", user.id)
     .single();
 
   if (!profile) {
-    // Get the first user to attach the profile to (or use a service role in production)
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
-    const { data: newProfile, error: profileError } = await supabase
-      .from("organizer_profiles")
-      .insert({
-        user_id: user.user.id,
-        org_type: "organization",
-        name: "litly imports",
-        bio: "Events imported and curated by the litly team.",
-      })
-      .select("id")
-      .single();
-
-    if (profileError || !newProfile) {
-      return NextResponse.json(
-        { error: "Failed to create importer profile" },
-        { status: 500 }
-      );
-    }
-    profile = newProfile;
+    return NextResponse.json(
+      { error: "No organizer profile found. Make sure you are logged in as an organizer." },
+      { status: 400 }
+    );
   }
 
   const { error } = await supabase.from("events").insert({
