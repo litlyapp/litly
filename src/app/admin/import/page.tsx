@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Genre, EventType } from "@/types/database";
+import DateTimePicker from "@/components/DateTimePicker";
 
 const GENRES: Genre[] = [
   "poetry", "fiction", "nonfiction", "essay", "hybrid_experimental",
@@ -250,25 +251,17 @@ export default function AdminImportPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-cream-muted text-xs mb-1 block">Start date & time</label>
-                  <input
-                    type="datetime-local"
-                    value={toDatetimeLocal(parsed.date_time)}
-                    onChange={(e) => setParsed({ ...parsed, date_time: e.target.value ? new Date(e.target.value).toISOString() : null })}
-                    className={`${inputClass} [color-scheme:dark]`}
-                  />
-                </div>
-                <div>
-                  <label className="text-cream-muted text-xs mb-1 block">End time</label>
-                  <input
-                    type="datetime-local"
-                    value={toDatetimeLocal(parsed.end_time)}
-                    onChange={(e) => setParsed({ ...parsed, end_time: e.target.value ? new Date(e.target.value).toISOString() : null })}
-                    className={`${inputClass} [color-scheme:dark]`}
-                  />
-                </div>
+              <div className="space-y-3">
+                <DateTimePicker
+                  label="Start date & time"
+                  value={toDatetimeLocal(parsed.date_time)}
+                  onChange={(v) => setParsed({ ...parsed, date_time: v || null })}
+                />
+                <DateTimePicker
+                  label="End time (optional)"
+                  value={toDatetimeLocal(parsed.end_time)}
+                  onChange={(v) => setParsed({ ...parsed, end_time: v || null })}
+                />
               </div>
 
               {parsed.event_type === "in_person" && (

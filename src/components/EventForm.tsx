@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import DateTimePicker from "./DateTimePicker";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Genre, EventType, FeaturedReader } from "@/types/database";
@@ -285,26 +286,18 @@ export default function EventForm({ organizerId, initialData, eventId }: Props) 
       </div>
 
       {/* Date & time */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className={labelClass}>Start date & time *</label>
-          <input
-            type="datetime-local"
-            value={form.date_time}
-            onChange={(e) => set("date_time", e.target.value)}
-            required
-            className={`${inputClass} [color-scheme:dark]`}
-          />
-        </div>
-        <div>
-          <label className={labelClass}>End time (optional)</label>
-          <input
-            type="datetime-local"
-            value={form.end_time}
-            onChange={(e) => set("end_time", e.target.value)}
-            className={`${inputClass} [color-scheme:dark]`}
-          />
-        </div>
+      <div className="space-y-4">
+        <DateTimePicker
+          label="Start date & time"
+          value={form.date_time}
+          onChange={(v) => set("date_time", v)}
+          required
+        />
+        <DateTimePicker
+          label="End time (optional)"
+          value={form.end_time}
+          onChange={(v) => set("end_time", v)}
+        />
       </div>
 
       {/* Location (in-person) */}
