@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 interface DashboardEvent {
   id: string;
   title: string;
-  genre: Genre;
+  genre: Genre | Genre[];
   event_type: EventType;
   date_time: string;
   location_name: string | null;
@@ -60,6 +60,21 @@ export default async function DashboardPage() {
   const upcomingEvents = upcomingResult.data ?? [];
   const pastEvents = pastResult.data ?? [];
 
+  // Fetch RSVP counts for all organizer events
+  const allEventIds = [...upcomingEvents, ...pastEvents].map((e) => e.id);
+  const rsvpCounts: Record<string, number> = {};
+
+  if (allEventIds.length > 0) {
+    const { data: rsvpRows } = await supabase
+      .from("rsvps")
+      .select("event_id")
+      .in("event_id", allEventIds);
+
+    (rsvpRows ?? []).forEach((r) => {
+      rsvpCounts[r.event_id] = (rsvpCounts[r.event_id] ?? 0) + 1;
+    });
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-10">
       {/* Header */}
@@ -77,18 +92,13 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-10">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
+        <StatCard label="Upcoming" value={upcomingEvents.length} />
+        <StatCard label="Past events" value={pastEvents.length} />
+        <StatCard label="Total posted" value={upcomingEvents.length + pastEvents.length} />
         <StatCard
-          label="Upcoming"
-          value={upcomingEvents.length}
-        />
-        <StatCard
-          label="Past events"
-          value={pastEvents.length}
-        />
-        <StatCard
-          label="Total posted"
-          value={upcomingEvents.length + pastEvents.length}
+          label="Total RSVPs"
+          value={Object.values(rsvpCounts).reduce((a, b) => a + b, 0)}
         />
       </div>
 
@@ -113,6 +123,7 @@ export default async function DashboardPage() {
                 key={event.id}
                 event={event}
                 divider={i < upcomingEvents.length - 1}
+                rsvpCount={rsvpCounts[event.id] ?? 0}
               />
             ))}
           </div>
@@ -130,6 +141,7 @@ export default async function DashboardPage() {
                 event={event}
                 divider={i < pastEvents.length - 1}
                 isPast
+                rsvpCount={rsvpCounts[event.id] ?? 0}
               />
             ))}
           </div>

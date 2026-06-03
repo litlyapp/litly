@@ -21,6 +21,7 @@ interface Props {
   };
   divider?: boolean;
   isPast?: boolean;
+  rsvpCount?: number;
 }
 
 function formatDate(iso: string) {
@@ -34,7 +35,7 @@ function formatDate(iso: string) {
   });
 }
 
-export default function DashboardEventRow({ event, divider, isPast }: Props) {
+export default function DashboardEventRow({ event, divider, isPast, rsvpCount }: Props) {
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [, startTransition] = useTransition();
@@ -71,7 +72,12 @@ export default function DashboardEventRow({ event, divider, isPast }: Props) {
               Open mic
             </span>
           )}
-          {event.rsvp_enabled && (
+          {event.rsvp_enabled && rsvpCount !== undefined && rsvpCount > 0 && (
+            <span className="px-2 py-0.5 rounded-full bg-orange/15 text-orange text-xs font-medium">
+              {rsvpCount} RSVP{rsvpCount !== 1 ? "s" : ""}
+            </span>
+          )}
+          {event.rsvp_enabled && (rsvpCount === undefined || rsvpCount === 0) && (
             <span className="px-2 py-0.5 rounded-full bg-cream/10 text-cream-muted text-xs">
               RSVPs on
             </span>
