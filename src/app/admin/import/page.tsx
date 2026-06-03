@@ -3,23 +3,12 @@
 import { useState } from "react";
 import type { Genre, EventType } from "@/types/database";
 import DateTimePicker from "@/components/DateTimePicker";
-
-const GENRES: Genre[] = [
-  "poetry", "fiction", "nonfiction", "essay", "hybrid_experimental",
-  "translation", "ya", "craft_talk", "open_mic", "mixed",
-];
-
-const GENRE_LABELS: Record<Genre, string> = {
-  poetry: "Poetry", fiction: "Fiction", nonfiction: "Nonfiction",
-  essay: "Essay", hybrid_experimental: "Hybrid / Experimental",
-  translation: "Translation", ya: "YA", craft_talk: "Craft Talk",
-  open_mic: "Open Mic", mixed: "Mixed",
-};
+import { GENRES, GENRE_LABELS } from "@/lib/genres";
 
 interface ParsedEvent {
   title: string;
   description: string | null;
-  genre: Genre;
+  genre: Genre[];
   event_type: EventType;
   date_time: string | null;
   end_time: string | null;
@@ -224,31 +213,46 @@ export default function AdminImportPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-cream-muted text-xs mb-1 block">Genre</label>
-                  <select
-                    value={parsed.genre}
-                    onChange={(e) => setParsed({ ...parsed, genre: e.target.value as Genre })}
-                    className={inputClass}
-                  >
-                    {GENRES.map((g) => (
-                      <option key={g} value={g}>{GENRE_LABELS[g]}</option>
-                    ))}
-                  </select>
+              <div>
+                <label className="text-cream-muted text-xs mb-1 block">Genre</label>
+                <div className="flex flex-wrap gap-2">
+                  {GENRES.map((g) => {
+                    const active = parsed.genre.includes(g.value);
+                    return (
+                      <button
+                        key={g.value}
+                        type="button"
+                        onClick={() =>
+                          setParsed({
+                            ...parsed,
+                            genre: active
+                              ? parsed.genre.filter((x) => x !== g.value)
+                              : [...parsed.genre, g.value],
+                          })
+                        }
+                        className={`px-3 py-1 rounded-full text-xs border transition ${
+                          active
+                            ? "bg-orange border-orange text-cream"
+                            : "border-cream/20 text-cream-muted hover:border-cream hover:text-cream"
+                        }`}
+                      >
+                        {g.label}
+                      </button>
+                    );
+                  })}
                 </div>
+              </div>
 
-                <div>
-                  <label className="text-cream-muted text-xs mb-1 block">Event type</label>
-                  <select
-                    value={parsed.event_type}
-                    onChange={(e) => setParsed({ ...parsed, event_type: e.target.value as EventType })}
-                    className={inputClass}
-                  >
-                    <option value="in_person">In Person</option>
-                    <option value="virtual">Virtual</option>
-                  </select>
-                </div>
+              <div>
+                <label className="text-cream-muted text-xs mb-1 block">Event type</label>
+                <select
+                  value={parsed.event_type}
+                  onChange={(e) => setParsed({ ...parsed, event_type: e.target.value as EventType })}
+                  className={inputClass}
+                >
+                  <option value="in_person">In Person</option>
+                  <option value="virtual">Virtual</option>
+                </select>
               </div>
 
               <div className="space-y-3">

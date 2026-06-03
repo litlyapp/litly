@@ -10,7 +10,6 @@ interface SearchParams {
   type?: string;
   from?: string;
   to?: string;
-  open_mic?: string;
   organizer?: string;
 }
 
@@ -53,7 +52,8 @@ export default async function EventsPage({
       : [params.genre]
     : [];
   if (genres.length > 0) {
-    query = query.in("genre", genres as Genre[]);
+    // Use overlap operator: events whose genre array contains any of the selected genres
+    query = query.overlaps("genre", genres as Genre[]);
   }
 
   if (params.type && params.type !== "all") {
@@ -68,10 +68,6 @@ export default async function EventsPage({
     const toDate = new Date(params.to);
     toDate.setHours(23, 59, 59, 999);
     query = query.lte("date_time", toDate.toISOString());
-  }
-
-  if (params.open_mic === "1") {
-    query = query.eq("open_mic", true);
   }
 
   if (params.organizer) {

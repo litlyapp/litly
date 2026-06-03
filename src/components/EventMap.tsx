@@ -6,7 +6,7 @@ import type { Genre } from "@/types/database";
 export interface MapEvent {
   id: string;
   title: string;
-  genre: Genre;
+  genre: Genre | Genre[];
   date_time: string;
   lat: number | null;
   lng: number | null;

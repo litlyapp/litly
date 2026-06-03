@@ -7,8 +7,7 @@ export type Genre =
   | "translation"
   | "ya"
   | "craft_talk"
-  | "open_mic"
-  | "mixed";
+  | "open_mic";
 
 export type UserRole = "patron" | "organizer";
 export type EventType = "in_person" | "virtual";
@@ -94,7 +93,7 @@ export type Database = {
           organizer_id: string;
           title: string;
           description: string | null;
-          genre: Genre;
+          genre: Genre[];
           event_type: EventType;
           date_time: string;
           end_time: string | null;
@@ -117,7 +116,7 @@ export type Database = {
           organizer_id: string;
           title: string;
           description?: string | null;
-          genre: Genre;
+          genre: Genre[];
           event_type: EventType;
           date_time: string;
           end_time?: string | null;
@@ -138,7 +137,7 @@ export type Database = {
         Update: {
           title?: string;
           description?: string | null;
-          genre?: Genre;
+          genre?: Genre[];
           event_type?: EventType;
           date_time?: string;
           end_time?: string | null;

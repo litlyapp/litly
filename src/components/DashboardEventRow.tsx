@@ -5,25 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Genre, EventType } from "@/types/database";
-
-const GENRE_LABELS: Record<Genre, string> = {
-  poetry: "Poetry",
-  fiction: "Fiction",
-  nonfiction: "Nonfiction",
-  essay: "Essay",
-  hybrid_experimental: "Hybrid / Exp.",
-  translation: "Translation",
-  ya: "YA",
-  craft_talk: "Craft Talk",
-  open_mic: "Open Mic",
-  mixed: "Mixed",
-};
+import { GENRE_LABELS } from "@/lib/genres";
 
 interface Props {
   event: {
     id: string;
     title: string;
-    genre: Genre;
+    genre: Genre | Genre[];
     event_type: EventType;
     date_time: string;
     location_name: string | null;
@@ -68,9 +56,11 @@ export default function DashboardEventRow({ event, divider, isPast }: Props) {
       {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1 flex-wrap">
-          <span className="px-2 py-0.5 rounded-full bg-orange/15 text-orange text-xs font-medium">
-            {GENRE_LABELS[event.genre]}
-          </span>
+          {(Array.isArray(event.genre) ? event.genre : [event.genre]).map((g) => (
+            <span key={g} className="px-2 py-0.5 rounded-full bg-orange/15 text-orange text-xs font-medium">
+              {GENRE_LABELS[g]}
+            </span>
+          ))}
           {event.event_type === "virtual" && (
             <span className="px-2 py-0.5 rounded-full bg-cream/10 text-cream-muted text-xs">
               Virtual

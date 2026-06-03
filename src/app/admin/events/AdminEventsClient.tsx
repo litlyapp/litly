@@ -5,18 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Genre, EventType } from "@/types/database";
-
-const GENRE_LABELS: Record<Genre, string> = {
-  poetry: "Poetry", fiction: "Fiction", nonfiction: "Nonfiction",
-  essay: "Essay", hybrid_experimental: "Hybrid / Exp.",
-  translation: "Translation", ya: "YA", craft_talk: "Craft Talk",
-  open_mic: "Open Mic", mixed: "Mixed",
-};
+import { GENRE_LABELS } from "@/lib/genres";
 
 interface AdminEvent {
   id: string;
   title: string;
-  genre: Genre;
+  genre: Genre | Genre[];
   event_type: EventType;
   date_time: string;
   is_imported: boolean;
@@ -135,9 +129,11 @@ export default function AdminEventsClient({ initialEvents }: { initialEvents: Ad
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
-                  <span className="px-2 py-0.5 rounded-full bg-orange/15 text-orange text-xs">
-                    {GENRE_LABELS[event.genre]}
-                  </span>
+                  {(Array.isArray(event.genre) ? event.genre : [event.genre]).map((g) => (
+                    <span key={g} className="px-2 py-0.5 rounded-full bg-orange/15 text-orange text-xs">
+                      {GENRE_LABELS[g]}
+                    </span>
+                  ))}
                   {event.is_imported && (
                     <span className="px-2 py-0.5 rounded-full bg-cream/10 text-cream-muted text-xs">
                       imported · {event.source_name}

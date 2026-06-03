@@ -3,21 +3,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import type { Genre } from "@/types/database";
+import { GENRE_LABELS } from "@/lib/genres";
 import SaveButton from "@/components/SaveButton";
 import RsvpButton from "@/components/RsvpButton";
-
-const GENRE_LABELS: Record<Genre, string> = {
-  poetry: "Poetry",
-  fiction: "Fiction",
-  nonfiction: "Nonfiction",
-  essay: "Essay",
-  hybrid_experimental: "Hybrid / Experimental",
-  translation: "Translation",
-  ya: "YA",
-  craft_talk: "Craft Talk",
-  open_mic: "Open Mic",
-  mixed: "Mixed",
-};
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", {
@@ -116,14 +104,11 @@ export default async function EventDetailPage({
       <div className="bg-navy-light border border-cream/10 rounded-2xl p-8 mb-6">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div className="flex gap-2 flex-wrap">
-            <span className="px-3 py-1 rounded-full bg-orange/15 text-orange text-sm font-medium">
-              {GENRE_LABELS[event.genre as Genre]}
-            </span>
-            {event.open_mic && (
-              <span className="px-3 py-1 rounded-full bg-cream/10 text-cream-muted text-sm">
-                Open Mic
+            {(Array.isArray(event.genre) ? event.genre : [event.genre]).map((g: Genre) => (
+              <span key={g} className="px-3 py-1 rounded-full bg-orange/15 text-orange text-sm font-medium">
+                {GENRE_LABELS[g]}
               </span>
-            )}
+            ))}
             {event.event_type === "virtual" && (
               <span className="px-3 py-1 rounded-full bg-cream/10 text-cream-muted text-sm">
                 Virtual

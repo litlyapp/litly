@@ -140,7 +140,6 @@ export default async function HomePage() {
             { label: "Translation", value: "translation" },
             { label: "YA", value: "ya" },
             { label: "Hybrid / Experimental", value: "hybrid_experimental" },
-            { label: "Mixed", value: "mixed" },
           ].map((g) => (
             <Link
               key={g.value}

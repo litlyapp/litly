@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { Genre, EventType } from "@/types/database";
+import { GENRE_LABELS } from "@/lib/genres";
 import SaveButton from "./SaveButton";
 
 interface EventCardProps {
@@ -8,7 +9,7 @@ interface EventCardProps {
     id: string;
     title: string;
     description: string | null;
-    genre: Genre;
+    genre: Genre | Genre[];
     event_type: EventType;
     date_time: string;
     location_name: string | null;
@@ -24,18 +25,6 @@ interface EventCardProps {
   rsvpEventIds?: Set<string>;
 }
 
-const GENRE_LABELS: Record<Genre, string> = {
-  poetry: "Poetry",
-  fiction: "Fiction",
-  nonfiction: "Nonfiction",
-  essay: "Essay",
-  hybrid_experimental: "Hybrid / Exp.",
-  translation: "Translation",
-  ya: "YA",
-  craft_talk: "Craft Talk",
-  open_mic: "Open Mic",
-  mixed: "Mixed",
-};
 
 function formatDate(iso: string) {
   const d = new Date(iso);
@@ -89,14 +78,11 @@ export default function EventCard({
 
       {/* Genre + type pills */}
       <div className="flex gap-2 flex-wrap pr-8">
-        <span className="px-2.5 py-0.5 rounded-full bg-orange/15 text-orange text-xs font-medium">
-          {GENRE_LABELS[event.genre]}
-        </span>
-        {event.open_mic && (
-          <span className="px-2.5 py-0.5 rounded-full bg-cream/10 text-cream-muted text-xs">
-            Open mic
+        {(Array.isArray(event.genre) ? event.genre : [event.genre]).map((g) => (
+          <span key={g} className="px-2.5 py-0.5 rounded-full bg-orange/15 text-orange text-xs font-medium">
+            {GENRE_LABELS[g]}
           </span>
-        )}
+        ))}
         {event.event_type === "virtual" && (
           <span className="px-2.5 py-0.5 rounded-full bg-cream/10 text-cream-muted text-xs">
             Virtual

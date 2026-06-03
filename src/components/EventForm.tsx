@@ -6,24 +6,12 @@ import BannerUpload from "./BannerUpload";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Genre, EventType, FeaturedReader } from "@/types/database";
-
-const GENRES: { value: Genre; label: string }[] = [
-  { value: "poetry", label: "Poetry" },
-  { value: "fiction", label: "Fiction" },
-  { value: "nonfiction", label: "Nonfiction" },
-  { value: "essay", label: "Essay" },
-  { value: "hybrid_experimental", label: "Hybrid / Experimental" },
-  { value: "translation", label: "Translation" },
-  { value: "ya", label: "YA" },
-  { value: "craft_talk", label: "Craft Talk" },
-  { value: "open_mic", label: "Open Mic" },
-  { value: "mixed", label: "Mixed" },
-];
+import { GENRES } from "@/lib/genres";
 
 interface EventData {
   title: string;
   description: string | null;
-  genre: Genre;
+  genre: Genre[];
   event_type: EventType;
   date_time: string;
   end_time: string | null;
@@ -77,7 +65,6 @@ export default function EventForm({ organizerId, initialData, eventId }: Props) 
   const [form, setForm] = useState({
     title: initialData?.title ?? "",
     description: initialData?.description ?? "",
-    genre: initialData?.genre ?? ("poetry" as Genre),
     event_type: initialData?.event_type ?? ("in_person" as EventType),
     date_time: toDatetimeLocal(initialData?.date_time),
     end_time: toDatetimeLocal(initialData?.end_time),
@@ -87,6 +74,10 @@ export default function EventForm({ organizerId, initialData, eventId }: Props) 
     open_mic: initialData?.open_mic ?? false,
     rsvp_enabled: initialData?.rsvp_enabled ?? false,
   });
+
+  const [genres, setGenres] = useState<Genre[]>(
+    initialData?.genre ?? []
+  );
 
   const [bannerUrl, setBannerUrl] = useState<string | null>(
     initialData?.banner_url ?? null
@@ -138,8 +129,15 @@ export default function EventForm({ organizerId, initialData, eventId }: Props) 
     setReaders((prev) => prev.filter((_, i) => i !== index));
   }
 
+  function toggleGenre(genre: Genre) {
+    setGenres((prev) =>
+      prev.includes(genre) ? prev.filter((g) => g !== genre) : [...prev, genre]
+    );
+  }
+
   function validate(): string | null {
     if (!form.title.trim()) return "Title is required.";
+    if (genres.length === 0) return "Select at least one genre.";
     if (!form.date_time) return "Date and time are required.";
     if (form.event_type === "in_person" && !form.location_name.trim())
       return "Location name is required for in-person events.";
@@ -171,7 +169,7 @@ export default function EventForm({ organizerId, initialData, eventId }: Props) 
     const sharedFields = {
       title: form.title.trim(),
       description: form.description.trim() || null,
-      genre: form.genre,
+      genre: genres,
       event_type: form.event_type,
       date_time: new Date(form.date_time).toISOString(),
       end_time: form.end_time ? new Date(form.end_time).toISOString() : null,
@@ -185,7 +183,7 @@ export default function EventForm({ organizerId, initialData, eventId }: Props) 
       lng: form.event_type === "in_person" ? coords?.lng ?? null : null,
       virtual_url:
         form.event_type === "virtual" ? form.virtual_url.trim() || null : null,
-      open_mic: form.open_mic,
+      open_mic: genres.includes("open_mic"),
       featured_readers: readers.filter((r) => r.name.trim()).length
         ? readers.filter((r) => r.name.trim())
         : null,
@@ -260,18 +258,31 @@ export default function EventForm({ organizerId, initialData, eventId }: Props) 
 
       {/* Genre */}
       <div>
-        <label className={labelClass}>Genre *</label>
-        <select
-          value={form.genre}
-          onChange={(e) => set("genre", e.target.value as Genre)}
-          className={inputClass}
-        >
-          {GENRES.map((g) => (
-            <option key={g.value} value={g.value}>
-              {g.label}
-            </option>
-          ))}
-        </select>
+        <label className={labelClass}>
+          Genre * <span className="normal-case tracking-normal text-cream-muted/60">— select all that apply</span>
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {GENRES.map((g) => {
+            const active = genres.includes(g.value);
+            return (
+              <button
+                key={g.value}
+                type="button"
+                onClick={() => toggleGenre(g.value)}
+                className={`px-4 py-1.5 rounded-full text-sm border transition ${
+                  active
+                    ? "bg-orange border-orange text-cream"
+                    : "border-cream/20 text-cream-muted hover:border-cream hover:text-cream"
+                }`}
+              >
+                {g.label}
+              </button>
+            );
+          })}
+        </div>
+        {genres.length === 0 && (
+          <p className="text-cream-muted/60 text-xs mt-1">Select at least one.</p>
+        )}
       </div>
 
       {/* Event type */}
@@ -379,19 +390,6 @@ export default function EventForm({ organizerId, initialData, eventId }: Props) 
 
       {/* Toggles */}
       <div className="space-y-4">
-        <label className="flex items-center gap-4 cursor-pointer">
-          <Toggle
-            value={form.open_mic}
-            onChange={(v) => set("open_mic", v)}
-          />
-          <div>
-            <span className="text-cream text-sm font-medium">Open mic</span>
-            <p className="text-cream-muted text-xs">
-              There's a sign-up list at the event.
-            </p>
-          </div>
-        </label>
-
         <label className="flex items-center gap-4 cursor-pointer">
           <Toggle
             value={form.rsvp_enabled}

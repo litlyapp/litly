@@ -15,7 +15,6 @@ const GENRE_COLORS: Partial<Record<Genre, string>> = {
   ya: "#E84393",
   craft_talk: "#1ABC9C",
   open_mic: "#E8622A",
-  mixed: "#95A5A6",
 };
 
 function formatDate(iso: string) {
@@ -71,7 +70,8 @@ export default function LeafletMap({ events }: { events: MapEvent[] }) {
       events.forEach((event) => {
         if (!event.lat || !event.lng) return;
 
-        const color = GENRE_COLORS[event.genre] ?? "#E8622A";
+        const primaryGenre = Array.isArray(event.genre) ? event.genre[0] : event.genre;
+        const color = GENRE_COLORS[primaryGenre] ?? "#E8622A";
         const organizer = Array.isArray(event.organizer)
           ? event.organizer[0]
           : event.organizer;

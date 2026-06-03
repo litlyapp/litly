@@ -2,19 +2,7 @@
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useCallback, useTransition } from "react";
-
-const GENRES = [
-  { value: "poetry", label: "Poetry" },
-  { value: "fiction", label: "Fiction" },
-  { value: "nonfiction", label: "Nonfiction" },
-  { value: "essay", label: "Essay" },
-  { value: "hybrid_experimental", label: "Hybrid / Experimental" },
-  { value: "translation", label: "Translation" },
-  { value: "ya", label: "YA" },
-  { value: "craft_talk", label: "Craft Talk" },
-  { value: "open_mic", label: "Open Mic" },
-  { value: "mixed", label: "Mixed" },
-] as const;
+import { GENRES } from "@/lib/genres";
 
 interface Organizer {
   id: string;
@@ -33,7 +21,6 @@ export default function EventFilters({
 
   const activeGenres = searchParams.getAll("genre");
   const activeType = searchParams.get("type") ?? "all";
-  const activeOpenMic = searchParams.get("open_mic") === "1";
   const activeOrganizer = searchParams.get("organizer") ?? "";
   const activeQ = searchParams.get("q") ?? "";
   const activeFrom = searchParams.get("from") ?? "";
@@ -75,7 +62,6 @@ export default function EventFilters({
     activeQ ||
     activeGenres.length > 0 ||
     activeType !== "all" ||
-    activeOpenMic ||
     activeOrganizer ||
     activeFrom ||
     activeTo;
@@ -181,29 +167,6 @@ export default function EventFilters({
             </option>
           ))}
         </select>
-      </div>
-
-      {/* Open mic toggle */}
-      <div>
-        <label className="flex items-center gap-3 cursor-pointer">
-          <div
-            onClick={() =>
-              setParam("open_mic", activeOpenMic ? "" : "1")
-            }
-            className={`w-10 h-6 rounded-full border transition relative ${
-              activeOpenMic
-                ? "bg-orange border-orange"
-                : "bg-navy-light border-cream/30"
-            }`}
-          >
-            <span
-              className={`absolute top-0.5 w-5 h-5 rounded-full bg-cream transition-all ${
-                activeOpenMic ? "left-4" : "left-0.5"
-              }`}
-            />
-          </div>
-          <span className="text-cream-muted text-sm">Open mic only</span>
-        </label>
       </div>
 
       {/* Clear */}
