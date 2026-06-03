@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useCallback, useTransition } from "react";
+import { useCallback, useTransition, useState, useRef, useEffect } from "react";
 import { GENRES } from "@/lib/genres";
 
 interface Organizer {
@@ -150,24 +150,12 @@ export default function EventFilters({
         </div>
       </div>
 
-      {/* Organizer */}
-      <div>
-        <label className="text-cream-muted text-xs uppercase tracking-wider mb-2 block">
-          Organizer
-        </label>
-        <select
-          value={activeOrganizer}
-          onChange={(e) => setParam("organizer", e.target.value)}
-          className="w-full bg-navy-light border border-cream/20 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange"
-        >
-          <option value="">All organizers</option>
-          {organizers.map((o) => (
-            <option key={o.id} value={o.id}>
-              {o.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      {/* Organizer typeahead */}
+      <OrganizerSearch
+        organizers={organizers}
+        activeId={activeOrganizer}
+        onSelect={(id) => setParam("organizer", id)}
+      />
 
       {/* Clear */}
       {hasFilters && (
@@ -178,6 +166,107 @@ export default function EventFilters({
           Clear all filters
         </button>
       )}
+    </div>
+  );
+}
+
+function OrganizerSearch({
+  organizers,
+  activeId,
+  onSelect,
+}: {
+  organizers: Organizer[];
+  activeId: string;
+  onSelect: (id: string) => void;
+}) {
+  const activeName = organizers.find((o) => o.id === activeId)?.name ?? "";
+  const [query, setQuery] = useState(activeName);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Sync if external clear happens
+  useEffect(() => {
+    setQuery(activeName);
+  }, [activeName]);
+
+  // Close on outside click
+  useEffect(() => {
+    function handle(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        // If nothing selected, reset input
+        if (!activeId) setQuery("");
+      }
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [activeId]);
+
+  const filtered = query.trim()
+    ? organizers.filter((o) =>
+        o.name.toLowerCase().includes(query.toLowerCase())
+      )
+    : organizers;
+
+  function select(o: Organizer) {
+    setQuery(o.name);
+    setOpen(false);
+    onSelect(o.id);
+  }
+
+  function clear() {
+    setQuery("");
+    setOpen(false);
+    onSelect("");
+  }
+
+  return (
+    <div ref={ref}>
+      <label className="text-cream-muted text-xs uppercase tracking-wider mb-2 block">
+        Organizer
+      </label>
+      <div className="relative">
+        <input
+          type="text"
+          placeholder="Search organizers…"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+            if (!e.target.value) onSelect("");
+          }}
+          onFocus={() => setOpen(true)}
+          className="w-full bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange pr-7"
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={clear}
+            className="absolute right-2.5 top-2 text-cream-muted hover:text-cream text-xs"
+          >
+            ✕
+          </button>
+        )}
+
+        {open && filtered.length > 0 && (
+          <div className="absolute z-50 top-full mt-1 w-full bg-navy-light border border-cream/20 rounded-xl overflow-hidden shadow-lg max-h-48 overflow-y-auto">
+            {filtered.slice(0, 20).map((o) => (
+              <button
+                key={o.id}
+                type="button"
+                onClick={() => select(o)}
+                className={`w-full text-left px-3 py-2 text-sm transition ${
+                  o.id === activeId
+                    ? "text-orange bg-orange/10"
+                    : "text-cream-muted hover:text-cream hover:bg-navy"
+                }`}
+              >
+                {o.name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
