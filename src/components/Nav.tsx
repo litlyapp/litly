@@ -37,7 +37,12 @@ export default async function Nav() {
         {/* Desktop links */}
         <div className="hidden md:flex items-center gap-1">
           <NavLink href="/events">Events</NavLink>
-          <NavLink href="/events/map">Map</NavLink>
+          <Link
+            href="/events/map"
+            className="bg-orange text-cream text-sm font-semibold px-4 py-1.5 rounded-full hover:bg-orange/90 transition"
+          >
+            Map
+          </Link>
         </div>
 
         {/* Auth controls + mobile menu (client) */}
