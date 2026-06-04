@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     title: event.title,
     description: event.description ?? null,
     genre: event.genre,
-    event_type: event.event_type,
+    event_type: event.event_type ?? "in_person",
     date_time: event.date_time,
     end_time: event.end_time ?? null,
     location_name: event.location_name ?? null,
@@ -46,6 +46,7 @@ export async function POST(request: Request) {
     is_imported: true,
     source_url: event.source_url ?? null,
     source_name: event.source_name ?? null,
+    banner_url: event.banner_url ?? null,
   });
 
   if (error) {
