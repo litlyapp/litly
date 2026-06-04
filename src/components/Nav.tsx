@@ -27,8 +27,8 @@ export default async function Nav() {
           <Image
             src="/logo.png"
             alt="litly"
-            width={40}
-            height={40}
+            width={56}
+            height={56}
             className="rounded-xl"
             priority
           />
