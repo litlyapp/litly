@@ -92,14 +92,10 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
+      <div className="grid grid-cols-3 gap-4 mb-10">
         <StatCard label="Upcoming" value={upcomingEvents.length} />
         <StatCard label="Past events" value={pastEvents.length} />
         <StatCard label="Total posted" value={upcomingEvents.length + pastEvents.length} />
-        <StatCard
-          label="Total RSVPs"
-          value={Object.values(rsvpCounts).reduce((a, b) => a + b, 0)}
-        />
       </div>
 
       {/* Upcoming events */}
