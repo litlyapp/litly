@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Genre, EventType } from "@/types/database";
 import { GENRE_LABELS } from "@/lib/genres";
+import { formatEventDate, formatEventTime } from "@/lib/formatDate";
 
 interface Props {
   event: {
@@ -25,14 +26,7 @@ interface Props {
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  return `${formatEventDate(iso)} · ${formatEventTime(iso)}`;
 }
 
 export default function DashboardEventRow({ event, divider, isPast, rsvpCount }: Props) {

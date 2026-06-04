@@ -4,19 +4,10 @@ import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import type { Genre } from "@/types/database";
 import { GENRE_LABELS } from "@/lib/genres";
+import { formatEventDateTime } from "@/lib/formatDate";
 import SaveButton from "@/components/SaveButton";
 import RsvpButton from "@/components/RsvpButton";
 
-function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 
 export default async function EventDetailPage({
   params,
@@ -132,10 +123,10 @@ export default async function EventDetailPage({
           <div className="flex items-center gap-3 text-cream">
             <CalendarIcon />
             <div>
-              <div>{formatDateTime(event.date_time)}</div>
+              <div>{formatEventDateTime(event.date_time)}</div>
               {event.end_time && (
                 <div className="text-cream-muted text-sm">
-                  Until {formatDateTime(event.end_time)}
+                  Until {formatEventDateTime(event.end_time)}
                 </div>
               )}
             </div>

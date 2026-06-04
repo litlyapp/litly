@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Genre, EventType } from "@/types/database";
 import { GENRE_LABELS } from "@/lib/genres";
+import { formatEventDate, formatEventTime } from "@/lib/formatDate";
 import SaveButton from "./SaveButton";
 
 interface EventCardProps {
@@ -27,23 +28,6 @@ interface EventCardProps {
 }
 
 
-function formatDate(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleDateString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function formatTime(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 
 export default function EventCard({
   event,
@@ -113,7 +97,7 @@ export default function EventCard({
         <div className="flex items-center gap-1.5">
           <CalendarIcon />
           <span>
-            {formatDate(event.date_time)} · {formatTime(event.date_time)}
+            {formatEventDate(event.date_time)} · {formatEventTime(event.date_time)}
           </span>
         </div>
         {event.event_type === "in_person" && event.location_name && (
