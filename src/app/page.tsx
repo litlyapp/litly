@@ -158,7 +158,7 @@ export default async function HomePage() {
         <div className="bg-navy-light border border-cream/10 rounded-2xl p-10 md:p-14 flex flex-col md:flex-row items-center gap-8 justify-between">
           <div>
             <h2 className="font-serif text-3xl text-cream mb-3">
-              Running a reading series?
+              Hosting an event?
             </h2>
             <p className="text-cream-muted max-w-md">
               litly is free to post on. Reach readers who are actively looking
