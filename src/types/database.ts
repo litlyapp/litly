@@ -101,6 +101,7 @@ export type Database = {
           location_name: string | null;
           address: string | null;
           city: string | null;
+          state: string | null;
           country: string | null;
           lat: number | null;
           lng: number | null;
@@ -127,6 +128,7 @@ export type Database = {
           location_name?: string | null;
           address?: string | null;
           city?: string | null;
+          state?: string | null;
           country?: string | null;
           lat?: number | null;
           lng?: number | null;
@@ -151,6 +153,7 @@ export type Database = {
           location_name?: string | null;
           address?: string | null;
           city?: string | null;
+          state?: string | null;
           country?: string | null;
           lat?: number | null;
           lng?: number | null;

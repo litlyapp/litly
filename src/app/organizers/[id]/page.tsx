@@ -25,7 +25,7 @@ export default async function OrganizerProfilePage({
     supabase
       .from("events")
       .select(
-        "id, title, description, genre, event_type, date_time, end_time, location_name, city, country, virtual_url, open_mic, rsvp_enabled, created_at, organizer:organizer_profiles(id, name, org_type)"
+        "id, title, description, genre, event_type, date_time, end_time, location_name, city, state, country, virtual_url, open_mic, rsvp_enabled, created_at, organizer:organizer_profiles(id, name, org_type)"
       )
       .eq("organizer_id", id)
       .gte("date_time", now)
@@ -33,7 +33,7 @@ export default async function OrganizerProfilePage({
     supabase
       .from("events")
       .select(
-        "id, title, description, genre, event_type, date_time, end_time, location_name, city, country, virtual_url, open_mic, rsvp_enabled, created_at, organizer:organizer_profiles(id, name, org_type)"
+        "id, title, description, genre, event_type, date_time, end_time, location_name, city, state, country, virtual_url, open_mic, rsvp_enabled, created_at, organizer:organizer_profiles(id, name, org_type)"
       )
       .eq("organizer_id", id)
       .lt("date_time", now)

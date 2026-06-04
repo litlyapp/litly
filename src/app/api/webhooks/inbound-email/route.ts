@@ -78,6 +78,7 @@ Return a JSON array of event objects. Each object:
   "location_name": "string or null",
   "address": "string or null",
   "city": "string or null",
+  "state": "string or null",
   "country": "string or null",
   "virtual_url": "string or null",
   "ticket_url": "string or null",

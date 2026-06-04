@@ -40,6 +40,7 @@ export async function POST(request: Request) {
     location_name: event.location_name ?? null,
     address: event.address ?? null,
     city: event.city ?? null,
+    state: event.state ?? null,
     country: event.country ?? null,
     virtual_url: event.virtual_url ?? null,
     open_mic: event.open_mic ?? false,

@@ -15,6 +15,7 @@ interface EventCardProps {
     date_time: string;
     location_name: string | null;
     city: string | null;
+    state: string | null;
     country: string | null;
     virtual_url: string | null;
     open_mic: boolean;
@@ -108,9 +109,9 @@ export default function EventCard({
           <div className="flex items-center gap-1.5">
             <PinIcon />
             <span className="truncate">
-              {event.city && event.country
-                ? `${event.city}, ${event.country}`
-                : event.city || event.location_name}
+              {event.city
+                ? [event.city, event.state, event.country].filter(Boolean).join(", ")
+                : event.location_name}
             </span>
           </div>
         )}

@@ -53,6 +53,7 @@ create table public.events (
   location_name text,
   address text,
   city text,
+  state text,
   country text,
   lat double precision,
   lng double precision,

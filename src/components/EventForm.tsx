@@ -18,6 +18,7 @@ interface EventData {
   location_name: string | null;
   address: string | null;
   city: string | null;
+  state: string | null;
   country: string | null;
   lat: number | null;
   lng: number | null;
@@ -54,6 +55,28 @@ async function geocode(
   return null;
 }
 
+// Resolve zip code → state + country via Nominatim
+async function resolveZip(
+  zip: string
+): Promise<{ state: string; country: string } | null> {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&limit=1&postalcode=${encodeURIComponent(zip)}&addressdetails=1`,
+      { headers: { "Accept-Language": "en" } }
+    );
+    const data = await res.json();
+    if (data[0]?.address) {
+      const addr = data[0].address;
+      const state = addr.state ?? addr.province ?? addr.region ?? "";
+      const country = addr.country ?? "";
+      return { state, country };
+    }
+  } catch {
+    // best-effort
+  }
+  return null;
+}
+
 function toDatetimeLocal(iso: string | null | undefined): string {
   if (!iso) return "";
   // Convert UTC ISO to local time "YYYY-MM-DDTHH:MM" for the picker
@@ -76,6 +99,8 @@ export default function EventForm({ organizerId, initialData, eventId }: Props) 
     location_name: initialData?.location_name ?? "",
     address: initialData?.address ?? "",
     city: initialData?.city ?? "",
+    zip_code: "",
+    state: initialData?.state ?? "",
     country: initialData?.country ?? "",
     virtual_url: initialData?.virtual_url ?? "",
     open_mic: initialData?.open_mic ?? false,
@@ -188,6 +213,7 @@ export default function EventForm({ organizerId, initialData, eventId }: Props) 
       address:
         form.event_type === "in_person" ? form.address.trim() || null : null,
       city: form.event_type === "in_person" ? form.city.trim() || null : null,
+      state: form.event_type === "in_person" ? form.state.trim() || null : null,
       country: form.event_type === "in_person" ? form.country.trim() || null : null,
       lat: form.event_type === "in_person" ? coords?.lat ?? null : null,
       lng: form.event_type === "in_person" ? coords?.lng ?? null : null,
@@ -350,23 +376,37 @@ export default function EventForm({ organizerId, initialData, eventId }: Props) 
               <label className={labelClass}>City *</label>
               <input
                 type="text"
-                placeholder="e.g. New York"
+                placeholder="e.g. Durham"
                 value={form.city}
                 onChange={(e) => set("city", e.target.value)}
                 className={inputClass}
               />
             </div>
             <div>
-              <label className={labelClass}>Country *</label>
+              <label className={labelClass}>Zip / Postal code</label>
               <input
                 type="text"
-                placeholder="e.g. USA"
-                value={form.country}
-                onChange={(e) => set("country", e.target.value)}
+                placeholder="e.g. 27701"
+                value={form.zip_code}
+                onChange={(e) => set("zip_code", e.target.value)}
+                onBlur={async (e) => {
+                  const zip = e.target.value.trim();
+                  if (!zip) return;
+                  const result = await resolveZip(zip);
+                  if (result) {
+                    if (result.state) set("state", result.state);
+                    if (result.country) set("country", result.country);
+                  }
+                }}
                 className={inputClass}
               />
             </div>
           </div>
+          {(form.state || form.country) && (
+            <p className="text-cream-muted text-xs -mt-2">
+              {[form.state, form.country].filter(Boolean).join(", ")}
+            </p>
+          )}
 
           <div>
             <label className={labelClass}>
