@@ -49,21 +49,21 @@ export default function LandingSearch() {
   return (
     <form
       onSubmit={(e) => handleSubmit(e)}
-      className="flex max-w-xl mx-auto gap-2"
+      className="flex w-full max-w-xl mx-auto gap-2 px-4"
     >
       <input
         type="text"
-        placeholder="Search for readings, open mics, craft talks…"
+        placeholder="Search readings, open mics…"
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        className="flex-1 bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-full px-5 py-3 text-sm focus:outline-none focus:border-orange"
+        className="flex-1 min-w-0 bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-full px-4 py-3 text-sm focus:outline-none focus:border-orange"
       />
       <button
         type="button"
         onClick={handleNearMe}
         disabled={locating}
         title="Near me"
-        className="border border-cream/25 text-cream-muted px-4 py-3 rounded-full hover:border-cream/50 hover:text-cream transition shrink-0 disabled:opacity-60"
+        className="border border-cream/25 text-cream-muted px-3 py-3 rounded-full hover:border-cream/50 hover:text-cream transition shrink-0 disabled:opacity-60"
       >
         {locating ? (
           <span className="text-xs">…</span>
@@ -73,7 +73,7 @@ export default function LandingSearch() {
       </button>
       <button
         type="submit"
-        className="bg-orange text-cream font-semibold px-6 py-3 rounded-full hover:bg-orange/90 transition text-sm shrink-0"
+        className="bg-orange text-cream font-semibold px-5 py-3 rounded-full hover:bg-orange/90 transition text-sm shrink-0"
       >
         Search
       </button>
