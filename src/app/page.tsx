@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import EventCard from "@/components/EventCard";
 import LandingSearch from "@/components/LandingSearch";
+import InstallButton from "@/components/InstallButton";
 import { GENRES } from "@/lib/genres";
 
 export const dynamic = "force-dynamic";
@@ -84,6 +85,7 @@ export default async function HomePage() {
             >
               Post an event
             </Link>
+            <InstallButton variant="hero" />
           </div>
         </div>
       </section>

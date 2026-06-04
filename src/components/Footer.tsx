@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import InstallButton from "./InstallButton";
 
 export default function Footer() {
   return (
@@ -12,6 +13,7 @@ export default function Footer() {
           <Link href="/events" className="hover:text-cream transition">Events</Link>
           <Link href="/events/map" className="hover:text-cream transition">Map</Link>
           <Link href="/register" className="hover:text-cream transition">Post an event</Link>
+          <InstallButton variant="footer" />
         </nav>
         <p className="text-cream-muted/50 text-xs">
           © {new Date().getFullYear()} litly
