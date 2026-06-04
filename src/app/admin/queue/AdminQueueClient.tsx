@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import DateTimePicker from "@/components/DateTimePicker";
+import BannerUpload from "@/components/BannerUpload";
 import { GENRES, GENRE_LABELS } from "@/lib/genres";
 import type { Genre, EventType } from "@/types/database";
 
@@ -301,6 +302,14 @@ export default function AdminQueueClient({
                         ))}
                       </div>
                     </div>
+                  )}
+
+                  {/* Banner image */}
+                  {isEditing && (
+                    <BannerUpload
+                      value={(data.banner_url as string | null) ?? null}
+                      onChange={(url) => setField("banner_url", url)}
+                    />
                   )}
                 </div>
               ) : (
