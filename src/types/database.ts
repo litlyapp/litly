@@ -7,7 +7,8 @@ export type Genre =
   | "translation"
   | "ya"
   | "craft_talk"
-  | "open_mic";
+  | "open_mic"
+  | "workshop";
 
 export type UserRole = "patron" | "organizer";
 export type EventType = "in_person" | "virtual";
