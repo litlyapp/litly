@@ -2,6 +2,25 @@ import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 
+const CONFIRMATION_FORWARD_TO = "knuth.cdgo@gmail.com";
+const CONFIRMATION_PATTERN = /confirm|verify|activate|subscri|welcome|opt.?in/i;
+
+async function forwardToGmail(from: string, subject: string, bodyPlain: string, bodyHtml: string) {
+  const formData = new FormData();
+  formData.append("from", "litly inbound <newsletters@thelitlyapp.com>");
+  formData.append("to", CONFIRMATION_FORWARD_TO);
+  formData.append("subject", `[litly fwd] ${subject}`);
+  formData.append("text", `Originally from: ${from}\n\n${bodyPlain}`);
+  if (bodyHtml) formData.append("html", bodyHtml);
+
+  const credentials = Buffer.from(`api:${process.env.MAILGUN_API_KEY}`).toString("base64");
+  await fetch("https://api.mailgun.net/v3/thelitlyapp.com/messages", {
+    method: "POST",
+    headers: { Authorization: `Basic ${credentials}` },
+    body: formData,
+  });
+}
+
 export async function POST(request: Request) {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -19,6 +38,12 @@ export async function POST(request: Request) {
     const bodyHtml = formData.get("body-html")?.toString() ?? "";
 
     const body = bodyPlain || bodyHtml;
+
+    // Forward confirmation/verification emails to personal inbox
+    if (CONFIRMATION_PATTERN.test(subject)) {
+      await forwardToGmail(from, subject, bodyPlain, bodyHtml);
+    }
+
     // If body is empty or very short, use subject as content
     const emailContent = body.trim().length > 10 ? body : `Subject: ${subject}`;
 
