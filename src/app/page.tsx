@@ -89,6 +89,16 @@ export default async function HomePage() {
               <EventCard key={event.id} event={event} />
             ))}
           </div>
+
+          {/* Explore map CTA — mobile only */}
+          <div className="md:hidden mt-6">
+            <Link
+              href="/events/map"
+              className="block w-full text-center bg-orange text-cream font-semibold px-6 py-3.5 rounded-full hover:bg-orange/90 transition"
+            >
+              Explore the map
+            </Link>
+          </div>
         </section>
       )}
 
