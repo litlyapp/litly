@@ -68,12 +68,6 @@ export default async function HomePage() {
 
           <div className="flex flex-wrap justify-center gap-3 mt-10">
             <Link
-              href="/events"
-              className="border border-cream/25 text-cream-muted text-sm px-5 py-2 rounded-full hover:border-cream/50 hover:text-cream transition"
-            >
-              Browse all events
-            </Link>
-            <Link
               href="/events/map"
               className="border border-cream/25 text-cream-muted text-sm px-5 py-2 rounded-full hover:border-cream/50 hover:text-cream transition"
             >
