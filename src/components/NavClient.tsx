@@ -80,6 +80,24 @@ export default function NavClient({ user, role }: Props) {
         )}
       </div>
 
+      {/* Mobile auth buttons (logged-out only) */}
+      {!user && (
+        <div className="md:hidden flex items-center gap-2">
+          <Link
+            href="/login"
+            className="text-cream text-sm px-3 py-1.5 rounded-full border border-cream/30 hover:border-cream/60 transition"
+          >
+            Sign in
+          </Link>
+          <Link
+            href="/register"
+            className="text-cream text-sm px-3 py-1.5 rounded-full bg-orange hover:bg-orange/90 transition"
+          >
+            Join
+          </Link>
+        </div>
+      )}
+
       {/* Mobile hamburger */}
       <button
         className="md:hidden text-cream-muted hover:text-cream p-2 rounded-xl hover:bg-navy-light transition"
