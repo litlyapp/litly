@@ -99,53 +99,42 @@ export default function DashboardEventRow({ event, divider, isPast, rsvpCount }:
         </p>
       </div>
 
-      {/* Actions */}
-      {!isPast && (
-        <div className="flex items-center gap-2 shrink-0">
-          {confirming ? (
-            <>
-              <span className="text-cream-muted text-xs">Delete?</span>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="text-orange text-xs border border-orange/40 rounded-full px-3 py-1 hover:bg-orange/10 transition disabled:opacity-60"
-              >
-                {deleting ? "…" : "Yes, delete"}
-              </button>
-              <button
-                onClick={() => setConfirming(false)}
-                className="text-cream-muted text-xs border border-cream/20 rounded-full px-3 py-1 hover:text-cream transition"
-              >
-                Cancel
-              </button>
-            </>
-          ) : (
-            <>
-              <Link
-                href={`/events/${event.id}/edit`}
-                className="text-cream-muted text-xs border border-cream/20 rounded-full px-3 py-1.5 hover:text-cream hover:border-cream/40 transition"
-              >
-                Edit
-              </Link>
-              <button
-                onClick={() => setConfirming(true)}
-                className="text-cream-muted text-xs border border-cream/20 rounded-full px-3 py-1.5 hover:text-orange hover:border-orange/40 transition"
-              >
-                Delete
-              </button>
-            </>
-          )}
-        </div>
-      )}
-
-      {isPast && (
-        <Link
-          href={`/events/${event.id}`}
-          className="text-cream-muted text-xs border border-cream/20 rounded-full px-3 py-1.5 hover:text-cream hover:border-cream/40 transition shrink-0"
-        >
-          View
-        </Link>
-      )}
+      {/* Actions — always available for both upcoming and past events */}
+      <div className="flex items-center gap-2 shrink-0">
+        {confirming ? (
+          <>
+            <span className="text-cream-muted text-xs">Delete?</span>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="text-orange text-xs border border-orange/40 rounded-full px-3 py-1 hover:bg-orange/10 transition disabled:opacity-60"
+            >
+              {deleting ? "…" : "Yes, delete"}
+            </button>
+            <button
+              onClick={() => setConfirming(false)}
+              className="text-cream-muted text-xs border border-cream/20 rounded-full px-3 py-1 hover:text-cream transition"
+            >
+              Cancel
+            </button>
+          </>
+        ) : (
+          <>
+            <Link
+              href={`/events/${event.id}/edit`}
+              className="text-cream-muted text-xs border border-cream/20 rounded-full px-3 py-1.5 hover:text-cream hover:border-cream/40 transition"
+            >
+              Edit
+            </Link>
+            <button
+              onClick={() => setConfirming(true)}
+              className="text-cream-muted text-xs border border-cream/20 rounded-full px-3 py-1.5 hover:text-orange hover:border-orange/40 transition"
+            >
+              Delete
+            </button>
+          </>
+        )}
+      </div>
     </div>
   );
 }
