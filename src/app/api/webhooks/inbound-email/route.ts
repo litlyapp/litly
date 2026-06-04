@@ -46,7 +46,7 @@ Return a JSON array of event objects. Each object:
 {
   "title": "Event title — use email subject if no better title found",
   "description": "string or null",
-  "genre": ["array of applicable: poetry, fiction, nonfiction, essay, hybrid_experimental, translation, ya, craft_talk, open_mic"],
+  "genre": ["array of applicable: poetry, fiction, nonfiction, essay, hybrid_experimental, translation, ya, craft_talk, open_mic, workshop"],
   "event_type": "in_person or virtual (default to in_person if unclear)",
   "date_time": "ISO 8601 or null",
   "end_time": "ISO 8601 or null",
