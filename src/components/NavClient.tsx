@@ -80,40 +80,42 @@ export default function NavClient({ user, role }: Props) {
         )}
       </div>
 
-      {/* Mobile auth buttons (logged-out only) */}
-      {!user && (
-        <div className="md:hidden flex items-center gap-2">
-          <Link
-            href="/login"
-            className="text-cream text-sm px-3 py-1.5 rounded-full border border-cream/30 hover:border-cream/60 transition"
-          >
-            Sign in
-          </Link>
-          <Link
-            href="/register"
-            className="text-cream text-sm px-3 py-1.5 rounded-full bg-orange hover:bg-orange/90 transition"
-          >
-            Join
-          </Link>
-        </div>
-      )}
-
-      {/* Mobile hamburger */}
-      <button
-        className="md:hidden text-cream-muted hover:text-cream p-2 rounded-xl hover:bg-navy-light transition"
-        onClick={() => setMenuOpen((o) => !o)}
-        aria-label="Toggle menu"
-      >
-        {menuOpen ? (
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        ) : (
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
+      {/* Mobile: auth buttons + hamburger grouped together */}
+      <div className="md:hidden flex items-center gap-2">
+        {!user && (
+          <>
+            <Link
+              href="/login"
+              className="text-cream text-sm px-3 py-1.5 rounded-full border border-cream/30 hover:border-cream/60 transition"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/register"
+              className="text-cream text-sm px-3 py-1.5 rounded-full bg-orange hover:bg-orange/90 transition"
+            >
+              Join
+            </Link>
+          </>
         )}
-      </button>
+
+        {/* Hamburger */}
+        <button
+          className="text-cream-muted hover:text-cream p-2 rounded-xl hover:bg-navy-light transition"
+          onClick={() => setMenuOpen((o) => !o)}
+          aria-label="Toggle menu"
+        >
+          {menuOpen ? (
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          ) : (
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          )}
+        </button>
+      </div>
 
       {/* Mobile drawer */}
       {menuOpen && (
