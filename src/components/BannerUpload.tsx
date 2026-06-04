@@ -81,9 +81,10 @@ export default function BannerUpload({ value, onChange }: Props) {
           <Image
             src={value}
             alt="Event banner"
-            width={800}
-            height={300}
-            className="w-full h-48 object-cover"
+            width={0}
+            height={0}
+            sizes="100vw"
+            className="w-full h-auto"
           />
           <div className="absolute inset-0 bg-navy/50 opacity-0 hover:opacity-100 transition flex items-center justify-center gap-3">
             <button
