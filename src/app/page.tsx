@@ -29,17 +29,17 @@ export default async function HomePage() {
   return (
     <div>
       {/* Hero */}
-      <section className="relative px-4 pt-20 pb-16 text-center overflow-hidden">
+      <section className="relative px-4 pt-20 pb-16 text-center">
         {/* Decorative blobs */}
         <div
           aria-hidden
-          className="absolute -top-24 -left-24 w-96 h-96 rounded-full opacity-10"
+          className="absolute -top-24 -left-24 w-96 h-96 rounded-full opacity-10 pointer-events-none"
           style={{ background: "#E8622A", filter: "blur(80px)" }}
         />
         <div
           aria-hidden
-          className="absolute -bottom-16 -right-16 w-72 h-72 rounded-full opacity-10"
-          style={{ background: "#E8622A", filter: "blur(60px)" }}
+          className="absolute -bottom-32 -right-16 w-96 h-96 rounded-full opacity-10 pointer-events-none"
+          style={{ background: "#E8622A", filter: "blur(80px)" }}
         />
 
         <div className="relative max-w-3xl mx-auto">
