@@ -52,6 +52,8 @@ create table public.events (
   end_time timestamptz,
   location_name text,
   address text,
+  city text,
+  country text,
   lat double precision,
   lng double precision,
   virtual_url text,

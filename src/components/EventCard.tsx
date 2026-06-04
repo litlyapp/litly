@@ -14,6 +14,8 @@ interface EventCardProps {
     event_type: EventType;
     date_time: string;
     location_name: string | null;
+    city: string | null;
+    country: string | null;
     virtual_url: string | null;
     open_mic: boolean;
     is_imported?: boolean;
@@ -102,10 +104,14 @@ export default function EventCard({
             {formatEventDate(event.date_time)} · {formatEventTime(event.date_time)}
           </span>
         </div>
-        {event.event_type === "in_person" && event.location_name && (
+        {event.event_type === "in_person" && (event.city || event.location_name) && (
           <div className="flex items-center gap-1.5">
             <PinIcon />
-            <span className="truncate">{event.location_name}</span>
+            <span className="truncate">
+              {event.city && event.country
+                ? `${event.city}, ${event.country}`
+                : event.city || event.location_name}
+            </span>
           </div>
         )}
         {event.event_type === "virtual" && (

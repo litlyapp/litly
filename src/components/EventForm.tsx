@@ -17,6 +17,8 @@ interface EventData {
   end_time: string | null;
   location_name: string | null;
   address: string | null;
+  city: string | null;
+  country: string | null;
   lat: number | null;
   lng: number | null;
   virtual_url: string | null;
@@ -73,6 +75,8 @@ export default function EventForm({ organizerId, initialData, eventId }: Props) 
     end_time: toDatetimeLocal(initialData?.end_time),
     location_name: initialData?.location_name ?? "",
     address: initialData?.address ?? "",
+    city: initialData?.city ?? "",
+    country: initialData?.country ?? "",
     virtual_url: initialData?.virtual_url ?? "",
     open_mic: initialData?.open_mic ?? false,
     rsvp_enabled: initialData?.rsvp_enabled ?? false,
@@ -183,6 +187,8 @@ export default function EventForm({ organizerId, initialData, eventId }: Props) 
           : null,
       address:
         form.event_type === "in_person" ? form.address.trim() || null : null,
+      city: form.event_type === "in_person" ? form.city.trim() || null : null,
+      country: form.event_type === "in_person" ? form.country.trim() || null : null,
       lat: form.event_type === "in_person" ? coords?.lat ?? null : null,
       lng: form.event_type === "in_person" ? coords?.lng ?? null : null,
       virtual_url:
@@ -339,6 +345,29 @@ export default function EventForm({ organizerId, initialData, eventId }: Props) 
               className={inputClass}
             />
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelClass}>City *</label>
+              <input
+                type="text"
+                placeholder="e.g. New York"
+                value={form.city}
+                onChange={(e) => set("city", e.target.value)}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Country *</label>
+              <input
+                type="text"
+                placeholder="e.g. USA"
+                value={form.country}
+                onChange={(e) => set("country", e.target.value)}
+                className={inputClass}
+              />
+            </div>
+          </div>
+
           <div>
             <label className={labelClass}>
               Address{" "}
