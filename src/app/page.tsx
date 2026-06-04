@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import EventCard from "@/components/EventCard";
 import LandingSearch from "@/components/LandingSearch";
+import { GENRES } from "@/lib/genres";
 
 export const dynamic = "force-dynamic";
 
@@ -131,17 +132,7 @@ export default async function HomePage() {
       <section className="max-w-6xl mx-auto px-4 pb-20">
         <h2 className="font-serif text-2xl text-cream mb-6">Browse by genre</h2>
         <div className="flex flex-wrap gap-3">
-          {[
-            { label: "Poetry", value: "poetry" },
-            { label: "Fiction", value: "fiction" },
-            { label: "Nonfiction", value: "nonfiction" },
-            { label: "Essay", value: "essay" },
-            { label: "Open Mic", value: "open_mic" },
-            { label: "Craft Talk", value: "craft_talk" },
-            { label: "Translation", value: "translation" },
-            { label: "YA", value: "ya" },
-            { label: "Hybrid / Experimental", value: "hybrid_experimental" },
-          ].map((g) => (
+          {GENRES.map((g) => (
             <Link
               key={g.value}
               href={`/events?genre=${g.value}`}
