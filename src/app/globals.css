@@ -20,4 +20,5 @@ body {
   background-color: var(--color-navy);
   color: var(--color-cream);
   font-family: var(--font-sans);
+  overscroll-behavior: none;
 }
