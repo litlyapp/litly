@@ -63,9 +63,8 @@ export default function InstallButton({ variant = "hero" }: { variant?: "hero" |
       </button>
 
       {showIosHint && (
-        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-navy-light border border-cream/20 rounded-2xl px-4 py-3 text-cream-muted text-xs w-56 text-center shadow-lg z-50">
-          Tap <span className="text-cream">Share</span> <ShareIcon /> then
-          {" "}<span className="text-cream">Add to Home Screen</span>
+        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-navy-light border border-cream/20 rounded-2xl px-4 py-3 text-cream-muted text-xs w-60 text-center shadow-lg z-50">
+          To add the litly app, tap Share <ShareIcon /> then <span className="text-cream">Add to Home Screen</span>
           <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-navy-light border-r border-b border-cream/20 rotate-45" />
         </div>
       )}
