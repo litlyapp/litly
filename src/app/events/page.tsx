@@ -11,6 +11,7 @@ interface SearchParams {
   from?: string;
   to?: string;
   organizer?: string;
+  location?: string;
 }
 
 export const dynamic = "force-dynamic";
@@ -35,7 +36,7 @@ export default async function EventsPage({
     .select(
       `
       id, title, description, genre, event_type, date_time, end_time,
-      location_name, address, lat, lng, virtual_url, open_mic, rsvp_enabled, created_at,
+      location_name, address, city, country, lat, lng, virtual_url, open_mic, rsvp_enabled, created_at,
       organizer:organizer_profiles(id, name, org_type)
     `
     )
@@ -72,6 +73,11 @@ export default async function EventsPage({
 
   if (params.organizer) {
     query = query.eq("organizer_id", params.organizer);
+  }
+
+  if (params.location) {
+    const loc = params.location.split(",")[0].trim(); // use city portion
+    query = query.or(`city.ilike.%${loc}%,address.ilike.%${loc}%`);
   }
 
   const { data: events } = await query;

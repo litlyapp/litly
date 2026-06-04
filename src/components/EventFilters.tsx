@@ -23,8 +23,10 @@ export default function EventFilters({
   const activeType = searchParams.get("type") ?? "all";
   const activeOrganizer = searchParams.get("organizer") ?? "";
   const activeQ = searchParams.get("q") ?? "";
+  const activeLocation = searchParams.get("location") ?? "";
   const activeFrom = searchParams.get("from") ?? "";
   const activeTo = searchParams.get("to") ?? "";
+  const [locating, setLocating] = useState(false);
 
   const push = useCallback(
     (params: URLSearchParams) => {
@@ -58,8 +60,30 @@ export default function EventFilters({
     router.push(pathname);
   }
 
+  async function handleNearMe() {
+    if (!navigator.geolocation) return;
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`,
+            { headers: { "Accept-Language": "en" } }
+          );
+          const data = await res.json();
+          const city = data.address?.city || data.address?.town || data.address?.village || data.address?.county || "";
+          const country = data.address?.country || "";
+          setParam("location", city ? `${city}, ${country}` : country);
+        } catch { /* ignore */ }
+        setLocating(false);
+      },
+      () => setLocating(false)
+    );
+  }
+
   const hasFilters =
     activeQ ||
+    activeLocation ||
     activeGenres.length > 0 ||
     activeType !== "all" ||
     activeOrganizer ||
@@ -80,6 +104,31 @@ export default function EventFilters({
           onChange={(e) => setParam("q", e.target.value)}
           className="w-full bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange"
         />
+      </div>
+
+      {/* Location */}
+      <div>
+        <label className="text-cream-muted text-xs uppercase tracking-wider mb-2 block">
+          Location
+        </label>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="City or country…"
+            defaultValue={activeLocation}
+            onChange={(e) => setParam("location", e.target.value)}
+            className="flex-1 bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange"
+          />
+          <button
+            type="button"
+            onClick={handleNearMe}
+            disabled={locating}
+            title="Use my location"
+            className="border border-cream/20 text-cream-muted px-2.5 py-2 rounded-xl hover:border-orange hover:text-orange transition disabled:opacity-60 shrink-0"
+          >
+            <PinIcon />
+          </button>
+        </div>
       </div>
 
       {/* Event type */}
@@ -167,6 +216,15 @@ export default function EventFilters({
         </button>
       )}
     </div>
+  );
+}
+
+function PinIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 21C12 21 5 13.5 5 8.5a7 7 0 0 1 14 0c0 5-7 12.5-7 12.5z" />
+      <circle cx="12" cy="8.5" r="2.5" />
+    </svg>
   );
 }
 

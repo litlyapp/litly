@@ -5,33 +5,93 @@ import { useRouter } from "next/navigation";
 
 export default function LandingSearch() {
   const [q, setQ] = useState("");
+  const [location, setLocation] = useState("");
+  const [locating, setLocating] = useState(false);
   const router = useRouter();
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const params = new URLSearchParams();
     if (q.trim()) params.set("q", q.trim());
+    if (location.trim()) params.set("location", location.trim());
     router.push(`/events${params.toString() ? `?${params}` : ""}`);
   }
 
+  async function handleNearMe() {
+    if (!navigator.geolocation) return;
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`,
+            { headers: { "Accept-Language": "en" } }
+          );
+          const data = await res.json();
+          const city =
+            data.address?.city ||
+            data.address?.town ||
+            data.address?.village ||
+            data.address?.county ||
+            "";
+          const country = data.address?.country || "";
+          setLocation(city ? `${city}, ${country}` : country);
+        } catch {
+          // fallback — leave location empty
+        }
+        setLocating(false);
+      },
+      () => setLocating(false)
+    );
+  }
+
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="flex max-w-xl mx-auto gap-2"
-    >
-      <input
-        type="text"
-        placeholder="Search for readings, open mics, craft talks…"
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        className="flex-1 bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-full px-5 py-3 text-sm focus:outline-none focus:border-orange"
-      />
-      <button
-        type="submit"
-        className="bg-orange text-cream font-semibold px-6 py-3 rounded-full hover:bg-orange/90 transition text-sm shrink-0"
-      >
-        Search
-      </button>
+    <form onSubmit={handleSubmit} className="max-w-xl mx-auto space-y-2">
+      {/* Keyword row */}
+      <div className="flex gap-2">
+        <input
+          type="text"
+          placeholder="Search for readings, open mics, craft talks…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          className="flex-1 bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-full px-5 py-3 text-sm focus:outline-none focus:border-orange"
+        />
+        <button
+          type="submit"
+          className="bg-orange text-cream font-semibold px-6 py-3 rounded-full hover:bg-orange/90 transition text-sm shrink-0"
+        >
+          Search
+        </button>
+      </div>
+
+      {/* Location row */}
+      <div className="flex gap-2">
+        <input
+          type="text"
+          placeholder="City or country…"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          className="flex-1 bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-full px-5 py-2.5 text-sm focus:outline-none focus:border-orange"
+        />
+        <button
+          type="button"
+          onClick={handleNearMe}
+          disabled={locating}
+          className="border border-cream/25 text-cream-muted text-sm px-4 py-2.5 rounded-full hover:border-cream/50 hover:text-cream transition shrink-0 flex items-center gap-1.5 disabled:opacity-60"
+        >
+          <PinIcon />
+          {locating ? "Locating…" : "Near me"}
+        </button>
+      </div>
     </form>
+  );
+}
+
+function PinIcon() {
+  return (
+    <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 21C12 21 5 13.5 5 8.5a7 7 0 0 1 14 0c0 5-7 12.5-7 12.5z" />
+      <circle cx="12" cy="8.5" r="2.5" />
+    </svg>
   );
 }
