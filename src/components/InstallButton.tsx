@@ -39,7 +39,7 @@ export default function InstallButton({ variant = "hero" }: { variant?: "hero" |
   }
 
   const baseClass = variant === "hero"
-    ? "md:hidden border border-cream/25 text-cream-muted text-sm px-5 py-2 rounded-full hover:border-cream/50 hover:text-cream transition flex items-center gap-2"
+    ? "md:hidden bg-cream text-navy text-sm font-medium px-5 py-2 rounded-full hover:bg-cream/90 transition flex items-center gap-2"
     : "md:hidden text-cream-muted font-semibold hover:text-cream transition flex items-center gap-2";
 
   if (mode === "android") {
