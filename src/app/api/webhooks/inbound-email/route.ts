@@ -19,8 +19,10 @@ export async function POST(request: Request) {
     const bodyHtml = formData.get("body-html")?.toString() ?? "";
 
     const body = bodyPlain || bodyHtml;
+    // If body is empty or very short, use subject as content
+    const emailContent = body.trim().length > 10 ? body : `Subject: ${subject}`;
 
-    if (!body.trim()) {
+    if (!emailContent.trim()) {
       return NextResponse.json({ ok: true, skipped: "empty body" });
     }
 
@@ -31,35 +33,40 @@ export async function POST(request: Request) {
       messages: [
         {
           role: "user",
-          content: `You are a literary event extractor for litly.
+          content: `You are a literary event extractor for litly, a platform for literary events.
 
-Extract ALL literary events from this newsletter email. Return a JSON array of event objects.
+Extract ALL events from this email that relate to books, poetry, fiction, nonfiction, writing, authors, readings, open mics, craft talks, book releases, or literary arts.
 
-Each event object:
+Rules:
+- INCLUDE if the email mentions: readings, book releases, open mics, author events, poetry, fiction, writing workshops, craft talks, literary festivals, or bookstore events.
+- IGNORE only if the email is clearly spam, a generic store sale, a non-literary event (sports, food, music with no literary connection), or completely unrelated to books/writing/authors.
+- When in doubt, INCLUDE with null fields rather than ignore. The curator will fill in missing details.
+
+Return a JSON array of event objects. Each object:
 {
-  "title": "string (required)",
+  "title": "Event title — use email subject if no better title found",
   "description": "string or null",
-  "genre": ["array of: poetry, fiction, nonfiction, essay, hybrid_experimental, translation, ya, craft_talk, open_mic"],
-  "event_type": "in_person or virtual",
+  "genre": ["array of applicable: poetry, fiction, nonfiction, essay, hybrid_experimental, translation, ya, craft_talk, open_mic"],
+  "event_type": "in_person or virtual (default to in_person if unclear)",
   "date_time": "ISO 8601 or null",
   "end_time": "ISO 8601 or null",
   "location_name": "string or null",
   "address": "string or null",
   "virtual_url": "string or null",
   "ticket_url": "string or null",
-  "source_name": "name of the newsletter or org",
+  "source_name": "name of the sender org or newsletter",
   "ignore": false
 }
 
-Set "ignore": true for anything that is NOT a literary/book/poetry/writing event.
-If no events found, return [].
+Current year is 2026. If a date mentions only month/day, assume 2026.
+If truly no literary event can be identified, return [].
 Return ONLY a valid JSON array, no other text.
 
 Email subject: ${subject}
 Email from: ${from}
 
 Email body:
-${body.slice(0, 8000)}`,
+${emailContent.slice(0, 8000)}`,
         },
       ],
     });
