@@ -166,6 +166,18 @@ export default function AdminQueueClient({
                 </span>
               </div>
 
+              {/* Original email body */}
+              {item.raw_body && (
+                <details className="mb-4">
+                  <summary className="text-cream-muted text-xs cursor-pointer hover:text-cream transition select-none">
+                    View original email ▾
+                  </summary>
+                  <div className="mt-2 bg-navy border border-cream/10 rounded-xl p-3 text-cream-muted text-xs whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed">
+                    {item.raw_body}
+                  </div>
+                </details>
+              )}
+
               {data.title ? (
                 <div className="space-y-4">
                   {/* Title */}
