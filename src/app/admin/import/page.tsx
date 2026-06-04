@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Genre, EventType } from "@/types/database";
 import DateTimePicker from "@/components/DateTimePicker";
+import BannerUpload from "@/components/BannerUpload";
 import { GENRES, GENRE_LABELS } from "@/lib/genres";
 
 interface ParsedEvent {
@@ -19,6 +20,7 @@ interface ParsedEvent {
   featured_readers: { name: string; url: string }[] | null;
   source_name: string | null;
   source_url?: string | null;
+  banner_url?: string | null;
   ignore?: boolean;
 }
 
@@ -319,6 +321,11 @@ export default function AdminImportPage() {
                   className={inputClass}
                 />
               </div>
+
+              <BannerUpload
+                value={parsed.banner_url ?? null}
+                onChange={(url) => setParsed({ ...parsed, banner_url: url })}
+              />
             </div>
           </div>
 
