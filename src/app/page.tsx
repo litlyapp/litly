@@ -50,15 +50,16 @@ export default async function HomePage() {
             Find your next<br />
             <span className="text-orange italic">literary moment.</span>
           </h1>
-          <p className="text-cream-muted text-lg md:text-xl max-w-lg mx-auto mb-10">
+          <p className="text-cream-muted text-lg md:text-xl max-w-lg mx-auto mb-2">
             Readings, open mics, craft talks, and more —<br className="hidden sm:block" />
-            all in one place.{" "}
-            {count != null && count > 0 && (
-              <span className="text-cream">
-                {count} event{count !== 1 ? "s" : ""} coming up.
-              </span>
-            )}
+            all in one place.
           </p>
+          {count != null && count > 0 && (
+            <p className="text-cream text-lg md:text-xl mb-10">
+              {count} event{count !== 1 ? "s" : ""} coming up.
+            </p>
+          )}
+          {(count == null || count === 0) && <div className="mb-10" />}
 
           {/* Search bar — navigates to /events?q=... */}
           <LandingSearch />

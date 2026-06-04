@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import NavClient from "./NavClient";
 
@@ -21,12 +22,16 @@ export default async function Nav() {
   return (
     <nav className="bg-navy border-b border-cream/10 sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-        {/* Wordmark */}
-        <Link
-          href="/"
-          className="font-serif text-2xl text-cream tracking-tight hover:text-orange transition"
-        >
-          litly
+        {/* Logo */}
+        <Link href="/" className="flex items-center hover:opacity-80 transition">
+          <Image
+            src="/logo.png"
+            alt="litly"
+            width={40}
+            height={40}
+            className="rounded-xl"
+            priority
+          />
         </Link>
 
         {/* Desktop links */}
