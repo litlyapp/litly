@@ -59,9 +59,31 @@ export default function LeafletMap({ events }: { events: MapEvent[] }) {
       // Try to center on user's location
       navigator.geolocation?.getCurrentPosition(
         (pos) => {
-          map.flyTo([pos.coords.latitude, pos.coords.longitude], 12, {
-            duration: 1,
+          const userLat = pos.coords.latitude;
+          const userLng = pos.coords.longitude;
+          map.flyTo([userLat, userLng], 12, { duration: 1 });
+
+          // Show a message if no event pins are nearby (within ~80km)
+          const hasNearbyEvents = events.some((e) => {
+            if (!e.lat || !e.lng) return false;
+            const dist = Math.sqrt(
+              Math.pow((e.lat - userLat) * 111, 2) +
+              Math.pow((e.lng - userLng) * 111, 2)
+            );
+            return dist < 80;
           });
+
+          if (!hasNearbyEvents) {
+            const msg = L.popup({ closeButton: true, className: "litly-popup" })
+              .setLatLng([userLat, userLng])
+              .setContent(`
+                <div style="font-family:Inter,sans-serif;background:#1B2A3E;border-radius:12px;padding:12px;min-width:180px;text-align:center;">
+                  <div style="color:#F2E8D5;font-size:13px;font-weight:600;margin-bottom:4px;">No events near you yet</div>
+                  <div style="color:#D9D0C0;font-size:11px;">Zoom out to explore events elsewhere.</div>
+                </div>
+              `)
+              .openOn(map);
+          }
         },
         () => {/* permission denied — stay at default center */}
       );
