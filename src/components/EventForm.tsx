@@ -54,8 +54,10 @@ async function geocode(
 
 function toDatetimeLocal(iso: string | null | undefined): string {
   if (!iso) return "";
-  // Convert ISO to the format datetime-local inputs expect: "YYYY-MM-DDTHH:MM"
-  return iso.slice(0, 16);
+  // Convert UTC ISO to local time "YYYY-MM-DDTHH:MM" for the picker
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 export default function EventForm({ organizerId, initialData, eventId }: Props) {
