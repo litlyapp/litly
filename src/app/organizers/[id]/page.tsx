@@ -12,13 +12,15 @@ export default async function OrganizerProfilePage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: organizer } = await supabase
+  const { data: organizerRaw } = await supabase
     .from("organizer_profiles")
-    .select("id, user_id, name, org_type, bio, website, social_links, avatar_url")
+    .select("id, user_id, name, org_type, bio, website, social_links")
     .eq("id", id)
     .single();
 
-  if (!organizer) notFound();
+  if (!organizerRaw) notFound();
+
+  const organizer = organizerRaw as typeof organizerRaw & { avatar_url?: string | null };
 
   const now = new Date().toISOString();
 

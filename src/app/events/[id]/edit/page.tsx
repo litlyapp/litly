@@ -30,23 +30,29 @@ export default async function EditEventPage({
 
   if (!event) notFound();
 
+  const ev = event as typeof event & {
+    recurrence_rule: object | null;
+    parent_event_id: string | null;
+  };
+
   // Build series context if this event is part of a recurring series
   let seriesContext = undefined;
-  const isRecurring = !!(event.recurrence_rule || event.parent_event_id);
+  const isRecurring = !!(ev.recurrence_rule || ev.parent_event_id);
 
   if (isRecurring) {
-    const parentId = event.parent_event_id ?? event.id;
+    const parentId = ev.parent_event_id ?? ev.id;
 
-    const { count } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { count } = await (supabase as any)
       .from("events")
       .select("id", { count: "exact", head: true })
       .eq("parent_event_id", parentId)
-      .gte("date_time", event.date_time)
+      .gte("date_time", ev.date_time)
       .neq("id", id);
 
     seriesContext = {
       parentId,
-      isParent: !event.parent_event_id,
+      isParent: !ev.parent_event_id,
       futureCount: count ?? 0,
     };
   }

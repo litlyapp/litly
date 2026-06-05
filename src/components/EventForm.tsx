@@ -276,7 +276,8 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
           banner_url: sharedFields.banner_url,
         };
 
-        let siblingsQuery = supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let siblingsQuery = (supabase as any)
           .from("events")
           .update(nonDateFields)
           .eq("parent_event_id", seriesContext.parentId)
@@ -292,7 +293,8 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       router.push(`/events/${eventId}`);
     } else {
       // Insert parent event (first occurrence)
-      const { data, error: insertError } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error: insertError } = await (supabase as any)
         .from("events")
         .insert({
           organizer_id: organizerId,
@@ -330,7 +332,8 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         }));
 
         if (children.length > 0) {
-          const { error: childError } = await supabase.from("events").insert(children);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { error: childError } = await (supabase as any).from("events").insert(children);
           if (childError) {
             setError(`Event created but some occurrences failed: ${childError.message}`);
             setLoading(false);

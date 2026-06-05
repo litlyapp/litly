@@ -19,8 +19,8 @@ interface Props {
     virtual_url: string | null;
     rsvp_enabled: boolean;
     open_mic: boolean;
-    parent_event_id: string | null;
-    recurrence_rule: object | null;
+    parent_event_id?: string | null;
+    recurrence_rule?: object | null;
   };
   divider?: boolean;
   isPast?: boolean;
@@ -50,19 +50,18 @@ export default function DashboardEventRow({ event, divider, isPast, rsvpCount }:
     if (!isRecurring || deleteScope === "this") {
       await supabase.from("events").delete().eq("id", event.id);
     } else if (deleteScope === "future") {
-      // Delete this occurrence and all future siblings
-      await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
         .from("events")
         .delete()
         .eq("parent_event_id", parentId)
         .gte("date_time", event.date_time);
-      // Also delete this event if it's the parent
       if (!event.parent_event_id) {
         await supabase.from("events").delete().eq("id", event.id);
       }
     } else if (deleteScope === "all") {
-      // Delete all children then the parent
-      await supabase.from("events").delete().eq("parent_event_id", parentId);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from("events").delete().eq("parent_event_id", parentId);
       await supabase.from("events").delete().eq("id", parentId);
     }
 

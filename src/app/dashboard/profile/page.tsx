@@ -10,13 +10,15 @@ export default async function ProfilePage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/dashboard/profile");
 
-  const { data: profile } = await supabase
+  const { data: profileRaw } = await supabase
     .from("organizer_profiles")
-    .select("id, name, org_type, bio, website, social_links, avatar_url")
+    .select("*")
     .eq("user_id", user.id)
     .single();
 
-  if (!profile) redirect("/");
+  if (!profileRaw) redirect("/");
+
+  const profile = profileRaw as typeof profileRaw & { avatar_url: string | null };
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-10">

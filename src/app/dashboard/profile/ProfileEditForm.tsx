@@ -11,7 +11,7 @@ interface Profile {
   org_type: string;
   bio: string | null;
   website: string | null;
-  social_links: Record<string, string> | null;
+  social_links: Record<string, string | undefined> | null;
   avatar_url: string | null;
 }
 
@@ -40,13 +40,14 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
 
     const { error: updateError } = await supabase
       .from("organizer_profiles")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .update({
         name: name.trim(),
         bio: bio.trim() || null,
         website: website.trim() || null,
         social_links: Object.keys(social_links).length ? social_links : null,
         avatar_url: avatarUrl,
-      })
+      } as any)
       .eq("id", profile.id);
 
     setSaving(false);

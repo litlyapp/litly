@@ -16,8 +16,8 @@ interface DashboardEvent {
   virtual_url: string | null;
   rsvp_enabled: boolean;
   open_mic: boolean;
-  parent_event_id: string | null;
-  recurrence_rule: object | null;
+  parent_event_id?: string | null;
+  recurrence_rule?: object | null;
 }
 
 export default async function DashboardPage() {
@@ -42,25 +42,21 @@ export default async function DashboardPage() {
   const [upcomingResult, pastResult] = await Promise.all([
     supabase
       .from("events")
-      .select<string, DashboardEvent>(
-        "id, title, genre, event_type, date_time, location_name, virtual_url, rsvp_enabled, open_mic, parent_event_id, recurrence_rule"
-      )
+      .select("*")
       .eq("organizer_id", profile.id)
       .gte("date_time", now)
       .order("date_time", { ascending: true }),
     supabase
       .from("events")
-      .select<string, DashboardEvent>(
-        "id, title, genre, event_type, date_time, location_name, virtual_url, rsvp_enabled, open_mic, parent_event_id, recurrence_rule"
-      )
+      .select("*")
       .eq("organizer_id", profile.id)
       .lt("date_time", now)
       .order("date_time", { ascending: false })
       .limit(20),
   ]);
 
-  const upcomingEvents = upcomingResult.data ?? [];
-  const pastEvents = pastResult.data ?? [];
+  const upcomingEvents = (upcomingResult.data ?? []) as DashboardEvent[];
+  const pastEvents = (pastResult.data ?? []) as DashboardEvent[];
 
   // Fetch RSVP counts for all organizer events
   const allEventIds = [...upcomingEvents, ...pastEvents].map((e) => e.id);
