@@ -16,6 +16,8 @@ interface DashboardEvent {
   virtual_url: string | null;
   rsvp_enabled: boolean;
   open_mic: boolean;
+  parent_event_id: string | null;
+  recurrence_rule: object | null;
 }
 
 export default async function DashboardPage() {
@@ -41,7 +43,7 @@ export default async function DashboardPage() {
     supabase
       .from("events")
       .select<string, DashboardEvent>(
-        "id, title, genre, event_type, date_time, location_name, virtual_url, rsvp_enabled, open_mic"
+        "id, title, genre, event_type, date_time, location_name, virtual_url, rsvp_enabled, open_mic, parent_event_id, recurrence_rule"
       )
       .eq("organizer_id", profile.id)
       .gte("date_time", now)
@@ -49,7 +51,7 @@ export default async function DashboardPage() {
     supabase
       .from("events")
       .select<string, DashboardEvent>(
-        "id, title, genre, event_type, date_time, location_name, virtual_url, rsvp_enabled, open_mic"
+        "id, title, genre, event_type, date_time, location_name, virtual_url, rsvp_enabled, open_mic, parent_event_id, recurrence_rule"
       )
       .eq("organizer_id", profile.id)
       .lt("date_time", now)

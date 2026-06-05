@@ -10,10 +10,7 @@ export default async function EditEventPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/login?next=/events/${id}/edit`);
 
   const { data: profile } = await supabase
@@ -33,13 +30,42 @@ export default async function EditEventPage({
 
   if (!event) notFound();
 
+  // Build series context if this event is part of a recurring series
+  let seriesContext = undefined;
+  const isRecurring = !!(event.recurrence_rule || event.parent_event_id);
+
+  if (isRecurring) {
+    const parentId = event.parent_event_id ?? event.id;
+
+    const { count } = await supabase
+      .from("events")
+      .select("id", { count: "exact", head: true })
+      .eq("parent_event_id", parentId)
+      .gte("date_time", event.date_time)
+      .neq("id", id);
+
+    seriesContext = {
+      parentId,
+      isParent: !event.parent_event_id,
+      futureCount: count ?? 0,
+    };
+  }
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-10">
       <div className="mb-8">
         <h1 className="font-serif text-4xl text-cream mb-1">Edit event</h1>
         <p className="text-cream-muted line-clamp-1">{event.title}</p>
+        {isRecurring && (
+          <p className="text-orange text-sm mt-1">Part of a recurring series</p>
+        )}
       </div>
-      <EventForm organizerId={profile.id} initialData={event} eventId={id} />
+      <EventForm
+        organizerId={profile.id}
+        initialData={event}
+        eventId={id}
+        seriesContext={seriesContext}
+      />
     </div>
   );
 }

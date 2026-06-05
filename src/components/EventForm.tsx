@@ -3,10 +3,12 @@
 import { useState, useCallback } from "react";
 import DateTimePicker from "./DateTimePicker";
 import BannerUpload from "./BannerUpload";
+import RecurrenceOptions from "./RecurrenceOptions";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Genre, EventType, FeaturedReader } from "@/types/database";
 import { GENRES } from "@/lib/genres";
+import { type RecurrenceRule, generateOccurrenceDates } from "@/lib/recurrence";
 
 interface EventData {
   title: string;
@@ -30,10 +32,19 @@ interface EventData {
   ticket_url?: string | null;
 }
 
+export type EditScope = "this" | "future" | "all";
+
+interface SeriesContext {
+  parentId: string;
+  isParent: boolean;
+  futureCount: number;
+}
+
 interface Props {
   organizerId: string;
   initialData?: EventData & { id?: string };
   eventId?: string;
+  seriesContext?: SeriesContext;
 }
 
 // Geocode an address using Nominatim (free, no API key)
@@ -85,7 +96,7 @@ function toDatetimeLocal(iso: string | null | undefined): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export default function EventForm({ organizerId, initialData, eventId }: Props) {
+export default function EventForm({ organizerId, initialData, eventId, seriesContext }: Props) {
   const router = useRouter();
   const supabase = createClient();
   const isEditing = !!eventId;
@@ -126,6 +137,9 @@ export default function EventForm({ organizerId, initialData, eventId }: Props) 
       ? { lat: initialData.lat, lng: initialData.lng }
       : null
   );
+
+  const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule | null>(null);
+  const [editScope, setEditScope] = useState<EditScope>("this");
 
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -239,11 +253,52 @@ export default function EventForm({ organizerId, initialData, eventId }: Props) 
         setLoading(false);
         return;
       }
+
+      // Propagate non-date fields to series siblings if needed
+      if (seriesContext && editScope !== "this") {
+        const nonDateFields = {
+          title: sharedFields.title,
+          description: sharedFields.description,
+          genre: sharedFields.genre,
+          event_type: sharedFields.event_type,
+          location_name: sharedFields.location_name,
+          address: sharedFields.address,
+          city: sharedFields.city,
+          state: sharedFields.state,
+          country: sharedFields.country,
+          lat: sharedFields.lat,
+          lng: sharedFields.lng,
+          virtual_url: sharedFields.virtual_url,
+          open_mic: sharedFields.open_mic,
+          featured_readers: sharedFields.featured_readers,
+          rsvp_enabled: sharedFields.rsvp_enabled,
+          ticket_url: sharedFields.ticket_url,
+          banner_url: sharedFields.banner_url,
+        };
+
+        let siblingsQuery = supabase
+          .from("events")
+          .update(nonDateFields)
+          .eq("parent_event_id", seriesContext.parentId)
+          .neq("id", eventId!);
+
+        if (editScope === "future") {
+          siblingsQuery = siblingsQuery.gte("date_time", sharedFields.date_time);
+        }
+
+        await siblingsQuery;
+      }
+
       router.push(`/events/${eventId}`);
     } else {
+      // Insert parent event (first occurrence)
       const { data, error: insertError } = await supabase
         .from("events")
-        .insert({ organizer_id: organizerId, ...sharedFields })
+        .insert({
+          organizer_id: organizerId,
+          ...sharedFields,
+          recurrence_rule: recurrenceRule ?? null,
+        })
         .select("id")
         .single();
 
@@ -252,6 +307,39 @@ export default function EventForm({ organizerId, initialData, eventId }: Props) 
         setLoading(false);
         return;
       }
+
+      // Generate and insert child occurrences
+      if (recurrenceRule && form.date_time) {
+        const startDate = new Date(form.date_time);
+        const occurrenceDates = generateOccurrenceDates(startDate, recurrenceRule);
+
+        const durationMs =
+          form.end_time
+            ? new Date(form.end_time).getTime() - startDate.getTime()
+            : null;
+
+        const children = occurrenceDates.map((d) => ({
+          organizer_id: organizerId,
+          parent_event_id: data.id,
+          ...sharedFields,
+          recurrence_rule: null,
+          date_time: d.toISOString(),
+          end_time: durationMs !== null
+            ? new Date(d.getTime() + durationMs).toISOString()
+            : null,
+        }));
+
+        if (children.length > 0) {
+          const { error: childError } = await supabase.from("events").insert(children);
+          if (childError) {
+            setError(`Event created but some occurrences failed: ${childError.message}`);
+            setLoading(false);
+            router.push(`/events/${data.id}`);
+            return;
+          }
+        }
+      }
+
       router.push(`/events/${data.id}`);
     }
 
@@ -357,6 +445,18 @@ export default function EventForm({ organizerId, initialData, eventId }: Props) 
           onChange={(v) => set("end_time", v)}
         />
       </div>
+
+      {/* Recurrence — only for new events */}
+      {!isEditing && (
+        <div>
+          <label className={labelClass}>Recurrence</label>
+          <RecurrenceOptions
+            startDateIso={form.date_time}
+            value={recurrenceRule}
+            onChange={setRecurrenceRule}
+          />
+        </div>
+      )}
 
       {/* Location (in-person) */}
       {form.event_type === "in_person" && (
@@ -543,6 +643,37 @@ export default function EventForm({ organizerId, initialData, eventId }: Props) 
           ))}
         </div>
       </div>
+
+      {/* Series scope picker — only shown when editing a recurring event */}
+      {isEditing && seriesContext && (
+        <div className="bg-navy border border-cream/10 rounded-2xl p-5">
+          <p className="text-cream-muted text-xs uppercase tracking-wider mb-3">Apply changes to</p>
+          <div className="flex flex-col gap-2">
+            {(
+              [
+                { scope: "this" as EditScope, label: "Just this occurrence" },
+                { scope: "future" as EditScope, label: `This and future occurrences${seriesContext.futureCount > 0 ? ` (${seriesContext.futureCount} upcoming)` : ""}` },
+                { scope: "all" as EditScope, label: "All occurrences in the series" },
+              ] as const
+            ).map(({ scope, label }) => (
+              <label key={scope} className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="editScope"
+                  value={scope}
+                  checked={editScope === scope}
+                  onChange={() => setEditScope(scope)}
+                  className="accent-orange"
+                />
+                <span className="text-cream text-sm">{label}</span>
+              </label>
+            ))}
+          </div>
+          <p className="text-cream-muted/60 text-xs mt-3">
+            Date and time for each occurrence will not change — only the event details.
+          </p>
+        </div>
+      )}
 
       {/* Error */}
       {error && (
