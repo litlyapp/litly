@@ -1,7 +1,9 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import EventCard from "@/components/EventCard";
 import EventFilters from "@/components/EventFilters";
+import { GENRES } from "@/lib/genres";
 import type { Genre, EventType } from "@/types/database";
 
 interface SearchParams {
@@ -103,13 +105,37 @@ export default async function EventsPage({
         {/* Event grid */}
         <div className="flex-1">
           {!events || events.length === 0 ? (
-            <div className="bg-navy-light rounded-2xl border border-cream/10 p-16 text-center">
-              <p className="font-serif text-2xl text-cream mb-2">
-                No events found
+            <div className="bg-navy-light rounded-2xl border border-cream/10 p-10 text-center">
+              <p className="font-serif text-2xl text-cream mb-2">No events found</p>
+              <p className="text-cream-muted text-sm mb-6">
+                {params.q
+                  ? `No results for "${params.q}"${params.location ? ` in ${params.location}` : ""}.`
+                  : params.location
+                  ? `No upcoming events in ${params.location}.`
+                  : "No events match your current filters."}
               </p>
-              <p className="text-cream-muted text-sm">
-                Try adjusting your filters.
-              </p>
+
+              <Link
+                href="/events"
+                className="inline-block mb-8 px-5 py-2 rounded-full bg-orange text-cream text-sm font-medium hover:bg-orange/90 transition"
+              >
+                Clear all filters
+              </Link>
+
+              <div>
+                <p className="text-cream-muted text-xs uppercase tracking-wider mb-3">Browse by genre</p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {GENRES.map((g) => (
+                    <Link
+                      key={g.value}
+                      href={`/events?genre=${g.value}`}
+                      className="px-3 py-1 rounded-full text-sm border border-cream/20 text-cream-muted hover:border-orange hover:text-orange transition"
+                    >
+                      {g.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
