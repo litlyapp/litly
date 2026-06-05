@@ -4,9 +4,9 @@ import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import type { Genre } from "@/types/database";
 import { GENRE_LABELS } from "@/lib/genres";
-import { formatEventDateTime } from "@/lib/formatDate";
 import SaveButton from "@/components/SaveButton";
 import RsvpButton from "@/components/RsvpButton";
+import AddToCalendarButton from "@/components/AddToCalendarButton";
 
 
 export default async function EventDetailPage({
@@ -122,21 +122,14 @@ export default async function EventDetailPage({
 
         {/* Date & time */}
         <div className="space-y-3 mb-6">
-          <a
-            href={`/api/events/${event.id}/calendar`}
-            className="flex items-center gap-3 text-cream hover:text-orange transition group"
-            title="Add to calendar"
-          >
-            <CalendarIcon />
-            <div>
-              <div className="group-hover:underline">{formatEventDateTime(event.date_time)}</div>
-              {event.end_time && (
-                <div className="text-cream-muted text-sm">
-                  Until {formatEventDateTime(event.end_time)}
-                </div>
-              )}
-            </div>
-          </a>
+          <AddToCalendarButton
+            eventId={event.id}
+            dateTime={event.date_time}
+            endTime={event.end_time}
+            title={event.title}
+            description={event.description}
+            location={[event.location_name, event.address, event.city, event.state, event.country].filter(Boolean).join(", ")}
+          />
 
           {event.event_type === "in_person" && event.location_name && (() => {
             const addressParts = [
@@ -258,15 +251,6 @@ export default async function EventDetailPage({
         </div>
       )}
     </div>
-  );
-}
-
-function CalendarIcon() {
-  return (
-    <svg className="w-5 h-5 text-orange shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <rect x="3" y="4" width="18" height="18" rx="2" />
-      <path d="M16 2v4M8 2v4M3 10h18" />
-    </svg>
   );
 }
 
