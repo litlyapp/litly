@@ -11,6 +11,7 @@ import AddToCalendarButton from "@/components/AddToCalendarButton";
 import EventCard from "@/components/EventCard";
 import EventViewTracker from "@/components/EventViewTracker";
 import TicketLinkButton from "@/components/TicketLinkButton";
+import ShareButton from "@/components/ShareButton";
 
 export async function generateMetadata({
   params,
@@ -195,7 +196,10 @@ export default async function EventDetailPage({
               </span>
             )}
           </div>
-          <SaveButton eventId={event.id} initialSaved={isSaved} />
+          <div className="flex items-center gap-1">
+            <ShareButton title={event.title} url={`https://thelitlyapp.com/events/${event.id}`} />
+            <SaveButton eventId={event.id} initialSaved={isSaved} />
+          </div>
         </div>
 
         <h1 className="font-serif text-3xl md:text-4xl text-cream mb-6 leading-tight">
