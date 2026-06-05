@@ -117,6 +117,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
     open_mic: initialData?.open_mic ?? false,
     rsvp_enabled: initialData?.rsvp_enabled ?? false,
     ticket_url: initialData?.ticket_url ?? "",
+    ticket_type: (initialData as { ticket_type?: string })?.ticket_type ?? "",
   });
 
   const [genres, setGenres] = useState<Genre[]>(
@@ -239,6 +240,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         : null,
       rsvp_enabled: form.rsvp_enabled,
       ticket_url: form.ticket_url.trim() || null,
+      ticket_type: (form.ticket_type || null) as "paid" | "free" | null,
       banner_url: bannerUrl,
     };
 
@@ -580,18 +582,50 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
           </div>
         </label>
 
-        <div>
-          <label className={labelClass}>Ticket link (optional)</label>
-          <input
-            type="url"
-            placeholder="https://eventbrite.com/… or your own ticketing page"
-            value={form.ticket_url}
-            onChange={(e) => set("ticket_url", e.target.value)}
-            className={inputClass}
-          />
-          <p className="text-cream-muted/60 text-xs mt-1">
-            Paid or external ticketing — litly will show a "Get tickets" button linking here.
-          </p>
+        {/* External ticketing */}
+        <div className="space-y-3">
+          <label className={labelClass}>External ticketing</label>
+          <div className="flex gap-2 flex-wrap">
+            {(
+              [
+                { value: "", label: "No tickets" },
+                { value: "free", label: "Free ticket / registration" },
+                { value: "paid", label: "Paid ticket" },
+              ] as const
+            ).map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  set("ticket_type", opt.value);
+                  if (!opt.value) set("ticket_url", "");
+                }}
+                className={`px-4 py-1.5 rounded-full text-sm border transition ${
+                  form.ticket_type === opt.value
+                    ? "bg-orange border-orange text-cream"
+                    : "border-cream/20 text-cream-muted hover:border-cream hover:text-cream"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {form.ticket_type && (
+            <div>
+              <input
+                type="url"
+                placeholder={form.ticket_type === "paid" ? "https://eventbrite.com/… or ticketing page" : "https://… registration or RSVP page"}
+                value={form.ticket_url}
+                onChange={(e) => set("ticket_url", e.target.value)}
+                className={inputClass}
+              />
+              <p className="text-cream-muted/60 text-xs mt-1">
+                {form.ticket_type === "paid"
+                  ? "Users will be directed here to purchase a ticket — litly does not handle payments."
+                  : "Users will be directed here to register or claim a free ticket."}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

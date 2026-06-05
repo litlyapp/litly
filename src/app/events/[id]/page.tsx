@@ -267,7 +267,7 @@ export default async function EventDetailPage({
                 rel="noopener noreferrer"
                 className="bg-orange text-cream font-semibold px-6 py-2.5 rounded-full hover:bg-orange/90 transition"
               >
-                Get tickets ↗
+                {event.ticket_type === "free" ? "Register (free) ↗" : "Get tickets ↗"}
               </a>
             )}
             {event.rsvp_enabled && (

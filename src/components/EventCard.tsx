@@ -24,6 +24,7 @@ interface EventCardProps {
     source_name?: string | null;
     banner_url?: string | null;
     ticket_url?: string | null;
+    ticket_type?: string | null;
     organizer: { id: string; name: string } | { id: string; name: string }[] | null;
   };
   savedEventIds?: Set<string>;
@@ -80,7 +81,7 @@ export default function EventCard({
         )}
         {event.ticket_url && (
           <span className="px-2.5 py-0.5 rounded-full bg-cream/10 text-cream-muted text-xs">
-            Ticketed
+            {event.ticket_type === "paid" ? "Paid ticket" : "Free ticket"}
           </span>
         )}
         {isRsvp && (
