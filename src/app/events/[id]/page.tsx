@@ -122,34 +122,53 @@ export default async function EventDetailPage({
 
         {/* Date & time */}
         <div className="space-y-3 mb-6">
-          <div className="flex items-center gap-3 text-cream">
+          <a
+            href={`/api/events/${event.id}/calendar`}
+            className="flex items-center gap-3 text-cream hover:text-orange transition group"
+            title="Add to calendar"
+          >
             <CalendarIcon />
             <div>
-              <div>{formatEventDateTime(event.date_time)}</div>
+              <div className="group-hover:underline">{formatEventDateTime(event.date_time)}</div>
               {event.end_time && (
                 <div className="text-cream-muted text-sm">
                   Until {formatEventDateTime(event.end_time)}
                 </div>
               )}
             </div>
-          </div>
+          </a>
 
-          {event.event_type === "in_person" && event.location_name && (
-            <div className="flex items-center gap-3 text-cream">
-              <PinIcon />
-              <div>
-                <div>{event.location_name}</div>
-                {event.address && (
-                  <div className="text-cream-muted text-sm">{event.address}</div>
-                )}
-                {(event.city || event.state || event.country) && (
-                  <div className="text-cream-muted text-sm">
-                    {[event.city, event.state, event.country].filter(Boolean).join(", ")}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+          {event.event_type === "in_person" && event.location_name && (() => {
+            const addressParts = [
+              event.location_name,
+              event.address,
+              event.city,
+              event.state,
+              event.country,
+            ].filter(Boolean).join(", ");
+            const mapsUrl = `https://maps.google.com/?q=${encodeURIComponent(addressParts)}`;
+            return (
+              <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 text-cream hover:text-orange transition group"
+              >
+                <PinIcon />
+                <div>
+                  <div className="group-hover:underline">{event.location_name}</div>
+                  {event.address && (
+                    <div className="text-cream-muted text-sm">{event.address}</div>
+                  )}
+                  {(event.city || event.state || event.country) && (
+                    <div className="text-cream-muted text-sm">
+                      {[event.city, event.state, event.country].filter(Boolean).join(", ")}
+                    </div>
+                  )}
+                </div>
+              </a>
+            );
+          })()}
 
           {event.event_type === "virtual" && event.virtual_url && (
             <div className="flex items-center gap-3 text-cream">
