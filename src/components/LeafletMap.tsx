@@ -55,6 +55,8 @@ export default function LeafletMap({ events }: { events: MapEvent[] }) {
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [radius, setRadius] = useState<number | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [locError, setLocError] = useState(false);
 
   // Init map once
   useEffect(() => {
@@ -83,24 +85,15 @@ export default function LeafletMap({ events }: { events: MapEvent[] }) {
 
       markerLayerRef.current = L.layerGroup().addTo(map);
 
+      // Fit to events on load; user can request their location via button
+      const valid = events.filter((e) => e.lat && e.lng);
+      if (valid.length > 0) {
+        const bounds = L.latLngBounds(valid.map((e) => [e.lat!, e.lng!]));
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+      }
+
       // Signal that map is ready so markers can be drawn
       setMapReady(true);
-
-      navigator.geolocation?.getCurrentPosition(
-        (pos) => {
-          const { latitude: lat, longitude: lng } = pos.coords;
-          map.flyTo([lat, lng], 12, { duration: 1 });
-          setUserLoc({ lat, lng });
-        },
-        () => {
-          // permission denied or unavailable — fit to events
-          const valid = events.filter((e) => e.lat && e.lng);
-          if (valid.length > 0) {
-            const bounds = L.latLngBounds(valid.map((e) => [e.lat!, e.lng!]));
-            map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
-          }
-        }
-      );
     }
 
     init();
@@ -220,27 +213,65 @@ export default function LeafletMap({ events }: { events: MapEvent[] }) {
     }
   }, [events, userLoc, radius, mapReady]);
 
+  function handleLocate() {
+    if (!navigator.geolocation) { setLocError(true); return; }
+    setLocating(true);
+    setLocError(false);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        mapRef.current?.flyTo([lat, lng], 12, { duration: 1 });
+        setUserLoc({ lat, lng });
+        setLocating(false);
+      },
+      () => {
+        setLocating(false);
+        setLocError(true);
+      }
+    );
+  }
+
   return (
     <div className="space-y-3">
-      {/* Radius filter — only shown when user location is available */}
-      {userLoc && (
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-cream-muted text-sm">Distance:</span>
-          {RADIUS_OPTIONS.map((opt) => (
-            <button
-              key={opt.label}
-              onClick={() => setRadius(opt.miles)}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition border ${
-                radius === opt.miles
-                  ? "bg-orange text-cream border-orange"
-                  : "border-cream/20 text-cream-muted hover:border-orange hover:text-orange"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="flex items-center gap-2 flex-wrap">
+        {/* Use my location button — always visible until location is granted */}
+        {!userLoc && (
+          <button
+            onClick={handleLocate}
+            disabled={locating}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium border border-cream/20 text-cream-muted hover:border-orange hover:text-orange transition disabled:opacity-50"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path d="M12 21C12 21 5 13.5 5 8.5a7 7 0 0 1 14 0c0 5-7 12.5-7 12.5z" />
+              <circle cx="12" cy="8.5" r="2.5" />
+            </svg>
+            {locating ? "Locating…" : "Use my location"}
+          </button>
+        )}
+        {locError && (
+          <span className="text-sm text-cream-muted">Location unavailable — check browser permissions.</span>
+        )}
+
+        {/* Radius filter — only shown once location is known */}
+        {userLoc && (
+          <>
+            <span className="text-cream-muted text-sm">Distance:</span>
+            {RADIUS_OPTIONS.map((opt) => (
+              <button
+                key={opt.label}
+                onClick={() => setRadius(opt.miles)}
+                className={`px-3 py-1 rounded-full text-sm font-medium transition border ${
+                  radius === opt.miles
+                    ? "bg-orange text-cream border-orange"
+                    : "border-cream/20 text-cream-muted hover:border-orange hover:text-orange"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </>
+        )}
+      </div>
 
       <div
         ref={containerRef}
