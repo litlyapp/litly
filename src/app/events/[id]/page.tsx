@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import type { Genre } from "@/types/database";
 import { GENRE_LABELS } from "@/lib/genres";
@@ -8,6 +9,51 @@ import SaveButton from "@/components/SaveButton";
 import RsvpButton from "@/components/RsvpButton";
 import AddToCalendarButton from "@/components/AddToCalendarButton";
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data: event } = await supabase
+    .from("events")
+    .select("title, description, banner_url, location_name, city, state")
+    .eq("id", id)
+    .single();
+
+  if (!event) return {};
+
+  const location = [event.location_name, event.city, event.state].filter(Boolean).join(", ");
+  const description = event.description
+    ? event.description.slice(0, 160)
+    : location
+    ? `A literary event at ${location}.`
+    : "A literary event on litly.";
+
+  const images = event.banner_url
+    ? [{ url: event.banner_url, width: 1200, height: 630, alt: event.title }]
+    : [{ url: "https://thelitlyapp.com/icons/icon-192x192.png", width: 192, height: 192, alt: "litly" }];
+
+  return {
+    title: `${event.title} — litly`,
+    description,
+    openGraph: {
+      title: event.title,
+      description,
+      url: `https://thelitlyapp.com/events/${id}`,
+      siteName: "litly",
+      images,
+      type: "website",
+    },
+    twitter: {
+      card: event.banner_url ? "summary_large_image" : "summary",
+      title: event.title,
+      description,
+      images: images.map((i) => i.url),
+    },
+  };
+}
 
 export default async function EventDetailPage({
   params,
