@@ -120,6 +120,12 @@ export default function DashboardEventRow({ event, divider, isPast, rsvpCount }:
             >
               Edit
             </Link>
+            <Link
+              href={`/events/new?from=${event.id}`}
+              className="text-cream-muted text-xs border border-cream/20 rounded-full px-3 py-1.5 hover:text-cream hover:border-cream/40 transition"
+            >
+              Duplicate
+            </Link>
             <button
               onClick={() => setConfirming(true)}
               className="text-cream-muted text-xs border border-cream/20 rounded-full px-3 py-1.5 hover:text-orange hover:border-orange/40 transition"
