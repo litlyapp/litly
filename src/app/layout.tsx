@@ -6,6 +6,9 @@ import Footer from "@/components/Footer";
 export const metadata: Metadata = {
   title: "litly — literary event locator",
   description: "Find and track readings and literary events anywhere, anytime.",
+  verification: {
+    google: "DkN4K5yBvawHHJcfNePK5_Z4YAg1iM6oJ_9HT0vXEWI",
+  },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
