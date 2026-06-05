@@ -245,7 +245,8 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
     };
 
     if (isEditing) {
-      const { error: updateError } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: updateError } = await (supabase as any)
         .from("events")
         .update(sharedFields)
         .eq("id", eventId);

@@ -9,6 +9,8 @@ import SaveButton from "@/components/SaveButton";
 import RsvpButton from "@/components/RsvpButton";
 import AddToCalendarButton from "@/components/AddToCalendarButton";
 import EventCard from "@/components/EventCard";
+import EventViewTracker from "@/components/EventViewTracker";
+import TicketLinkButton from "@/components/TicketLinkButton";
 
 export async function generateMetadata({
   params,
@@ -147,6 +149,7 @@ export default async function EventDetailPage({
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
+      <EventViewTracker eventId={event.id} />
       {/* Breadcrumb */}
       <div className="mb-6">
         <Link
@@ -261,14 +264,11 @@ export default async function EventDetailPage({
         {!isPast && (event.ticket_url || event.rsvp_enabled) && (
           <div className="flex flex-wrap gap-3">
             {event.ticket_url && (
-              <a
+              <TicketLinkButton
+                eventId={event.id}
                 href={event.ticket_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-orange text-cream font-semibold px-6 py-2.5 rounded-full hover:bg-orange/90 transition"
-              >
-                {event.ticket_type === "free" ? "Register (free) ↗" : "Get tickets ↗"}
-              </a>
+                label={(event as typeof event & { ticket_type?: string }).ticket_type === "free" ? "Register (free) ↗" : "Get tickets ↗"}
+              />
             )}
             {event.rsvp_enabled && (
               <RsvpButton eventId={event.id} initialRsvp={isRsvp} user={user} />

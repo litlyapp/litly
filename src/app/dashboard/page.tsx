@@ -58,18 +58,33 @@ export default async function DashboardPage() {
   const upcomingEvents = (upcomingResult.data ?? []) as DashboardEvent[];
   const pastEvents = (pastResult.data ?? []) as DashboardEvent[];
 
-  // Fetch RSVP counts for all organizer events
   const allEventIds = [...upcomingEvents, ...pastEvents].map((e) => e.id);
   const rsvpCounts: Record<string, number> = {};
+  const saveCounts: Record<string, number> = {};
+  const viewCounts: Record<string, number> = {};
+  const clickCounts: Record<string, number> = {};
 
   if (allEventIds.length > 0) {
-    const { data: rsvpRows } = await supabase
-      .from("rsvps")
-      .select("event_id")
-      .in("event_id", allEventIds);
+    const [rsvpRows, saveRows, statRows] = await Promise.all([
+      supabase.from("rsvps").select("event_id").in("event_id", allEventIds),
+      supabase.from("saved_events").select("event_id").in("event_id", allEventIds),
+      supabase.from("events").select("id").in("id", allEventIds),
+    ]);
 
-    (rsvpRows ?? []).forEach((r) => {
+    (rsvpRows.data ?? []).forEach((r) => {
       rsvpCounts[r.event_id] = (rsvpCounts[r.event_id] ?? 0) + 1;
+    });
+    (saveRows.data ?? []).forEach((r) => {
+      saveCounts[r.event_id] = (saveCounts[r.event_id] ?? 0) + 1;
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const statRaw = await (supabase as any)
+      .from("events")
+      .select("id, view_count, ticket_click_count")
+      .in("id", allEventIds);
+    (statRaw.data ?? []).forEach((r: { id: string; view_count?: number; ticket_click_count?: number }) => {
+      viewCounts[r.id] = r.view_count ?? 0;
+      clickCounts[r.id] = r.ticket_click_count ?? 0;
     });
   }
 
@@ -126,6 +141,9 @@ export default async function DashboardPage() {
                 event={event}
                 divider={i < upcomingEvents.length - 1}
                 rsvpCount={rsvpCounts[event.id] ?? 0}
+                saveCount={saveCounts[event.id] ?? 0}
+                viewCount={viewCounts[event.id] ?? 0}
+                clickCount={clickCounts[event.id] ?? 0}
               />
             ))}
           </div>
@@ -144,6 +162,9 @@ export default async function DashboardPage() {
                 divider={i < pastEvents.length - 1}
                 isPast
                 rsvpCount={rsvpCounts[event.id] ?? 0}
+                saveCount={saveCounts[event.id] ?? 0}
+                viewCount={viewCounts[event.id] ?? 0}
+                clickCount={clickCounts[event.id] ?? 0}
               />
             ))}
           </div>

@@ -25,6 +25,9 @@ interface Props {
   divider?: boolean;
   isPast?: boolean;
   rsvpCount?: number;
+  viewCount?: number;
+  saveCount?: number;
+  clickCount?: number;
 }
 
 type DeleteScope = "this" | "future" | "all";
@@ -33,7 +36,7 @@ function formatDate(iso: string) {
   return `${formatEventDate(iso)} · ${formatEventTime(iso)}`;
 }
 
-export default function DashboardEventRow({ event, divider, isPast, rsvpCount }: Props) {
+export default function DashboardEventRow({ event, divider, isPast, rsvpCount, viewCount, saveCount, clickCount }: Props) {
   const [confirming, setConfirming] = useState(false);
   const [deleteScope, setDeleteScope] = useState<DeleteScope>("this");
   const [deleting, setDeleting] = useState(false);
@@ -108,6 +111,14 @@ export default function DashboardEventRow({ event, divider, isPast, rsvpCount }:
           {formatDate(event.date_time)}
           {event.event_type === "in_person" && event.location_name && <> · {event.location_name}</>}
         </p>
+
+        {/* Analytics */}
+        <div className="flex items-center gap-3 mt-1.5 text-xs text-cream-muted/70">
+          <span title="Views">👁 {viewCount ?? 0}</span>
+          <span title="Saves">🔖 {saveCount ?? 0}</span>
+          {event.rsvp_enabled && <span title="RSVPs">✓ {rsvpCount ?? 0}</span>}
+          {(clickCount ?? 0) > 0 && <span title="Ticket clicks">🎫 {clickCount}</span>}
+        </div>
       </div>
 
       {/* Actions */}
