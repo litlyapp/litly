@@ -83,12 +83,20 @@ export default async function DashboardPage() {
           <h1 className="font-serif text-4xl text-cream mb-1">Dashboard</h1>
           <p className="text-cream-muted">{profile.name}</p>
         </div>
-        <Link
-          href="/events/new"
-          className="bg-orange text-cream font-semibold px-5 py-2.5 rounded-full hover:bg-orange/90 transition text-sm"
-        >
-          + New event
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/dashboard/profile"
+            className="border border-cream/20 text-cream-muted font-medium px-4 py-2.5 rounded-full hover:border-cream/40 hover:text-cream transition text-sm"
+          >
+            Edit profile
+          </Link>
+          <Link
+            href="/events/new"
+            className="bg-orange text-cream font-semibold px-5 py-2.5 rounded-full hover:bg-orange/90 transition text-sm"
+          >
+            + New event
+          </Link>
+        </div>
       </div>
 
       {/* Stats strip */}

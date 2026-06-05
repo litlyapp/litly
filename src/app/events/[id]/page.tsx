@@ -69,7 +69,7 @@ export default async function EventDetailPage({
     .select(
       `
       *,
-      organizer:organizer_profiles(id, name, org_type, bio, website, social_links)
+      organizer:organizer_profiles(id, name, org_type, bio, website, social_links, avatar_url)
     `
     )
     .eq("id", id)
@@ -315,8 +315,19 @@ export default async function EventDetailPage({
             href={`/organizers/${organizer.id}`}
             className="flex items-center gap-4 group"
           >
-            <div className="w-12 h-12 rounded-full bg-orange/20 flex items-center justify-center text-orange font-serif text-xl shrink-0">
-              {organizer.name[0]}
+            <div className="relative w-12 h-12 shrink-0">
+              {(organizer as typeof organizer & { avatar_url?: string | null }).avatar_url ? (
+                <Image
+                  src={(organizer as typeof organizer & { avatar_url?: string | null }).avatar_url!}
+                  alt={organizer.name}
+                  fill
+                  className="rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-orange/20 flex items-center justify-center text-orange font-serif text-xl">
+                  {organizer.name[0]}
+                </div>
+              )}
             </div>
             <div>
               <div className="text-cream font-medium group-hover:text-orange transition">

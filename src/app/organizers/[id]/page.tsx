@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import EventCard from "@/components/EventCard";
 import FollowButton from "@/components/FollowButton";
@@ -13,7 +14,7 @@ export default async function OrganizerProfilePage({
 
   const { data: organizer } = await supabase
     .from("organizer_profiles")
-    .select("id, user_id, name, org_type, bio, website, social_links")
+    .select("id, user_id, name, org_type, bio, website, social_links, avatar_url")
     .eq("id", id)
     .single();
 
@@ -74,8 +75,19 @@ export default async function OrganizerProfilePage({
       <div className="bg-navy-light border border-cream/10 rounded-2xl p-8 mb-8">
         <div className="flex items-start justify-between gap-6">
           <div className="flex items-center gap-5">
-            <div className="w-16 h-16 rounded-full bg-orange/20 flex items-center justify-center text-orange font-serif text-3xl shrink-0">
-              {organizer.name[0]}
+            <div className="relative w-16 h-16 shrink-0">
+              {organizer.avatar_url ? (
+                <Image
+                  src={organizer.avatar_url}
+                  alt={organizer.name}
+                  fill
+                  className="rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-orange/20 flex items-center justify-center text-orange font-serif text-3xl">
+                  {organizer.name[0]}
+                </div>
+              )}
             </div>
             <div>
               <h1 className="font-serif text-3xl text-cream leading-tight">
