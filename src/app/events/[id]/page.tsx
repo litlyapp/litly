@@ -142,6 +142,11 @@ export default async function EventDetailPage({
                 {event.address && (
                   <div className="text-cream-muted text-sm">{event.address}</div>
                 )}
+                {(event.city || event.state || event.country) && (
+                  <div className="text-cream-muted text-sm">
+                    {[event.city, event.state, event.country].filter(Boolean).join(", ")}
+                  </div>
+                )}
               </div>
             </div>
           )}
