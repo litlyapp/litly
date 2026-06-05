@@ -54,6 +54,7 @@ export default function LeafletMap({ events }: { events: MapEvent[] }) {
 
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
   const [radius, setRadius] = useState<number | null>(null);
+  const [mapReady, setMapReady] = useState(false);
 
   // Init map once
   useEffect(() => {
@@ -82,6 +83,9 @@ export default function LeafletMap({ events }: { events: MapEvent[] }) {
 
       markerLayerRef.current = L.layerGroup().addTo(map);
 
+      // Signal that map is ready so markers can be drawn
+      setMapReady(true);
+
       navigator.geolocation?.getCurrentPosition(
         (pos) => {
           const { latitude: lat, longitude: lng } = pos.coords;
@@ -89,7 +93,7 @@ export default function LeafletMap({ events }: { events: MapEvent[] }) {
           setUserLoc({ lat, lng });
         },
         () => {
-          // permission denied — fit to events
+          // permission denied or unavailable — fit to events
           const valid = events.filter((e) => e.lat && e.lng);
           if (valid.length > 0) {
             const bounds = L.latLngBounds(valid.map((e) => [e.lat!, e.lng!]));
@@ -100,7 +104,7 @@ export default function LeafletMap({ events }: { events: MapEvent[] }) {
     }
 
     init();
-    return () => { map?.remove(); mapRef.current = null; };
+    return () => { map?.remove(); mapRef.current = null; markerLayerRef.current = null; LRef.current = null; setMapReady(false); };
   }, []);
 
   // Re-draw markers whenever events, userLoc, or radius changes
@@ -214,7 +218,7 @@ export default function LeafletMap({ events }: { events: MapEvent[] }) {
       const bounds = L.latLngBounds(filtered.filter(e => e.lat && e.lng).map((e) => [e.lat!, e.lng!]));
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
     }
-  }, [events, userLoc, radius]);
+  }, [events, userLoc, radius, mapReady]);
 
   return (
     <div className="space-y-3">
