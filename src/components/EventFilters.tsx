@@ -183,7 +183,7 @@ export default function EventFilters({
         <label className="text-cream-muted text-xs uppercase tracking-wider mb-2 block">
           Date range
         </label>
-        <div className="space-y-2 overflow-x-hidden">
+        <div className="space-y-2">
           <div className="relative">
             {!activeFrom && (
               <span className="pointer-events-none absolute inset-0 flex items-center px-3 text-sm text-cream-muted">
@@ -194,7 +194,7 @@ export default function EventFilters({
               type="date"
               value={activeFrom}
               onChange={(e) => setParam("from", e.target.value)}
-              className="w-full max-w-full bg-navy-light border border-cream/20 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange [color-scheme:dark]"
+              className="w-full bg-navy-light border border-cream/20 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange"
             />
           </div>
           <div className="relative">
@@ -207,7 +207,7 @@ export default function EventFilters({
               type="date"
               value={activeTo}
               onChange={(e) => setParam("to", e.target.value)}
-              className="w-full max-w-full bg-navy-light border border-cream/20 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange [color-scheme:dark]"
+              className="w-full bg-navy-light border border-cream/20 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange"
             />
           </div>
         </div>
