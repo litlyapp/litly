@@ -184,7 +184,7 @@ export default function EventFilters({
           Date range
         </label>
         <div className="space-y-2">
-          <div className="relative">
+          <div className="relative w-full min-w-0">
             {!activeFrom && (
               <span className="pointer-events-none absolute inset-0 flex items-center px-3 text-sm text-cream-muted">
                 From date…
@@ -197,7 +197,7 @@ export default function EventFilters({
               className="w-full bg-navy-light border border-cream/20 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange"
             />
           </div>
-          <div className="relative">
+          <div className="relative w-full min-w-0">
             {!activeTo && (
               <span className="pointer-events-none absolute inset-0 flex items-center px-3 text-sm text-cream-muted">
                 To date…
