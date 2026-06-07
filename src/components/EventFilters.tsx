@@ -183,7 +183,7 @@ export default function EventFilters({
         <label className="text-cream-muted text-xs uppercase tracking-wider mb-2 block">
           Date range
         </label>
-        <div className="space-y-2">
+        <div className="space-y-2 overflow-x-hidden">
           <div className="relative">
             {!activeFrom && (
               <span className="pointer-events-none absolute inset-0 flex items-center px-3 text-sm text-cream-muted">
