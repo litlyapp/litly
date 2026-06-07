@@ -184,18 +184,32 @@ export default function EventFilters({
           Date range
         </label>
         <div className="space-y-2">
-          <input
-            type="date"
-            value={activeFrom}
-            onChange={(e) => setParam("from", e.target.value)}
-            className="w-full bg-navy-light border border-cream/20 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange [color-scheme:dark]"
-          />
-          <input
-            type="date"
-            value={activeTo}
-            onChange={(e) => setParam("to", e.target.value)}
-            className="w-full bg-navy-light border border-cream/20 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange [color-scheme:dark]"
-          />
+          <div className="relative overflow-hidden rounded-xl">
+            {!activeFrom && (
+              <span className="pointer-events-none absolute inset-0 flex items-center px-3 text-sm text-cream-muted">
+                From date…
+              </span>
+            )}
+            <input
+              type="date"
+              value={activeFrom}
+              onChange={(e) => setParam("from", e.target.value)}
+              className="w-full max-w-full bg-navy-light border border-cream/20 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange [color-scheme:dark]"
+            />
+          </div>
+          <div className="relative overflow-hidden rounded-xl">
+            {!activeTo && (
+              <span className="pointer-events-none absolute inset-0 flex items-center px-3 text-sm text-cream-muted">
+                To date…
+              </span>
+            )}
+            <input
+              type="date"
+              value={activeTo}
+              onChange={(e) => setParam("to", e.target.value)}
+              className="w-full max-w-full bg-navy-light border border-cream/20 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange [color-scheme:dark]"
+            />
+          </div>
         </div>
       </div>
 
