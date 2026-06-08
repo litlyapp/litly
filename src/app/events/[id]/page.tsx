@@ -229,14 +229,14 @@ export default async function EventDetailPage({
 
       {/* Banner */}
       {event.banner_url && (
-        <div className="w-full rounded-2xl overflow-hidden mb-6 bg-navy-light flex justify-center">
+        <div className="w-full rounded-2xl overflow-hidden mb-6 bg-navy-light flex justify-center items-center h-[600px]">
           <Image
             src={event.banner_url}
             alt={event.title}
             width={0}
             height={0}
             sizes="(max-width: 768px) 100vw, 768px"
-            className="w-auto h-auto max-h-[840px] max-w-full object-contain"
+            className="h-full w-auto max-w-full object-contain"
             priority
           />
         </div>
