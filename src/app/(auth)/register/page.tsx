@@ -33,13 +33,19 @@ export default function RegisterPage() {
     setError(null);
     setLoading(true);
 
-    const { data, error: signUpError } = await supabase.auth.signUp({
+    const { error: signUpError } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
       options: {
         data: {
           role,
           display_name: form.displayName,
+          // Store organizer details in metadata so the auth callback can create the profile
+          // after email confirmation (when a proper session exists)
+          org_type: role === "organizer" ? form.orgType : undefined,
+          org_name: role === "organizer" ? (form.orgName || form.displayName) : undefined,
+          bio: role === "organizer" ? (form.bio || undefined) : undefined,
+          website: role === "organizer" ? (form.website || undefined) : undefined,
         },
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
@@ -49,26 +55,6 @@ export default function RegisterPage() {
       setError(signUpError.message);
       setLoading(false);
       return;
-    }
-
-    if (role === "organizer" && data.user) {
-      // Wait briefly for the trigger to create the users row, then insert organizer profile
-      await new Promise((r) => setTimeout(r, 500));
-      const { error: profileError } = await supabase
-        .from("organizer_profiles")
-        .insert({
-          user_id: data.user.id,
-          org_type: form.orgType,
-          name: form.orgName || form.displayName,
-          bio: form.bio || null,
-          website: form.website || null,
-        });
-
-      if (profileError) {
-        setError(profileError.message);
-        setLoading(false);
-        return;
-      }
     }
 
     router.push("/login?registered=1");
