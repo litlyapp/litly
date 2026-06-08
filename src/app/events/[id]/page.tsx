@@ -322,7 +322,7 @@ export default async function EventDetailPage({
                 rel="noopener noreferrer"
                 className="text-orange hover:underline"
               >
-                Join online event ↗
+                Event access link ↗
               </a>
             </div>
           )}
