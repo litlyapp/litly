@@ -3,7 +3,6 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/client";
 
 interface Props {
   eventId: string;
@@ -16,7 +15,6 @@ export default function RsvpButton({ eventId, initialRsvp, user }: Props) {
   const [loading, setLoading] = useState(false);
   const [, startTransition] = useTransition();
   const router = useRouter();
-  const supabase = createClient();
 
   async function toggle() {
     if (!user) {
@@ -28,17 +26,11 @@ export default function RsvpButton({ eventId, initialRsvp, user }: Props) {
     const next = !rsvp;
     setRsvp(next);
 
-    if (next) {
-      await supabase
-        .from("rsvps")
-        .insert({ user_id: user.id, event_id: eventId });
-    } else {
-      await supabase
-        .from("rsvps")
-        .delete()
-        .eq("user_id", user.id)
-        .eq("event_id", eventId);
-    }
+    await fetch("/api/rsvp", {
+      method: next ? "POST" : "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ eventId }),
+    });
 
     setLoading(false);
     startTransition(() => router.refresh());
