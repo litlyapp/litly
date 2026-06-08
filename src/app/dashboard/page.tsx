@@ -42,68 +42,71 @@ export default async function DashboardPage() {
 
   const eventSelect = "id, title, genre, event_type, date_time, location_name, virtual_url, rsvp_enabled, open_mic, parent_event_id, recurrence_rule, is_cancelled, view_count, ticket_click_count";
 
-  const [upcomingResult, pastResult] = await Promise.all([
+  const [upcomingResult, pastResult, totalUpcomingResult] = await Promise.all([
+    // Only show parent events and standalone events (exclude series children)
     supabase
       .from("events")
       .select(eventSelect)
       .eq("organizer_id", profile.id)
+      .is("parent_event_id", null)
       .gte("date_time", now)
       .order("date_time", { ascending: true }),
     supabase
       .from("events")
       .select(eventSelect)
       .eq("organizer_id", profile.id)
+      .is("parent_event_id", null)
       .lt("date_time", now)
       .order("date_time", { ascending: false })
       .limit(20),
+    // Total upcoming count including all occurrences (for the stat card)
+    supabase
+      .from("events")
+      .select("id", { count: "exact", head: true })
+      .eq("organizer_id", profile.id)
+      .gte("date_time", now),
   ]);
 
-  const allUpcoming = (upcomingResult.data ?? []) as DashboardEvent[];
+  const upcomingEvents = (upcomingResult.data ?? []) as DashboardEvent[];
   const pastEvents = (pastResult.data ?? []) as DashboardEvent[];
-
-  // Separate series children from the display list — group under their parent
-  const upcomingChildren = allUpcoming.filter((e) => !!e.parent_event_id);
-  const upcomingEvents = allUpcoming.filter((e) => !e.parent_event_id);
+  const totalUpcoming = totalUpcomingResult.count ?? 0;
 
   // Count upcoming non-cancelled children per series parent
   const upcomingChildCounts: Record<string, number> = {};
-  for (const child of upcomingChildren) {
-    const pid = child.parent_event_id!;
-    if (!child.is_cancelled) {
-      upcomingChildCounts[pid] = (upcomingChildCounts[pid] ?? 0) + 1;
-    }
+  for (const event of upcomingEvents) {
+    if (!event.recurrence_rule) continue;
+    const { count } = await supabase
+      .from("events")
+      .select("id", { count: "exact", head: true })
+      .eq("parent_event_id", event.id)
+      .eq("is_cancelled", false)
+      .gte("date_time", now);
+    upcomingChildCounts[event.id] = count ?? 0;
   }
 
-  const allEventIds = [...allUpcoming, ...pastEvents].map((e) => e.id);
   const rsvpCounts: Record<string, number> = {};
   const saveCounts: Record<string, number> = {};
   const viewCounts: Record<string, number> = {};
   const clickCounts: Record<string, number> = {};
 
-  // Aggregate view/click counts from the already-fetched event data
-  for (const e of [...allUpcoming, ...pastEvents]) {
-    const key = e.parent_event_id ?? e.id;
-    viewCounts[key] = (viewCounts[key] ?? 0) + ((e as DashboardEvent & { view_count?: number }).view_count ?? 0);
-    clickCounts[key] = (clickCounts[key] ?? 0) + ((e as DashboardEvent & { ticket_click_count?: number }).ticket_click_count ?? 0);
+  const allDisplayed = [...upcomingEvents, ...pastEvents];
+
+  for (const e of allDisplayed) {
+    viewCounts[e.id] = (e as DashboardEvent & { view_count?: number }).view_count ?? 0;
+    clickCounts[e.id] = (e as DashboardEvent & { ticket_click_count?: number }).ticket_click_count ?? 0;
   }
 
+  const allEventIds = allDisplayed.map((e) => e.id);
   if (allEventIds.length > 0) {
     const [rsvpRows, saveRows] = await Promise.all([
       supabase.from("rsvps").select("event_id").in("event_id", allEventIds),
       supabase.from("saved_events").select("event_id").in("event_id", allEventIds),
     ]);
-
-    // Aggregate RSVP and save counts — roll child counts up to the parent
-    const allEvents = [...allUpcoming, ...pastEvents];
     (rsvpRows.data ?? []).forEach((r) => {
-      const event = allEvents.find((e) => e.id === r.event_id);
-      const key = event?.parent_event_id ?? r.event_id;
-      rsvpCounts[key] = (rsvpCounts[key] ?? 0) + 1;
+      rsvpCounts[r.event_id] = (rsvpCounts[r.event_id] ?? 0) + 1;
     });
     (saveRows.data ?? []).forEach((r) => {
-      const event = allEvents.find((e) => e.id === r.event_id);
-      const key = event?.parent_event_id ?? r.event_id;
-      saveCounts[key] = (saveCounts[key] ?? 0) + 1;
+      saveCounts[r.event_id] = (saveCounts[r.event_id] ?? 0) + 1;
     });
   }
 
@@ -133,7 +136,7 @@ export default async function DashboardPage() {
 
       {/* Stats strip */}
       <div className="grid grid-cols-3 gap-4 mb-10">
-        <StatCard label="Upcoming" value={allUpcoming.length} />
+        <StatCard label="Upcoming" value={totalUpcoming} />
         <StatCard label="Past events" value={pastEvents.length} />
         <StatCard label="Total posted" value={upcomingEvents.length + pastEvents.length} />
       </div>
