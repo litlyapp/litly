@@ -149,6 +149,106 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
       >
         {saving ? "Saving…" : saved ? "Saved!" : "Save profile"}
       </button>
+
+      <ChangePasswordSection />
     </form>
+  );
+}
+
+function ChangePasswordSection() {
+  const supabase = createClient();
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+
+    if (newPassword !== confirm) {
+      setError("New passwords don't match.");
+      return;
+    }
+    if (newPassword.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+
+    setStatus("saving");
+
+    // Re-authenticate with current password first
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.email) { setError("Could not verify user."); setStatus("error"); return; }
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: currentPassword,
+    });
+
+    if (signInError) {
+      setError("Current password is incorrect.");
+      setStatus("error");
+      return;
+    }
+
+    const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+
+    if (updateError) {
+      setError(updateError.message);
+      setStatus("error");
+      return;
+    }
+
+    setStatus("saved");
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirm("");
+    setTimeout(() => setStatus("idle"), 3000);
+  }
+
+  return (
+    <div className="bg-navy-light border border-cream/10 rounded-2xl p-6 space-y-4">
+      <label className="text-cream-muted text-xs uppercase tracking-wider block">
+        Change password
+      </label>
+      <div>
+        <label className="text-cream-muted text-xs mb-1 block">Current password</label>
+        <input
+          type="password"
+          value={currentPassword}
+          onChange={(e) => setCurrentPassword(e.target.value)}
+          className="w-full bg-navy border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange"
+        />
+      </div>
+      <div>
+        <label className="text-cream-muted text-xs mb-1 block">New password</label>
+        <input
+          type="password"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          className="w-full bg-navy border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange"
+        />
+      </div>
+      <div>
+        <label className="text-cream-muted text-xs mb-1 block">Confirm new password</label>
+        <input
+          type="password"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          className="w-full bg-navy border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange"
+        />
+      </div>
+      {error && <p className="text-orange text-xs">{error}</p>}
+      <button
+        type="button"
+        onClick={handleSubmit}
+        disabled={status === "saving" || !currentPassword || !newPassword || !confirm}
+        className="px-5 py-2 rounded-full bg-orange text-cream text-sm font-medium hover:bg-orange/90 transition disabled:opacity-60"
+      >
+        {status === "saving" ? "Updating…" : status === "saved" ? "Password updated!" : "Update password"}
+      </button>
+    </div>
   );
 }
