@@ -12,6 +12,7 @@ interface DashboardEvent {
   genre: Genre | Genre[];
   event_type: EventType;
   date_time: string;
+  timezone?: string | null;
   location_name: string | null;
   virtual_url: string | null;
   rsvp_enabled: boolean;
@@ -40,7 +41,7 @@ export default async function DashboardPage() {
 
   const now = new Date().toISOString();
 
-  const eventSelect = "id, title, genre, event_type, date_time, location_name, virtual_url, rsvp_enabled, open_mic, parent_event_id, recurrence_rule, is_cancelled, view_count, ticket_click_count";
+  const eventSelect = "id, title, genre, event_type, date_time, timezone, location_name, virtual_url, rsvp_enabled, open_mic, parent_event_id, recurrence_rule, is_cancelled, view_count, ticket_click_count";
 
   const [upcomingResult, pastResult, totalUpcomingResult] = await Promise.all([
     // Only show parent events and standalone events (exclude series children)

@@ -8,6 +8,7 @@ export interface MapEvent {
   title: string;
   genre: Genre | Genre[];
   date_time: string;
+  timezone?: string | null;
   lat: number | null;
   lng: number | null;
   location_name: string | null;

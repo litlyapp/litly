@@ -99,7 +99,7 @@ export default async function EventDetailPage({
   if (seriesParentId) {
     const { data: siblings } = await supabase
       .from("events")
-      .select("id, title, date_time, location_name, city, state, event_type")
+      .select("id, title, date_time, timezone, location_name, city, state, event_type")
       .eq("parent_event_id", seriesParentId)
       .eq("is_cancelled", false)
       .neq("id", id)
@@ -137,7 +137,7 @@ export default async function EventDetailPage({
     const delta = 0.45;
     let nearbyQuery = supabase
       .from("events")
-      .select("id, title, genre, event_type, date_time, location_name, city, state, country, virtual_url, open_mic, banner_url, ticket_url, description, is_imported, source_url, source_name, lat, lng, organizer:organizer_profiles(id, name)")
+      .select("id, title, genre, event_type, date_time, timezone, location_name, city, state, country, virtual_url, open_mic, banner_url, ticket_url, description, is_imported, source_url, source_name, lat, lng, organizer:organizer_profiles(id, name)")
       .eq("event_type", "in_person")
       .eq("is_cancelled", false)
       .gte("date_time", new Date().toISOString())
@@ -299,6 +299,7 @@ export default async function EventDetailPage({
             eventId={event.id}
             dateTime={event.date_time}
             endTime={event.end_time}
+            timeZone={(event as typeof event & { timezone?: string | null }).timezone}
             title={event.title}
             description={event.description}
             location={[event.location_name, event.address, event.city, event.state, event.country].filter(Boolean).join(", ")}
@@ -448,7 +449,7 @@ export default async function EventDetailPage({
           <h2 className="font-serif text-xl text-cream mb-4">Upcoming in this series</h2>
           <div className="space-y-3">
             {upcomingSiblings.map((sibling) => {
-              const sibDate = new Date(sibling.date_time);
+              const sibTz = (sibling as typeof sibling & { timezone?: string | null }).timezone;
               const loc =
                 sibling.event_type === "virtual"
                   ? "Virtual"
@@ -461,7 +462,7 @@ export default async function EventDetailPage({
                 >
                   <div>
                     <p className="text-cream text-sm font-medium group-hover:text-orange transition">
-                      {sibDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+                      {new Date(sibling.date_time).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", ...(sibTz ? { timeZone: sibTz } : {}) })}
                     </p>
                     <p className="text-cream-muted text-xs mt-0.5">{loc}</p>
                   </div>

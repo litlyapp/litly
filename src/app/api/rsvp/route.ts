@@ -22,13 +22,13 @@ export async function POST(req: Request) {
   // Fetch event details for the confirmation email
   const { data: event } = await supabase
     .from("events")
-    .select("title, date_time, location_name, city, state, virtual_url, event_type")
+    .select("title, date_time, timezone, location_name, city, state, virtual_url, event_type")
     .eq("id", eventId)
     .single();
 
   if (event && user.email) {
-    const date = formatEventDate(event.date_time);
-    const time = formatEventTime(event.date_time);
+    const date = formatEventDate(event.date_time, event.timezone);
+    const time = formatEventTime(event.date_time, event.timezone);
     const location =
       event.event_type === "virtual"
         ? "Virtual event"

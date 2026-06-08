@@ -7,19 +7,22 @@ interface Props {
   eventId: string;
   dateTime: string;
   endTime?: string | null;
+  timeZone?: string | null;
   title: string;
   description?: string | null;
   location?: string;
 }
 
+// Format the true UTC instant as a UTC-suffixed string ("...Z") so Google
+// Calendar (and other ICS consumers) interpret it correctly regardless of
+// the viewer's own timezone.
 function toGCalDate(iso: string): string {
-  const local = iso.replace("Z", "").replace(/([+-]\d{2}:\d{2})$/, "").replace("+00", "");
-  const d = new Date(local);
+  const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+  return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
 }
 
-export default function AddToCalendarButton({ eventId, dateTime, endTime, title, description, location }: Props) {
+export default function AddToCalendarButton({ eventId, dateTime, endTime, timeZone, title, description, location }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -53,9 +56,9 @@ export default function AddToCalendarButton({ eventId, dateTime, endTime, title,
       >
         <CalendarIcon />
         <div>
-          <div className="group-hover:underline">{formatEventDateTime(dateTime)}</div>
+          <div className="group-hover:underline">{formatEventDateTime(dateTime, timeZone)}</div>
           {endTime && (
-            <div className="text-cream-muted text-sm">Until {formatEventDateTime(endTime)}</div>
+            <div className="text-cream-muted text-sm">Until {formatEventDateTime(endTime, timeZone)}</div>
           )}
         </div>
       </button>

@@ -14,7 +14,7 @@ export default async function HomePage() {
   const { data: featuredEvents } = await supabase
     .from("events")
     .select(
-      `id, title, description, genre, event_type, date_time, end_time,
+      `id, title, description, genre, event_type, date_time, timezone, end_time,
        location_name, address, city, state, country, lat, lng, virtual_url, open_mic, rsvp_enabled, created_at,
        organizer:organizer_profiles(id, name, org_type)`
     )

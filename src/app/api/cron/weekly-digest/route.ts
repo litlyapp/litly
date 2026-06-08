@@ -25,7 +25,7 @@ export async function GET(req: Request) {
     .from("rsvps")
     .select(`
       created_at,
-      event:events(id, title, date_time, location_name, city, state, event_type,
+      event:events(id, title, date_time, timezone, location_name, city, state, event_type,
         organizer:organizer_profiles(id, name, user_id)
       )
     `)
@@ -92,7 +92,7 @@ export async function GET(req: Request) {
         const loc = e.event_type === "virtual"
           ? "Virtual"
           : [e.location_name, e.city, e.state].filter(Boolean).join(", ") || "Location TBD";
-        return `• ${e.title} — ${formatEventDate(e.date_time)} at ${formatEventTime(e.date_time)} (${loc}): ${e.count} new RSVP${e.count !== 1 ? "s" : ""}`;
+        return `• ${e.title} — ${formatEventDate(e.date_time, e.timezone)} at ${formatEventTime(e.date_time, e.timezone)} (${loc}): ${e.count} new RSVP${e.count !== 1 ? "s" : ""}`;
       })
       .join("\n");
 
@@ -105,7 +105,7 @@ export async function GET(req: Request) {
           <tr>
             <td style="padding:12px 0;border-bottom:1px solid #d4c9b5">
               <a href="https://thelitlyapp.com/events/${e.eventId}" style="color:#1B2A3E;font-weight:600;text-decoration:none">${e.title}</a><br/>
-              <span style="color:#7a6a5a;font-size:13px">${formatEventDate(e.date_time)} · ${loc}</span>
+              <span style="color:#7a6a5a;font-size:13px">${formatEventDate(e.date_time, e.timezone)} · ${loc}</span>
             </td>
             <td style="padding:12px 0;border-bottom:1px solid #d4c9b5;text-align:right;white-space:nowrap">
               <strong style="color:#E8622A">${e.count} new RSVP${e.count !== 1 ? "s" : ""}</strong>

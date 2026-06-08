@@ -13,6 +13,7 @@ interface EventCardProps {
     genre: Genre | Genre[];
     event_type: EventType;
     date_time: string;
+    timezone?: string | null;
     location_name: string | null;
     city: string | null;
     state: string | null;
@@ -103,7 +104,7 @@ export default function EventCard({
         <div className="flex items-center gap-1.5">
           <CalendarIcon />
           <span>
-            {formatEventDate(event.date_time)} · {formatEventTime(event.date_time)}
+            {formatEventDate(event.date_time, event.timezone)} · {formatEventTime(event.date_time, event.timezone)}
           </span>
         </div>
         {event.event_type === "in_person" && (event.city || event.location_name) && (

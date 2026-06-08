@@ -27,7 +27,7 @@ export async function POST(
 
   const { data: event } = await supabase
     .from("events")
-    .select("id, title, date_time, location_name, city, state, event_type, organizer_id")
+    .select("id, title, date_time, timezone, location_name, city, state, event_type, organizer_id")
     .eq("id", id)
     .eq("organizer_id", profile.id)
     .single();
@@ -54,8 +54,8 @@ export async function POST(
     .eq("event_id", id);
 
   if (rsvps && rsvps.length > 0) {
-    const date = formatEventDate(event.date_time);
-    const time = formatEventTime(event.date_time);
+    const date = formatEventDate(event.date_time, event.timezone);
+    const time = formatEventTime(event.date_time, event.timezone);
     const location =
       event.event_type === "virtual"
         ? "Virtual event"

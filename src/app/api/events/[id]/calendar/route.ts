@@ -2,13 +2,13 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 function toIcsDate(iso: string): string {
-  // Strip timezone info — treat as local time (same logic as formatDate.ts)
-  const local = iso.replace("Z", "").replace(/([+-]\d{2}:\d{2})$/, "").replace("+00", "");
-  const d = new Date(local);
+  // Emit the true UTC instant with a "Z" suffix so calendar apps display
+  // the correct time regardless of the viewer's own timezone.
+  const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, "0");
   return (
-    `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}` +
-    `T${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`
+    `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}` +
+    `T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`
   );
 }
 

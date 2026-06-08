@@ -9,7 +9,7 @@ export default async function EventMapPage() {
   const { data: events } = await supabase
     .from("events")
     .select(
-      "id, title, genre, event_type, date_time, lat, lng, location_name, organizer:organizer_profiles(id, name)"
+      "id, title, genre, event_type, date_time, timezone, lat, lng, location_name, organizer:organizer_profiles(id, name)"
     )
     .eq("event_type", "in_person")
     .eq("is_cancelled", false)

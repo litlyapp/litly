@@ -15,6 +15,7 @@ interface Props {
     genre: Genre | Genre[];
     event_type: EventType;
     date_time: string;
+    timezone?: string | null;
     location_name: string | null;
     virtual_url: string | null;
     rsvp_enabled: boolean;
@@ -31,8 +32,8 @@ interface Props {
   upcomingInSeries?: number;
 }
 
-function formatDate(iso: string) {
-  return `${formatEventDate(iso)} · ${formatEventTime(iso)}`;
+function formatDate(iso: string, timeZone?: string | null) {
+  return `${formatEventDate(iso, timeZone)} · ${formatEventTime(iso, timeZone)}`;
 }
 
 export default function DashboardEventRow({ event, divider, isPast, rsvpCount, viewCount, saveCount, clickCount, upcomingInSeries }: Props) {
@@ -99,7 +100,7 @@ export default function DashboardEventRow({ event, divider, isPast, rsvpCount, v
         </Link>
 
         <p className="text-cream-muted text-xs mt-0.5">
-          {formatDate(event.date_time)}
+          {formatDate(event.date_time, event.timezone)}
           {event.event_type === "in_person" && event.location_name && <> · {event.location_name}</>}
         </p>
 

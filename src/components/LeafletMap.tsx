@@ -10,12 +10,13 @@ const RADIUS_OPTIONS = [
   { label: "All", miles: null },
 ];
 
-function formatDate(iso: string) {
+function formatDate(iso: string, timeZone?: string | null) {
   return new Date(iso).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    ...(timeZone ? { timeZone } : {}),
   });
 }
 
@@ -170,7 +171,7 @@ export default function LeafletMap({ events }: { events: MapEvent[] }) {
             return `
               ${i > 0 ? `<div style="border-top:1px solid rgba(242,232,213,0.1);margin:8px 0;"></div>` : ""}
               <div style="font-weight:600;color:#F2E8D5;margin-bottom:3px;font-size:13px;line-height:1.3;">${event.title}</div>
-              <div style="color:#D9D0C0;font-size:11px;margin-bottom:2px;">${formatDate(event.date_time)}</div>
+              <div style="color:#D9D0C0;font-size:11px;margin-bottom:2px;">${formatDate(event.date_time, (event as typeof event & { timezone?: string | null }).timezone)}</div>
               ${organizer ? `<div style="color:#D9D0C0;font-size:11px;margin-bottom:4px;">${organizer.name}</div>` : ""}
               <a href="/events/${event.id}" style="color:#E8622A;font-size:12px;text-decoration:none;font-weight:500;">View event →</a>
             `;

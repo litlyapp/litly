@@ -24,7 +24,7 @@ export async function POST(
   // Resolve parent event — id may be the parent or a child
   const { data: thisEvent } = await supabase
     .from("events")
-    .select("id, parent_event_id, organizer_id, title, date_time, location_name, city, state, event_type")
+    .select("id, parent_event_id, organizer_id, title, date_time, timezone, location_name, city, state, event_type")
     .eq("id", id)
     .eq("organizer_id", profile.id)
     .single();
@@ -43,14 +43,14 @@ export async function POST(
   // Get all upcoming siblings (children + parent if upcoming)
   const { data: siblings } = await serviceClient
     .from("events")
-    .select("id, title, date_time, location_name, city, state, event_type")
+    .select("id, title, date_time, timezone, location_name, city, state, event_type")
     .eq("parent_event_id", parentId)
     .eq("is_cancelled", false)
     .gte("date_time", now);
 
   const { data: parentEvent } = await serviceClient
     .from("events")
-    .select("id, title, date_time, location_name, city, state, event_type")
+    .select("id, title, date_time, timezone, location_name, city, state, event_type")
     .eq("id", parentId)
     .single();
 
@@ -81,8 +81,8 @@ export async function POST(
       if (!email) continue;
 
       const eventForRsvp = toCancel.find((e) => e.id === rsvp.event_id) ?? toCancel[0];
-      const date = formatEventDate(eventForRsvp.date_time);
-      const time = formatEventTime(eventForRsvp.date_time);
+      const date = formatEventDate(eventForRsvp.date_time, eventForRsvp.timezone);
+      const time = formatEventTime(eventForRsvp.date_time, eventForRsvp.timezone);
       const location = eventForRsvp.event_type === "virtual"
         ? "Virtual event"
         : [eventForRsvp.location_name, eventForRsvp.city, eventForRsvp.state].filter(Boolean).join(", ") || "Location TBD";
