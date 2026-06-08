@@ -2,7 +2,7 @@ const LOGO_URL = "https://thelitlyapp.com/logo.png";
 
 export function emailWrapper(body: string): string {
   return `
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#F2E8D5">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1B2A3E">
       <tr><td align="center" style="padding:0">
         <table width="520" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;width:100%">
           <!-- Header -->
