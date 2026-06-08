@@ -184,7 +184,7 @@ export default function EventFilters({
           Date range
         </label>
         <div className="space-y-2">
-          <div className="relative w-full min-w-0">
+          <div className="relative w-full bg-navy-light border border-cream/20 rounded-xl overflow-hidden focus-within:border-orange transition-colors">
             {!activeFrom && (
               <span className="pointer-events-none absolute inset-0 flex items-center px-3 text-sm text-cream-muted">
                 From date…
@@ -194,10 +194,10 @@ export default function EventFilters({
               type="date"
               value={activeFrom}
               onChange={(e) => setParam("from", e.target.value)}
-              className="w-full bg-navy-light border border-cream/20 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange"
+              className="w-full bg-transparent text-cream px-3 py-2 text-sm focus:outline-none"
             />
           </div>
-          <div className="relative w-full min-w-0">
+          <div className="relative w-full bg-navy-light border border-cream/20 rounded-xl overflow-hidden focus-within:border-orange transition-colors">
             {!activeTo && (
               <span className="pointer-events-none absolute inset-0 flex items-center px-3 text-sm text-cream-muted">
                 To date…
@@ -207,7 +207,7 @@ export default function EventFilters({
               type="date"
               value={activeTo}
               onChange={(e) => setParam("to", e.target.value)}
-              className="w-full bg-navy-light border border-cream/20 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange"
+              className="w-full bg-transparent text-cream px-3 py-2 text-sm focus:outline-none"
             />
           </div>
         </div>
