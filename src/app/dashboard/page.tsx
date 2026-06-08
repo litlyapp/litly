@@ -18,6 +18,7 @@ interface DashboardEvent {
   open_mic: boolean;
   parent_event_id?: string | null;
   recurrence_rule?: object | null;
+  is_cancelled?: boolean;
 }
 
 export default async function DashboardPage() {
@@ -55,36 +56,55 @@ export default async function DashboardPage() {
       .limit(20),
   ]);
 
-  const upcomingEvents = (upcomingResult.data ?? []) as DashboardEvent[];
+  const allUpcoming = (upcomingResult.data ?? []) as DashboardEvent[];
   const pastEvents = (pastResult.data ?? []) as DashboardEvent[];
 
-  const allEventIds = [...upcomingEvents, ...pastEvents].map((e) => e.id);
+  // Separate series children from the display list — group under their parent
+  const upcomingChildren = allUpcoming.filter((e) => !!e.parent_event_id);
+  const upcomingEvents = allUpcoming.filter((e) => !e.parent_event_id);
+
+  // Count upcoming non-cancelled children per series parent
+  const upcomingChildCounts: Record<string, number> = {};
+  for (const child of upcomingChildren) {
+    const pid = child.parent_event_id!;
+    if (!child.is_cancelled) {
+      upcomingChildCounts[pid] = (upcomingChildCounts[pid] ?? 0) + 1;
+    }
+  }
+
+  const allEventIds = [...allUpcoming, ...pastEvents].map((e) => e.id);
   const rsvpCounts: Record<string, number> = {};
   const saveCounts: Record<string, number> = {};
   const viewCounts: Record<string, number> = {};
   const clickCounts: Record<string, number> = {};
 
   if (allEventIds.length > 0) {
-    const [rsvpRows, saveRows, statRows] = await Promise.all([
+    const [rsvpRows, saveRows] = await Promise.all([
       supabase.from("rsvps").select("event_id").in("event_id", allEventIds),
       supabase.from("saved_events").select("event_id").in("event_id", allEventIds),
-      supabase.from("events").select("id").in("id", allEventIds),
     ]);
 
+    // Aggregate RSVP and save counts — roll child counts up to the parent
     (rsvpRows.data ?? []).forEach((r) => {
-      rsvpCounts[r.event_id] = (rsvpCounts[r.event_id] ?? 0) + 1;
+      const event = allUpcoming.find((e) => e.id === r.event_id) ?? pastEvents.find((e) => e.id === r.event_id);
+      const key = event?.parent_event_id ?? r.event_id;
+      rsvpCounts[key] = (rsvpCounts[key] ?? 0) + 1;
     });
     (saveRows.data ?? []).forEach((r) => {
-      saveCounts[r.event_id] = (saveCounts[r.event_id] ?? 0) + 1;
+      const event = allUpcoming.find((e) => e.id === r.event_id) ?? pastEvents.find((e) => e.id === r.event_id);
+      const key = event?.parent_event_id ?? r.event_id;
+      saveCounts[key] = (saveCounts[key] ?? 0) + 1;
     });
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const statRaw = await (supabase as any)
       .from("events")
-      .select("id, view_count, ticket_click_count")
+      .select("id, view_count, ticket_click_count, parent_event_id")
       .in("id", allEventIds);
-    (statRaw.data ?? []).forEach((r: { id: string; view_count?: number; ticket_click_count?: number }) => {
-      viewCounts[r.id] = r.view_count ?? 0;
-      clickCounts[r.id] = r.ticket_click_count ?? 0;
+    (statRaw.data ?? []).forEach((r: { id: string; view_count?: number; ticket_click_count?: number; parent_event_id?: string | null }) => {
+      const key = r.parent_event_id ?? r.id;
+      viewCounts[key] = (viewCounts[key] ?? 0) + (r.view_count ?? 0);
+      clickCounts[key] = (clickCounts[key] ?? 0) + (r.ticket_click_count ?? 0);
     });
   }
 
@@ -114,7 +134,7 @@ export default async function DashboardPage() {
 
       {/* Stats strip */}
       <div className="grid grid-cols-3 gap-4 mb-10">
-        <StatCard label="Upcoming" value={upcomingEvents.length} />
+        <StatCard label="Upcoming" value={allUpcoming.length} />
         <StatCard label="Past events" value={pastEvents.length} />
         <StatCard label="Total posted" value={upcomingEvents.length + pastEvents.length} />
       </div>
@@ -144,6 +164,7 @@ export default async function DashboardPage() {
                 saveCount={saveCounts[event.id] ?? 0}
                 viewCount={viewCounts[event.id] ?? 0}
                 clickCount={clickCounts[event.id] ?? 0}
+                upcomingInSeries={event.recurrence_rule ? (upcomingChildCounts[event.id] ?? 0) : undefined}
               />
             ))}
           </div>

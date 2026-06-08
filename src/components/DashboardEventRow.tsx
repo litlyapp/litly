@@ -28,6 +28,7 @@ interface Props {
   viewCount?: number;
   saveCount?: number;
   clickCount?: number;
+  upcomingInSeries?: number;
 }
 
 type DeleteScope = "this" | "future" | "all";
@@ -36,7 +37,7 @@ function formatDate(iso: string) {
   return `${formatEventDate(iso)} · ${formatEventTime(iso)}`;
 }
 
-export default function DashboardEventRow({ event, divider, isPast, rsvpCount, viewCount, saveCount, clickCount }: Props) {
+export default function DashboardEventRow({ event, divider, isPast, rsvpCount, viewCount, saveCount, clickCount, upcomingInSeries }: Props) {
   const [confirming, setConfirming] = useState(false);
   const [deleteScope, setDeleteScope] = useState<DeleteScope>("this");
   const [deleting, setDeleting] = useState(false);
@@ -88,7 +89,9 @@ export default function DashboardEventRow({ event, divider, isPast, rsvpCount, v
             <span className="px-2 py-0.5 rounded-full bg-cream/10 text-cream-muted text-xs">Open mic</span>
           )}
           {isRecurring && (
-            <span className="px-2 py-0.5 rounded-full bg-cream/10 text-cream-muted text-xs">🔁 Series</span>
+            <span className="px-2 py-0.5 rounded-full bg-cream/10 text-cream-muted text-xs">
+              🔁 Series{upcomingInSeries !== undefined ? ` · ${upcomingInSeries} upcoming` : ""}
+            </span>
           )}
           {event.rsvp_enabled && rsvpCount !== undefined && rsvpCount > 0 && (
             <span className="px-2 py-0.5 rounded-full bg-orange/15 text-orange text-xs font-medium">
