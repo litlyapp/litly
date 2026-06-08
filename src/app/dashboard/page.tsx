@@ -170,6 +170,16 @@ export default async function DashboardPage() {
           </div>
         </section>
       )}
+
+      <div className="mt-10 pt-6 border-t border-cream/10 text-center">
+        <p className="text-cream-muted text-sm mb-2">Having trouble posting or editing an event?</p>
+        <Link
+          href="/dashboard/support"
+          className="text-orange hover:text-orange/80 text-sm underline underline-offset-2 transition"
+        >
+          Contact support
+        </Link>
+      </div>
     </div>
   );
 }
