@@ -12,6 +12,7 @@ import EventCard from "@/components/EventCard";
 import EventViewTracker from "@/components/EventViewTracker";
 import TicketLinkButton from "@/components/TicketLinkButton";
 import ShareButton from "@/components/ShareButton";
+import CancelEventButton from "@/components/CancelEventButton";
 
 export async function generateMetadata({
   params,
@@ -178,6 +179,17 @@ export default async function EventDetailPage({
     ]);
     isSaved = !!savedResult.data;
     isRsvp = !!rsvpResult.data;
+  }
+
+  // Check if the viewer is the organizer of this event
+  let isOrganizer = false;
+  if (user) {
+    const { data: profile } = await supabase
+      .from("organizer_profiles")
+      .select("id")
+      .eq("user_id", user.id)
+      .single();
+    if (profile) isOrganizer = profile.id === event.organizer_id;
   }
 
   const organizer = Array.isArray(event.organizer)
@@ -406,6 +418,16 @@ export default async function EventDetailPage({
               </div>
             </div>
           </Link>
+        </div>
+      )}
+
+      {/* Organizer cancel controls — only shown to the event organizer */}
+      {isOrganizer && !isPast && !ev.is_cancelled && (
+        <div className="mb-6">
+          <CancelEventButton
+            eventId={event.id}
+            isRecurring={isRecurring}
+          />
         </div>
       )}
 
