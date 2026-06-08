@@ -22,6 +22,17 @@ export default async function HomePage() {
     .order("date_time", { ascending: true })
     .limit(6);
 
+  // Fetch saved event IDs for logged-in user
+  const { data: { user } } = await supabase.auth.getUser();
+  let savedEventIds = new Set<string>();
+  if (user) {
+    const { data: saved } = await supabase
+      .from("saved_events")
+      .select("event_id")
+      .eq("user_id", user.id);
+    savedEventIds = new Set((saved ?? []).map((s) => s.event_id));
+  }
+
   // Total upcoming event count for the tagline
   const { count } = await supabase
     .from("events")
@@ -86,7 +97,7 @@ export default async function HomePage() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {featuredEvents.map((event) => (
-              <EventCard key={event.id} event={event} />
+              <EventCard key={event.id} event={event} savedEventIds={savedEventIds} />
             ))}
           </div>
 

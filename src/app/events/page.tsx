@@ -86,6 +86,17 @@ export default async function EventsPage({
 
   const { data: rawEvents } = await query;
 
+  // Fetch the logged-in user's saved event IDs so cards render with correct heart state
+  const { data: { user } } = await supabase.auth.getUser();
+  let savedEventIds = new Set<string>();
+  if (user) {
+    const { data: saved } = await supabase
+      .from("saved_events")
+      .select("event_id")
+      .eq("user_id", user.id);
+    savedEventIds = new Set((saved ?? []).map((s) => s.event_id));
+  }
+
   // Deduplicate recurring series: keep only the next upcoming occurrence per series.
   // Events are sorted by date_time asc, so the first seen per series key is already correct.
   const seen = new Set<string>();
@@ -152,7 +163,7 @@ export default async function EventsPage({
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {events.map((event) => (
-                <EventCard key={event.id} event={event} />
+                <EventCard key={event.id} event={event} savedEventIds={savedEventIds} />
               ))}
             </div>
           )}
