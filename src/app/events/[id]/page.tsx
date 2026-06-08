@@ -325,7 +325,7 @@ export default async function EventDetailPage({
             );
           })()}
 
-          {event.event_type === "virtual" && event.virtual_url && (
+          {event.virtual_url && (
             <div className="flex items-center gap-3 text-cream">
               <GlobeIcon />
               <a
@@ -334,7 +334,7 @@ export default async function EventDetailPage({
                 rel="noopener noreferrer"
                 className="text-orange hover:underline"
               >
-                Event access link ↗
+                {event.event_type === "virtual" ? "Event access link ↗" : "Join remotely ↗"}
               </a>
             </div>
           )}

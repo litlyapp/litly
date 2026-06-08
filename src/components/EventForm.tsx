@@ -340,8 +340,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       country: form.event_type === "in_person" ? form.country.trim() || null : null,
       lat: form.event_type === "in_person" ? coords?.lat ?? null : null,
       lng: form.event_type === "in_person" ? coords?.lng ?? null : null,
-      virtual_url:
-        form.event_type === "virtual" ? form.virtual_url.trim() || null : null,
+      virtual_url: form.virtual_url.trim() || null,
       open_mic: genres.includes("open_mic"),
       featured_readers: readers.filter((r) => r.name.trim()).length
         ? readers.filter((r) => r.name.trim())
@@ -732,18 +731,22 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       )}
 
       {/* Virtual URL */}
-      {form.event_type === "virtual" && (
-        <div>
-          <label className={labelClass}>Event link *</label>
-          <input
-            type="url"
-            placeholder="https://zoom.us/j/… or similar"
-            value={form.virtual_url}
-            onChange={(e) => set("virtual_url", e.target.value)}
-            className={inputClass}
-          />
-        </div>
-      )}
+      <div>
+        <label className={labelClass}>
+          {form.event_type === "virtual" ? "Event link *" : "Online access link (optional)"}
+        </label>
+        <input
+          type="url"
+          placeholder={
+            form.event_type === "virtual"
+              ? "https://zoom.us/j/… or similar"
+              : "Optional — link for patrons joining remotely (livestream, Zoom, etc.)"
+          }
+          value={form.virtual_url}
+          onChange={(e) => set("virtual_url", e.target.value)}
+          className={inputClass}
+        />
+      </div>
 
       {/* Toggles + ticket link */}
       <div className="space-y-4">
