@@ -15,6 +15,9 @@ interface ParsedEvent {
   end_time: string | null;
   location_name: string | null;
   address: string | null;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
   virtual_url: string | null;
   open_mic: boolean;
   featured_readers: { name: string; url: string }[] | null;
