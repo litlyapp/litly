@@ -162,7 +162,7 @@ export default async function HomePage() {
               Hosting an event?
             </h2>
             <p className="text-cream-muted max-w-md">
-              litly is free to post on. Reach readers who are actively looking
+              Posting on litly is free. Reach readers who are actively looking
               for events like yours.
             </p>
           </div>
