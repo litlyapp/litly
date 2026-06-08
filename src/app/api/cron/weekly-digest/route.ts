@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { sendEmail } from "@/lib/sendEmail";
+import { sendEmail, emailWrapper } from "@/lib/sendEmail";
 import { formatEventDate, formatEventTime } from "@/lib/formatDate";
 
 export const dynamic = "force-dynamic";
@@ -103,11 +103,11 @@ export async function GET(req: Request) {
           : [e.location_name, e.city, e.state].filter(Boolean).join(", ") || "Location TBD";
         return `
           <tr>
-            <td style="padding:12px 0;border-bottom:1px solid #eee">
+            <td style="padding:12px 0;border-bottom:1px solid #d4c9b5">
               <a href="https://thelitlyapp.com/events/${e.eventId}" style="color:#1B2A3E;font-weight:600;text-decoration:none">${e.title}</a><br/>
-              <span style="color:#888;font-size:13px">${formatEventDate(e.date_time)} · ${loc}</span>
+              <span style="color:#7a6a5a;font-size:13px">${formatEventDate(e.date_time)} · ${loc}</span>
             </td>
-            <td style="padding:12px 0;border-bottom:1px solid #eee;text-align:right;white-space:nowrap">
+            <td style="padding:12px 0;border-bottom:1px solid #d4c9b5;text-align:right;white-space:nowrap">
               <strong style="color:#E8622A">${e.count} new RSVP${e.count !== 1 ? "s" : ""}</strong>
             </td>
           </tr>`;
@@ -128,26 +128,17 @@ export async function GET(req: Request) {
         ``,
         `— litly`,
       ].join("\n"),
-      html: `
-        <div style="font-family:Georgia,serif;max-width:520px;margin:0 auto;color:#1B2A3E">
-          <div style="background:#1B2A3E;padding:24px 32px">
-            <span style="color:#F2E8D5;font-size:22px;font-weight:bold">litly</span>
-          </div>
-          <div style="padding:32px">
-            <h1 style="font-size:22px;margin:0 0 8px">Your weekly digest</h1>
-            <p style="color:#555;margin:0 0 24px">Hi ${org.organizerName}, here's what happened this week.</p>
-            <table style="width:100%;border-collapse:collapse">
-              ${eventHtmlRows}
-            </table>
-            <div style="margin-top:28px">
-              <a href="https://thelitlyapp.com/dashboard" style="background:#E8622A;color:#fff;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:14px;font-weight:600">View dashboard</a>
-            </div>
-          </div>
-          <div style="padding:16px 32px;border-top:1px solid #eee;font-size:12px;color:#aaa">
-            Weekly digest from <a href="https://thelitlyapp.com" style="color:#aaa">litly</a>. Only sent when you have new RSVPs.
-          </div>
+      html: emailWrapper(`
+        <h1 style="font-size:22px;margin:0 0 8px;color:#1B2A3E">Your weekly digest</h1>
+        <p style="color:#5a4a3a;margin:0 0 24px">Hi ${org.organizerName}, here's what happened this week.</p>
+        <table style="width:100%;border-collapse:collapse">
+          ${eventHtmlRows}
+        </table>
+        <div style="margin-top:28px">
+          <a href="https://thelitlyapp.com/dashboard" style="background:#E8622A;color:#fff;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:14px;font-weight:600">View dashboard</a>
         </div>
-      `,
+        <p style="margin-top:32px;font-size:12px;color:#7a6a5a">Weekly digest from litly. Only sent when you have new RSVPs.</p>
+      `),
     });
 
     sent++;

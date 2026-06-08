@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { sendEmail } from "@/lib/sendEmail";
+import { sendEmail, emailWrapper } from "@/lib/sendEmail";
 import { formatEventDate, formatEventTime } from "@/lib/formatDate";
 
 export async function POST(req: Request) {
@@ -48,26 +48,17 @@ export async function POST(req: Request) {
         ``,
         `— litly`,
       ].join("\n"),
-      html: `
-        <div style="font-family:Georgia,serif;max-width:520px;margin:0 auto;color:#1B2A3E">
-          <div style="background:#1B2A3E;padding:24px 32px">
-            <span style="color:#F2E8D5;font-size:22px;font-weight:bold">litly</span>
-          </div>
-          <div style="padding:32px">
-            <h1 style="font-size:24px;margin:0 0 8px">You're going to<br/><em>${event.title}</em></h1>
-            <p style="color:#555;margin:0 0 24px">Your RSVP is confirmed.</p>
-            <table style="border-collapse:collapse;width:100%;margin-bottom:24px">
-              <tr><td style="padding:8px 0;color:#888;width:90px">Date</td><td style="padding:8px 0">${date}</td></tr>
-              <tr><td style="padding:8px 0;color:#888">Time</td><td style="padding:8px 0">${time}</td></tr>
-              <tr><td style="padding:8px 0;color:#888">Location</td><td style="padding:8px 0">${location}</td></tr>
-            </table>
-            <a href="https://thelitlyapp.com/events/${eventId}" style="background:#E8622A;color:#fff;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:14px;font-weight:600">View event</a>
-          </div>
-          <div style="padding:16px 32px;border-top:1px solid #eee;font-size:12px;color:#aaa">
-            You received this because you RSVPd on litly. <a href="https://thelitlyapp.com" style="color:#aaa">thelitlyapp.com</a>
-          </div>
-        </div>
-      `,
+      html: emailWrapper(`
+        <h1 style="font-size:24px;margin:0 0 8px;color:#1B2A3E">You're going to<br/><em>${event.title}</em></h1>
+        <p style="color:#5a4a3a;margin:0 0 24px">Your RSVP is confirmed.</p>
+        <table style="border-collapse:collapse;width:100%;margin-bottom:24px">
+          <tr><td style="padding:8px 0;color:#7a6a5a;width:90px">Date</td><td style="padding:8px 0;color:#1B2A3E">${date}</td></tr>
+          <tr><td style="padding:8px 0;color:#7a6a5a">Time</td><td style="padding:8px 0;color:#1B2A3E">${time}</td></tr>
+          <tr><td style="padding:8px 0;color:#7a6a5a">Location</td><td style="padding:8px 0;color:#1B2A3E">${location}</td></tr>
+        </table>
+        <a href="https://thelitlyapp.com/events/${eventId}" style="background:#E8622A;color:#fff;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:14px;font-weight:600">View event</a>
+        <p style="margin-top:32px;font-size:12px;color:#7a6a5a">You received this because you RSVPd on litly.</p>
+      `),
     }).catch(console.error); // don't block RSVP if email fails
   }
 
