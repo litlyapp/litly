@@ -760,11 +760,31 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
               />
             </div>
           </div>
-          {(form.state || form.country) && (
-            <p className="text-cream-muted text-xs -mt-2">
-              {[form.state, form.country].filter(Boolean).join(", ")}
-            </p>
-          )}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelClass}>State / Province</label>
+              <input
+                type="text"
+                placeholder="e.g. NC"
+                value={form.state}
+                onChange={(e) => set("state", e.target.value)}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Country</label>
+              <input
+                type="text"
+                placeholder="e.g. United States"
+                value={form.country}
+                onChange={(e) => set("country", e.target.value)}
+                className={inputClass}
+              />
+              <p className="text-cream-muted text-xs mt-1">
+                Auto-filled from the zip code — please confirm it&apos;s correct.
+              </p>
+            </div>
+          </div>
 
           <div>
             <label className={labelClass}>
