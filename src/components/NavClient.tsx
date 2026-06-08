@@ -60,7 +60,7 @@ export default function NavClient({ user, role }: Props) {
             >
               Saved
             </Link>
-            {role === "organizer" && (
+            {role === "organizer" ? (
               <Link
                 href="/dashboard"
                 className={`text-sm px-3 py-1.5 rounded-full hover:bg-navy-light transition ${
@@ -68,6 +68,15 @@ export default function NavClient({ user, role }: Props) {
                 }`}
               >
                 Dashboard
+              </Link>
+            ) : (
+              <Link
+                href="/account"
+                className={`text-sm px-3 py-1.5 rounded-full hover:bg-navy-light transition ${
+                  isActive("/account") ? "text-orange" : "text-cream-muted hover:text-cream"
+                }`}
+              >
+                Account
               </Link>
             )}
             <button
@@ -127,11 +136,13 @@ export default function NavClient({ user, role }: Props) {
             <>
               <div className="border-t border-cream/10 my-2" />
               <MobileLink href="/saved" onClick={close} active={isActive("/saved")}>Saved events</MobileLink>
-              {role === "organizer" && (
+              {role === "organizer" ? (
                 <>
                   <MobileLink href="/dashboard" onClick={close} active={isActive("/dashboard")}>Dashboard</MobileLink>
                   <MobileLink href="/events/new" onClick={close} active={isActive("/events/new")}>+ New event</MobileLink>
                 </>
+              ) : (
+                <MobileLink href="/account" onClick={close} active={isActive("/account")}>Account</MobileLink>
               )}
               <button
                 onClick={signOut}
