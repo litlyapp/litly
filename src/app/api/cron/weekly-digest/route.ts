@@ -45,7 +45,7 @@ export async function GET(req: Request) {
     organizerId: string;
     organizerName: string;
     userId: string;
-    events: Map<string, { title: string; date_time: string; location_name: string | null; city: string | null; state: string | null; event_type: string; count: number; eventId: string }>;
+    events: Map<string, { title: string; date_time: string; timezone: string | null; location_name: string | null; city: string | null; state: string | null; event_type: string; count: number; eventId: string }>;
   }>();
 
   for (const rsvp of rsvps) {
@@ -68,6 +68,7 @@ export async function GET(req: Request) {
       org.events.set(event.id, {
         title: event.title,
         date_time: event.date_time,
+        timezone: event.timezone,
         location_name: event.location_name,
         city: event.city,
         state: event.state,
