@@ -70,12 +70,7 @@ export default async function HomePage() {
             Readings, open mics, craft talks, and more —<br className="hidden sm:block" />
             all in one place.
           </p>
-          {count != null && count > 0 && (
-            <p className="text-cream text-lg md:text-xl mb-10">
-              {count} event{count !== 1 ? "s" : ""} coming up.
-            </p>
-          )}
-          {(count == null || count === 0) && <div className="mb-10" />}
+          <div className="mb-10" />
 
           {/* Search bar — navigates to /events?q=... */}
           <LandingSearch />
@@ -90,7 +85,14 @@ export default async function HomePage() {
       {featuredEvents && featuredEvents.length > 0 && (
         <section className="max-w-6xl mx-auto px-4 pb-20">
           <div className="flex items-baseline justify-between mb-6">
-            <h2 className="font-serif text-2xl text-cream">Upcoming events</h2>
+            <h2 className="font-serif text-2xl text-cream">
+              Upcoming events
+              {count != null && count > 0 && (
+                <span className="ml-2 font-sans text-base text-cream-muted font-normal">
+                  ({count})
+                </span>
+              )}
+            </h2>
             <Link
               href="/events"
               className="text-orange text-sm hover:underline underline-offset-2"
