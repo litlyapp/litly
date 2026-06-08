@@ -40,16 +40,18 @@ export default async function DashboardPage() {
 
   const now = new Date().toISOString();
 
+  const eventSelect = "id, title, genre, event_type, date_time, location_name, virtual_url, rsvp_enabled, open_mic, parent_event_id, recurrence_rule, is_cancelled, view_count, ticket_click_count";
+
   const [upcomingResult, pastResult] = await Promise.all([
     supabase
       .from("events")
-      .select("*")
+      .select(eventSelect)
       .eq("organizer_id", profile.id)
       .gte("date_time", now)
       .order("date_time", { ascending: true }),
     supabase
       .from("events")
-      .select("*")
+      .select(eventSelect)
       .eq("organizer_id", profile.id)
       .lt("date_time", now)
       .order("date_time", { ascending: false })
@@ -78,6 +80,13 @@ export default async function DashboardPage() {
   const viewCounts: Record<string, number> = {};
   const clickCounts: Record<string, number> = {};
 
+  // Aggregate view/click counts from the already-fetched event data
+  for (const e of [...allUpcoming, ...pastEvents]) {
+    const key = e.parent_event_id ?? e.id;
+    viewCounts[key] = (viewCounts[key] ?? 0) + ((e as DashboardEvent & { view_count?: number }).view_count ?? 0);
+    clickCounts[key] = (clickCounts[key] ?? 0) + ((e as DashboardEvent & { ticket_click_count?: number }).ticket_click_count ?? 0);
+  }
+
   if (allEventIds.length > 0) {
     const [rsvpRows, saveRows] = await Promise.all([
       supabase.from("rsvps").select("event_id").in("event_id", allEventIds),
@@ -85,26 +94,16 @@ export default async function DashboardPage() {
     ]);
 
     // Aggregate RSVP and save counts — roll child counts up to the parent
+    const allEvents = [...allUpcoming, ...pastEvents];
     (rsvpRows.data ?? []).forEach((r) => {
-      const event = allUpcoming.find((e) => e.id === r.event_id) ?? pastEvents.find((e) => e.id === r.event_id);
+      const event = allEvents.find((e) => e.id === r.event_id);
       const key = event?.parent_event_id ?? r.event_id;
       rsvpCounts[key] = (rsvpCounts[key] ?? 0) + 1;
     });
     (saveRows.data ?? []).forEach((r) => {
-      const event = allUpcoming.find((e) => e.id === r.event_id) ?? pastEvents.find((e) => e.id === r.event_id);
+      const event = allEvents.find((e) => e.id === r.event_id);
       const key = event?.parent_event_id ?? r.event_id;
       saveCounts[key] = (saveCounts[key] ?? 0) + 1;
-    });
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const statRaw = await (supabase as any)
-      .from("events")
-      .select("id, view_count, ticket_click_count, parent_event_id")
-      .in("id", allEventIds);
-    (statRaw.data ?? []).forEach((r: { id: string; view_count?: number; ticket_click_count?: number; parent_event_id?: string | null }) => {
-      const key = r.parent_event_id ?? r.id;
-      viewCounts[key] = (viewCounts[key] ?? 0) + (r.view_count ?? 0);
-      clickCounts[key] = (clickCounts[key] ?? 0) + (r.ticket_click_count ?? 0);
     });
   }
 
