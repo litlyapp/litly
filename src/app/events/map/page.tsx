@@ -12,6 +12,7 @@ export default async function EventMapPage() {
       "id, title, genre, event_type, date_time, lat, lng, location_name, organizer:organizer_profiles(id, name)"
     )
     .eq("event_type", "in_person")
+    .eq("is_cancelled", false)
     .gte("date_time", new Date().toISOString())
     .not("lat", "is", null)
     .not("lng", "is", null)

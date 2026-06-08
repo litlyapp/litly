@@ -101,6 +101,15 @@ export function generateOccurrenceDates(startDate: Date, rule: RecurrenceRule): 
   return dates;
 }
 
+/** Returns the single next occurrence after afterDate, or null if none possible. */
+export function generateNextOccurrence(afterDate: Date, rule: RecurrenceRule): Date | null {
+  const farFuture = new Date(afterDate);
+  farFuture.setFullYear(farFuture.getFullYear() + 10);
+  const extendedRule: RecurrenceRule = { ...rule, until: farFuture.toISOString().slice(0, 10) };
+  const dates = generateOccurrenceDates(afterDate, extendedRule);
+  return dates[0] ?? null;
+}
+
 export function describeRule(startDate: Date, rule: RecurrenceRule): string {
   switch (rule.frequency) {
     case "weekly":

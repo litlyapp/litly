@@ -19,6 +19,15 @@ export interface FeaturedReader {
   url: string;
 }
 
+export type RecurrenceFrequency = "weekly" | "biweekly" | "monthly_date" | "monthly_day";
+
+export interface RecurrenceRule {
+  frequency: RecurrenceFrequency;
+  day_of_week?: number;
+  week_of_month?: number;
+  until: string; // "YYYY-MM-DD"
+}
+
 export interface SocialLinks {
   twitter?: string;
   instagram?: string;
@@ -114,6 +123,14 @@ export type Database = {
           source_name: string | null;
           banner_url: string | null;
           ticket_url: string | null;
+          ticket_type: "paid" | "free" | null;
+          view_count: number;
+          ticket_click_count: number;
+          recurrence_rule: RecurrenceRule | null;
+          parent_event_id: string | null;
+          is_cancelled: boolean;
+          series_end_date: string | null;
+          is_ongoing: boolean;
           created_at: string;
         };
         Insert: {
@@ -141,6 +158,14 @@ export type Database = {
           source_name?: string | null;
           banner_url?: string | null;
           ticket_url?: string | null;
+          ticket_type?: "paid" | "free" | null;
+          view_count?: number;
+          ticket_click_count?: number;
+          recurrence_rule?: RecurrenceRule | null;
+          parent_event_id?: string | null;
+          is_cancelled?: boolean;
+          series_end_date?: string | null;
+          is_ongoing?: boolean;
           created_at?: string;
         };
         Update: {
@@ -166,6 +191,12 @@ export type Database = {
           source_name?: string | null;
           banner_url?: string | null;
           ticket_url?: string | null;
+          ticket_type?: "paid" | "free" | null;
+          recurrence_rule?: RecurrenceRule | null;
+          parent_event_id?: string | null;
+          is_cancelled?: boolean;
+          series_end_date?: string | null;
+          is_ongoing?: boolean;
         };
         Relationships: [
           {

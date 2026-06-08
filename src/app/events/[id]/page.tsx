@@ -80,6 +80,47 @@ export default async function EventDetailPage({
 
   if (!event) notFound();
 
+  const ev = event as typeof event & {
+    is_cancelled: boolean;
+    parent_event_id: string | null;
+    recurrence_rule: object | null;
+    series_end_date: string | null;
+    is_ongoing: boolean;
+  };
+
+  // Fetch upcoming series siblings (next 2 occurrences, not this event, not cancelled)
+  const isRecurring = !!(ev.recurrence_rule || ev.parent_event_id);
+  const seriesParentId = ev.parent_event_id ?? (ev.recurrence_rule ? ev.id : null);
+
+  let upcomingSiblings: { id: string; title: string; date_time: string; location_name: string | null; city: string | null; state: string | null; event_type: string }[] = [];
+  let isFinalOccurrence = false;
+
+  if (seriesParentId) {
+    const { data: siblings } = await supabase
+      .from("events")
+      .select("id, title, date_time, location_name, city, state, event_type")
+      .eq("parent_event_id", seriesParentId)
+      .eq("is_cancelled", false)
+      .neq("id", id)
+      .gte("date_time", new Date().toISOString())
+      .order("date_time", { ascending: true })
+      .limit(2);
+
+    upcomingSiblings = (siblings ?? []) as typeof upcomingSiblings;
+
+    // Check if this is the final occurrence (series has ended and no future siblings)
+    if (!ev.is_ongoing && upcomingSiblings.length === 0) {
+      // Verify there are no future siblings at all
+      const { count } = await supabase
+        .from("events")
+        .select("id", { count: "exact", head: true })
+        .eq("parent_event_id", seriesParentId)
+        .eq("is_cancelled", false)
+        .gt("date_time", ev.date_time);
+      isFinalOccurrence = (count ?? 0) === 0;
+    }
+  }
+
   // Fetch nearby events if this event has coordinates (~50km bounding box)
   let nearbyEvents: {
     id: string; title: string; genre: string | string[]; event_type: string;
@@ -97,6 +138,7 @@ export default async function EventDetailPage({
       .from("events")
       .select("id, title, genre, event_type, date_time, location_name, city, state, country, virtual_url, open_mic, banner_url, ticket_url, description, is_imported, source_url, source_name, lat, lng, organizer:organizer_profiles(id, name)")
       .eq("event_type", "in_person")
+      .eq("is_cancelled", false)
       .gte("date_time", new Date().toISOString())
       .neq("id", id)
       .gte("lat", event.lat - delta)
@@ -151,6 +193,18 @@ export default async function EventDetailPage({
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
       <EventViewTracker eventId={event.id} />
+
+      {/* Cancellation banner */}
+      {ev.is_cancelled && (
+        <div className="mb-6 bg-orange/10 border border-orange/30 rounded-2xl px-6 py-4 flex items-center gap-3">
+          <span className="text-orange text-xl">✕</span>
+          <div>
+            <p className="text-orange font-semibold">This event has been cancelled</p>
+            <p className="text-cream-muted text-sm">The organizer has cancelled this event. RSVPs have been notified.</p>
+          </div>
+        </div>
+      )}
+
       {/* Breadcrumb */}
       <div className="mb-6">
         <Link
@@ -193,6 +247,16 @@ export default async function EventDetailPage({
             {isPast && (
               <span className="px-3 py-1 rounded-full bg-cream/10 text-cream-muted text-sm">
                 Past event
+              </span>
+            )}
+            {isFinalOccurrence && !isPast && (
+              <span className="px-3 py-1 rounded-full bg-orange/20 text-orange text-sm font-medium">
+                Final occurrence
+              </span>
+            )}
+            {ev.is_cancelled && (
+              <span className="px-3 py-1 rounded-full bg-orange/20 text-orange text-sm font-medium">
+                Cancelled
               </span>
             )}
           </div>
@@ -342,6 +406,37 @@ export default async function EventDetailPage({
               </div>
             </div>
           </Link>
+        </div>
+      )}
+
+      {/* Upcoming occurrences in this series */}
+      {upcomingSiblings.length > 0 && (
+        <div className="bg-navy-light border border-cream/10 rounded-2xl p-8 mb-6">
+          <h2 className="font-serif text-xl text-cream mb-4">Upcoming in this series</h2>
+          <div className="space-y-3">
+            {upcomingSiblings.map((sibling) => {
+              const sibDate = new Date(sibling.date_time);
+              const loc =
+                sibling.event_type === "virtual"
+                  ? "Virtual"
+                  : [sibling.location_name, sibling.city, sibling.state].filter(Boolean).join(", ") || "Location TBD";
+              return (
+                <Link
+                  key={sibling.id}
+                  href={`/events/${sibling.id}`}
+                  className="flex items-center justify-between gap-4 py-3 border-b border-cream/10 last:border-0 group"
+                >
+                  <div>
+                    <p className="text-cream text-sm font-medium group-hover:text-orange transition">
+                      {sibDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+                    </p>
+                    <p className="text-cream-muted text-xs mt-0.5">{loc}</p>
+                  </div>
+                  <span className="text-cream-muted group-hover:text-orange transition text-sm shrink-0">→</span>
+                </Link>
+              );
+            })}
+          </div>
         </div>
       )}
 

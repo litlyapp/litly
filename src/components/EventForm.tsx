@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Genre, EventType, FeaturedReader } from "@/types/database";
 import { GENRES } from "@/lib/genres";
-import { type RecurrenceRule, generateOccurrenceDates } from "@/lib/recurrence";
+import { type RecurrenceRule, generateOccurrenceDates, generateNextOccurrence } from "@/lib/recurrence";
 
 interface EventData {
   title: string;
@@ -30,6 +30,11 @@ interface EventData {
   rsvp_enabled: boolean;
   banner_url?: string | null;
   ticket_url?: string | null;
+  ticket_type?: string | null;
+  recurrence_rule?: object | null;
+  parent_event_id?: string | null;
+  is_ongoing?: boolean;
+  series_end_date?: string | null;
 }
 
 export type EditScope = "this" | "future" | "all";
@@ -140,7 +145,16 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
   );
 
   const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule | null>(null);
+  const [newEventOngoing, setNewEventOngoing] = useState(false);
   const [editScope, setEditScope] = useState<EditScope>("this");
+
+  // Series settings (only relevant when editing the parent recurring event)
+  const isParentEvent = !!(initialData?.recurrence_rule) && !initialData?.parent_event_id;
+  const [seriesOngoing, setSeriesOngoing] = useState<boolean>(initialData?.is_ongoing ?? false);
+  const [seriesEndDate, setSeriesEndDate] = useState<string>(initialData?.series_end_date ?? "");
+
+  const [cancelConfirm, setCancelConfirm] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -175,6 +189,27 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
 
   function removeReader(index: number) {
     setReaders((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  async function handleCancel() {
+    if (!eventId) return;
+    setCancelling(true);
+    try {
+      const res = await fetch(`/api/events/${eventId}/cancel`, { method: "POST" });
+      if (!res.ok) {
+        const body = await res.json();
+        setError(body.error ?? "Failed to cancel event.");
+        setCancelling(false);
+        setCancelConfirm(false);
+        return;
+      }
+      router.push("/dashboard");
+      router.refresh();
+    } catch {
+      setError("Network error. Please try again.");
+      setCancelling(false);
+      setCancelConfirm(false);
+    }
   }
 
   function toggleGenre(genre: Genre) {
@@ -293,6 +328,18 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         await siblingsQuery;
       }
 
+      // If editing the parent event, also persist series settings
+      if (isParentEvent && eventId) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
+          .from("events")
+          .update({
+            is_ongoing: seriesOngoing,
+            series_end_date: seriesEndDate || null,
+          })
+          .eq("id", eventId);
+      }
+
       router.push(`/events/${eventId}`);
     } else {
       // Insert parent event (first occurrence)
@@ -303,6 +350,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
           organizer_id: organizerId,
           ...sharedFields,
           recurrence_rule: recurrenceRule ?? null,
+          is_ongoing: recurrenceRule ? newEventOngoing : false,
         })
         .select("id")
         .single();
@@ -313,8 +361,38 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         return;
       }
 
-      // Generate and insert child occurrences
-      if (recurrenceRule && form.date_time) {
+      // For ongoing events: seed first 9 children immediately (parent = occurrence 1, total = 10)
+      if (recurrenceRule && form.date_time && newEventOngoing) {
+        const startDate = new Date(form.date_time);
+        const durationMs = form.end_time
+          ? new Date(form.end_time).getTime() - startDate.getTime()
+          : null;
+
+        const children = [];
+        let cursor = startDate;
+        for (let i = 0; i < 9; i++) {
+          const next = generateNextOccurrence(cursor, recurrenceRule);
+          if (!next) break;
+          children.push({
+            organizer_id: organizerId,
+            parent_event_id: data.id,
+            ...sharedFields,
+            recurrence_rule: null,
+            is_ongoing: false,
+            date_time: next.toISOString(),
+            end_time: durationMs !== null ? new Date(next.getTime() + durationMs).toISOString() : null,
+          });
+          cursor = next;
+        }
+
+        if (children.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any).from("events").insert(children);
+        }
+      }
+
+      // Generate and insert child occurrences (skipped for ongoing — seeded above)
+      if (recurrenceRule && form.date_time && !newEventOngoing) {
         const startDate = new Date(form.date_time);
         const occurrenceDates = generateOccurrenceDates(startDate, recurrenceRule);
 
@@ -328,6 +406,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
           parent_event_id: data.id,
           ...sharedFields,
           recurrence_rule: null,
+          is_ongoing: false,
           date_time: d.toISOString(),
           end_time: durationMs !== null
             ? new Date(d.getTime() + durationMs).toISOString()
@@ -460,6 +539,8 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
             startDateIso={form.date_time}
             value={recurrenceRule}
             onChange={setRecurrenceRule}
+            ongoing={newEventOngoing}
+            onOngoingChange={setNewEventOngoing}
           />
         </div>
       )}
@@ -682,6 +763,34 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         </div>
       </div>
 
+      {/* Series settings — only shown when editing the parent (first) event of a recurring series */}
+      {isEditing && isParentEvent && (
+        <div className="bg-navy border border-cream/10 rounded-2xl p-5 space-y-4">
+          <p className="text-cream-muted text-xs uppercase tracking-wider">Series settings</p>
+
+          <label className="flex items-center gap-4 cursor-pointer">
+            <Toggle value={seriesOngoing} onChange={setSeriesOngoing} />
+            <div>
+              <span className="text-cream text-sm font-medium">Ongoing series</span>
+              <p className="text-cream-muted text-xs">litly will keep generating upcoming occurrences automatically.</p>
+            </div>
+          </label>
+
+          <div>
+            <label className={labelClass}>Series end date (optional)</label>
+            <input
+              type="date"
+              value={seriesEndDate}
+              onChange={(e) => setSeriesEndDate(e.target.value)}
+              className="bg-navy-light border border-cream/20 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange [color-scheme:dark]"
+            />
+            <p className="text-cream-muted/60 text-xs mt-1">
+              No new occurrences will be generated after this date.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Series scope picker — only shown when editing a recurring event */}
       {isEditing && seriesContext && (
         <div className="bg-navy border border-cream/10 rounded-2xl p-5">
@@ -720,6 +829,45 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         </p>
       )}
 
+      {/* Cancel this event — only when editing */}
+      {isEditing && (
+        <div className="pt-2 border-t border-cream/10">
+          {!cancelConfirm ? (
+            <button
+              type="button"
+              onClick={() => setCancelConfirm(true)}
+              className="text-sm text-cream-muted hover:text-orange transition"
+            >
+              Cancel this event…
+            </button>
+          ) : (
+            <div className="bg-orange/10 border border-orange/30 rounded-2xl p-5 space-y-3">
+              <p className="text-cream text-sm font-medium">Cancel this event?</p>
+              <p className="text-cream-muted text-xs">
+                This cannot be undone. All RSVPd patrons will receive a cancellation email.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  disabled={cancelling}
+                  className="px-5 py-2 rounded-full bg-orange text-cream text-sm font-medium hover:bg-orange/90 transition disabled:opacity-60"
+                >
+                  {cancelling ? "Cancelling…" : "Yes, cancel event"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCancelConfirm(false)}
+                  className="px-5 py-2 rounded-full border border-cream/20 text-cream-muted hover:text-cream hover:border-cream/40 transition text-sm"
+                >
+                  Keep event
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Submit */}
       <div className="flex gap-3 pt-2">
         <button
@@ -740,7 +888,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
           onClick={() => router.back()}
           className="px-6 py-3 rounded-full border border-cream/20 text-cream-muted hover:text-cream hover:border-cream/40 transition"
         >
-          Cancel
+          Go back
         </button>
       </div>
     </form>

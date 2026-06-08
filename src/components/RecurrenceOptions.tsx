@@ -10,9 +10,11 @@ import {
 } from "@/lib/recurrence";
 
 interface Props {
-  startDateIso: string; // current date_time value from EventForm
+  startDateIso: string;
   value: RecurrenceRule | null;
   onChange: (rule: RecurrenceRule | null) => void;
+  ongoing: boolean;
+  onOngoingChange: (v: boolean) => void;
 }
 
 const UNTIL_PRESETS = [
@@ -27,7 +29,7 @@ function addMonths(date: Date, n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-export default function RecurrenceOptions({ startDateIso, value, onChange }: Props) {
+export default function RecurrenceOptions({ startDateIso, value, onChange, ongoing, onOngoingChange }: Props) {
   const startDate = startDateIso ? new Date(startDateIso) : null;
 
   const defaultUntil = startDate ? addMonths(startDate, 6) : "";
@@ -139,39 +141,66 @@ export default function RecurrenceOptions({ startDateIso, value, onChange }: Pro
             )}
           </div>
 
-          {/* Until */}
-          <div>
-            <label className={labelClass}>Repeat until</label>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {UNTIL_PRESETS.map(({ label, months }) => {
-                const target = addMonths(startDate, months);
-                return (
-                  <button
-                    key={label}
-                    type="button"
-                    onClick={() => setUntilPreset(months)}
-                    className={`${pillBase} ${value.until === target ? pillActive : pillInactive}`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
+          {/* Ongoing toggle */}
+          <label className="flex items-center gap-3 cursor-pointer">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={ongoing}
+              onClick={() => onOngoingChange(!ongoing)}
+              className={`w-11 h-6 rounded-full border transition relative shrink-0 ${
+                ongoing ? "bg-orange border-orange" : "bg-navy-light border-cream/30"
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 w-5 h-5 rounded-full bg-cream transition-all ${
+                  ongoing ? "left-5" : "left-0.5"
+                }`}
+              />
+            </button>
+            <div>
+              <span className="text-cream text-sm font-medium">Ongoing series</span>
+              <p className="text-cream-muted text-xs">litly tops up occurrences automatically — no fixed end date needed.</p>
             </div>
-            <input
-              type="date"
-              value={value.until}
-              min={startDateIso.slice(0, 10)}
-              onChange={(e) => setUntilCustom(e.target.value)}
-              className="bg-navy-light border border-cream/20 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange [color-scheme:dark]"
-            />
-          </div>
+          </label>
+
+          {/* Until — hidden when ongoing */}
+          {!ongoing && (
+            <div>
+              <label className={labelClass}>Repeat until</label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {UNTIL_PRESETS.map(({ label, months }) => {
+                  const target = addMonths(startDate, months);
+                  return (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => setUntilPreset(months)}
+                      className={`${pillBase} ${value.until === target ? pillActive : pillInactive}`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              <input
+                type="date"
+                value={value.until}
+                min={startDateIso.slice(0, 10)}
+                onChange={(e) => setUntilCustom(e.target.value)}
+                className="bg-navy-light border border-cream/20 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange [color-scheme:dark]"
+              />
+            </div>
+          )}
 
           {/* Preview */}
           {preview && (
             <div className="bg-orange/10 border border-orange/20 rounded-xl px-4 py-3 text-sm">
               <span className="text-orange font-medium">{preview.description}</span>
               <span className="text-cream-muted ml-2">
-                — {preview.count} additional {preview.count === 1 ? "occurrence" : "occurrences"} will be created
+                {ongoing
+                  ? "— ongoing, litly will keep this series topped up"
+                  : `— ${preview.count} additional ${preview.count === 1 ? "occurrence" : "occurrences"} will be created`}
               </span>
             </div>
           )}

@@ -39,9 +39,11 @@ export default async function EventsPage({
       `
       id, title, description, genre, event_type, date_time, end_time,
       location_name, address, city, state, country, lat, lng, virtual_url, open_mic, rsvp_enabled, created_at,
+      is_cancelled, parent_event_id,
       organizer:organizer_profiles(id, name, org_type)
     `
     )
+    .eq("is_cancelled", false)
     .gte("date_time", new Date().toISOString())
     .order("date_time", { ascending: true });
 
@@ -82,7 +84,17 @@ export default async function EventsPage({
     query = query.or(`city.ilike.%${loc}%,address.ilike.%${loc}%`);
   }
 
-  const { data: events } = await query;
+  const { data: rawEvents } = await query;
+
+  // Deduplicate recurring series: keep only the next upcoming occurrence per series.
+  // Events are sorted by date_time asc, so the first seen per series key is already correct.
+  const seen = new Set<string>();
+  const events = (rawEvents ?? []).filter((event) => {
+    const seriesKey = (event as typeof event & { parent_event_id?: string | null }).parent_event_id ?? event.id;
+    if (seen.has(seriesKey)) return false;
+    seen.add(seriesKey);
+    return true;
+  });
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-10">
