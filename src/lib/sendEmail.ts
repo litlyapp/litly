@@ -2,17 +2,24 @@ const LOGO_URL = "https://thelitlyapp.com/logo.png";
 
 export function emailWrapper(body: string): string {
   return `
-    <div style="font-family:Georgia,serif;max-width:520px;margin:0 auto;background:#F2E8D5;color:#1B2A3E">
-      <div style="background:#1B2A3E;padding:28px 32px;text-align:center">
-        <img src="${LOGO_URL}" alt="litly" style="height:64px;width:auto;display:inline-block" />
-      </div>
-      <div style="padding:32px;background:#F2E8D5">
-        ${body}
-      </div>
-      <div style="padding:16px 32px;background:#1B2A3E;font-size:12px;color:#F2E8D5;opacity:0.6;text-align:center">
-        <a href="https://thelitlyapp.com" style="color:#F2E8D5">thelitlyapp.com</a>
-      </div>
-    </div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#F2E8D5">
+      <tr><td align="center" style="padding:0">
+        <table width="520" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;width:100%">
+          <!-- Header -->
+          <tr><td bgcolor="#1B2A3E" align="center" style="padding:24px 32px">
+            <img src="${LOGO_URL}" alt="litly" width="80" height="80" style="display:block;border:0" />
+          </td></tr>
+          <!-- Body -->
+          <tr><td bgcolor="#F2E8D5" style="padding:32px;font-family:Georgia,serif;color:#1B2A3E">
+            ${body}
+          </td></tr>
+          <!-- Footer -->
+          <tr><td bgcolor="#1B2A3E" align="center" style="padding:16px 32px;font-family:Georgia,serif;font-size:12px">
+            <a href="https://thelitlyapp.com" style="color:#F2E8D5;opacity:0.7;text-decoration:none">thelitlyapp.com</a>
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>
   `;
 }
 
