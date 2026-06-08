@@ -2,20 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { MapEvent } from "./EventMap";
-import type { Genre } from "@/types/database";
-
-const GENRE_COLORS: Partial<Record<Genre, string>> = {
-  poetry: "#E8622A",
-  fiction: "#4A90D9",
-  nonfiction: "#7B9E6B",
-  essay: "#C4A35A",
-  hybrid_experimental: "#9B59B6",
-  translation: "#E67E22",
-  ya: "#E84393",
-  craft_talk: "#1ABC9C",
-  open_mic: "#E8622A",
-};
-
 const RADIUS_OPTIONS = [
   { label: "5 mi", miles: 5 },
   { label: "10 mi", miles: 10 },
@@ -159,10 +145,7 @@ export default function LeafletMap({ events }: { events: MapEvent[] }) {
 
     locationMap.forEach((locationEvents, key) => {
       const [lat, lng] = key.split(",").map(Number);
-      const primaryGenre = Array.isArray(locationEvents[0].genre)
-        ? locationEvents[0].genre[0]
-        : locationEvents[0].genre;
-      const color = GENRE_COLORS[primaryGenre] ?? "#E8622A";
+      const color = "#E8622A";
       const count = locationEvents.length;
 
       const svgIcon = L.divIcon({
