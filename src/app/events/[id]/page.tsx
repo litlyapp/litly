@@ -236,7 +236,7 @@ export default async function EventDetailPage({
             width={0}
             height={0}
             sizes="(max-width: 768px) 100vw, 768px"
-            className="w-auto h-auto max-h-[420px] max-w-full object-contain"
+            className="w-auto h-auto max-h-[840px] max-w-full object-contain"
             priority
           />
         </div>
