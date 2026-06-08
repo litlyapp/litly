@@ -18,19 +18,22 @@ export default async function HomePage() {
        location_name, address, city, state, country, lat, lng, virtual_url, open_mic, rsvp_enabled, created_at,
        organizer:organizer_profiles(id, name, org_type)`
     )
+    .eq("is_cancelled", false)
+    .is("parent_event_id", null)
     .gte("date_time", new Date().toISOString())
     .order("date_time", { ascending: true })
     .limit(6);
 
-  // Fetch saved event IDs for logged-in user
   const { data: { user } } = await supabase.auth.getUser();
   let savedEventIds = new Set<string>();
+  let isOrganizer = false;
   if (user) {
-    const { data: saved } = await supabase
-      .from("saved_events")
-      .select("event_id")
-      .eq("user_id", user.id);
-    savedEventIds = new Set((saved ?? []).map((s) => s.event_id));
+    const [savedResult, roleResult] = await Promise.all([
+      supabase.from("saved_events").select("event_id").eq("user_id", user.id),
+      supabase.from("users").select("role").eq("id", user.id).single(),
+    ]);
+    savedEventIds = new Set((savedResult.data ?? []).map((s) => s.event_id));
+    isOrganizer = roleResult.data?.role === "organizer";
   }
 
   // Total upcoming event count for the tagline
@@ -163,7 +166,7 @@ export default async function HomePage() {
           </div>
           <div className="flex gap-3 shrink-0">
             <Link
-              href="/register"
+              href={isOrganizer ? "/events/new" : "/register"}
               className="bg-orange text-cream font-semibold px-6 py-3 rounded-full hover:bg-orange/90 transition whitespace-nowrap"
             >
               Post an event
