@@ -4,7 +4,7 @@ export function emailWrapper(body: string): string {
   return `
     <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1B2A3E">
       <tr><td align="center" style="padding:0">
-        <table width="520" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;width:100%">
+        <table width="520" cellpadding="0" cellspacing="0" border="0" bgcolor="#F2E8D5" style="max-width:520px;width:100%">
           <!-- Header -->
           <tr><td bgcolor="#1B2A3E" align="center" style="padding:24px 32px">
             <img src="${LOGO_URL}" alt="litly" width="80" height="80" style="display:block;border:0" />
