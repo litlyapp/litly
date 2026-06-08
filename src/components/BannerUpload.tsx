@@ -33,8 +33,11 @@ export default function BannerUpload({ value, onChange }: Props) {
 
     setUploading(true);
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setError("Not signed in."); setUploading(false); return; }
+
     const ext = file.name.split(".").pop();
-    const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const filename = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
     const { data, error: uploadError } = await supabase.storage
       .from("event-banners")
