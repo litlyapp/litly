@@ -10,16 +10,81 @@ import type { Genre, EventType, FeaturedReader } from "@/types/database";
 import { GENRES } from "@/lib/genres";
 import { type RecurrenceRule, generateOccurrenceDates, generateNextOccurrence } from "@/lib/recurrence";
 
-// Common US time zones for the picker
-export const TIME_ZONES: { value: string; label: string }[] = [
-  { value: "America/New_York", label: "Eastern (ET)" },
-  { value: "America/Chicago", label: "Central (CT)" },
-  { value: "America/Denver", label: "Mountain (MT)" },
-  { value: "America/Phoenix", label: "Arizona (no DST)" },
-  { value: "America/Los_Angeles", label: "Pacific (PT)" },
-  { value: "America/Anchorage", label: "Alaska (AKT)" },
-  { value: "Pacific/Honolulu", label: "Hawaii (HST)" },
+// Common time zones for the picker, grouped by region
+export const TIME_ZONE_GROUPS: { region: string; zones: { value: string; label: string }[] }[] = [
+  {
+    region: "Americas",
+    zones: [
+      { value: "America/New_York", label: "Eastern (ET)" },
+      { value: "America/Chicago", label: "Central (CT)" },
+      { value: "America/Denver", label: "Mountain (MT)" },
+      { value: "America/Phoenix", label: "Arizona (no DST)" },
+      { value: "America/Los_Angeles", label: "Pacific (PT)" },
+      { value: "America/Anchorage", label: "Alaska (AKT)" },
+      { value: "Pacific/Honolulu", label: "Hawaii (HST)" },
+      { value: "America/Toronto", label: "Toronto" },
+      { value: "America/Vancouver", label: "Vancouver" },
+      { value: "America/Mexico_City", label: "Mexico City" },
+      { value: "America/Bogota", label: "Bogotá" },
+      { value: "America/Sao_Paulo", label: "São Paulo" },
+      { value: "America/Buenos_Aires", label: "Buenos Aires" },
+    ],
+  },
+  {
+    region: "Europe",
+    zones: [
+      { value: "Europe/London", label: "London (GMT/BST)" },
+      { value: "Europe/Dublin", label: "Dublin" },
+      { value: "Europe/Lisbon", label: "Lisbon" },
+      { value: "Europe/Paris", label: "Paris" },
+      { value: "Europe/Madrid", label: "Madrid" },
+      { value: "Europe/Berlin", label: "Berlin" },
+      { value: "Europe/Amsterdam", label: "Amsterdam" },
+      { value: "Europe/Rome", label: "Rome" },
+      { value: "Europe/Athens", label: "Athens" },
+      { value: "Europe/Helsinki", label: "Helsinki" },
+      { value: "Europe/Moscow", label: "Moscow" },
+    ],
+  },
+  {
+    region: "Africa & Middle East",
+    zones: [
+      { value: "Africa/Cairo", label: "Cairo" },
+      { value: "Africa/Lagos", label: "Lagos" },
+      { value: "Africa/Johannesburg", label: "Johannesburg" },
+      { value: "Africa/Nairobi", label: "Nairobi" },
+      { value: "Asia/Jerusalem", label: "Jerusalem" },
+      { value: "Asia/Dubai", label: "Dubai" },
+    ],
+  },
+  {
+    region: "Asia",
+    zones: [
+      { value: "Asia/Istanbul", label: "Istanbul" },
+      { value: "Asia/Kolkata", label: "Mumbai / Delhi (IST)" },
+      { value: "Asia/Bangkok", label: "Bangkok" },
+      { value: "Asia/Jakarta", label: "Jakarta" },
+      { value: "Asia/Shanghai", label: "Shanghai / Beijing" },
+      { value: "Asia/Hong_Kong", label: "Hong Kong" },
+      { value: "Asia/Singapore", label: "Singapore" },
+      { value: "Asia/Seoul", label: "Seoul" },
+      { value: "Asia/Tokyo", label: "Tokyo" },
+    ],
+  },
+  {
+    region: "Oceania",
+    zones: [
+      { value: "Australia/Perth", label: "Perth" },
+      { value: "Australia/Adelaide", label: "Adelaide" },
+      { value: "Australia/Sydney", label: "Sydney / Melbourne" },
+      { value: "Pacific/Auckland", label: "Auckland" },
+    ],
+  },
 ];
+
+export const TIME_ZONES: { value: string; label: string }[] = TIME_ZONE_GROUPS.flatMap(
+  (g) => g.zones
+);
 
 const DEFAULT_TIMEZONE =
   typeof Intl !== "undefined"
@@ -614,10 +679,14 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
             {!TIME_ZONES.some((z) => z.value === timezone) && (
               <option value={timezone}>{timezone}</option>
             )}
-            {TIME_ZONES.map((z) => (
-              <option key={z.value} value={z.value}>
-                {z.label} — {z.value.replace("_", " ")}
-              </option>
+            {TIME_ZONE_GROUPS.map((group) => (
+              <optgroup key={group.region} label={group.region}>
+                {group.zones.map((z) => (
+                  <option key={z.value} value={z.value}>
+                    {z.label} — {z.value.replace("_", " ")}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
           <p className="text-cream-muted text-xs mt-1.5">
