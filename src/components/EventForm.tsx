@@ -802,7 +802,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       {/* Virtual URL */}
       <div>
         <label className={labelClass}>
-          {form.event_type === "virtual" ? "Event link *" : "Online access link (optional)"}
+          {form.event_type === "virtual" ? "Event link *" : "Event link (optional)"}
         </label>
         <input
           type="url"
