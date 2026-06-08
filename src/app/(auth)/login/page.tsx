@@ -11,6 +11,7 @@ function LoginForm() {
   const supabase = createClient();
 
   const registered = searchParams.get("registered") === "1";
+  const confirmed = searchParams.get("confirmed") === "1";
   const next = searchParams.get("next") ?? "/";
 
   const [form, setForm] = useState({ email: "", password: "" });
@@ -52,6 +53,12 @@ function LoginForm() {
         {registered && (
           <div className="bg-navy-light border border-cream/20 rounded-2xl p-4 mb-6 text-cream-muted text-sm text-center">
             Account created! Check your email to confirm, then sign in.
+          </div>
+        )}
+
+        {confirmed && (
+          <div className="bg-orange/10 border border-orange/30 rounded-2xl p-4 mb-6 text-cream text-sm text-center">
+            Email confirmed — you&apos;re all set. Sign in below.
           </div>
         )}
 
