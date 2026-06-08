@@ -89,6 +89,12 @@ function LoginForm() {
           </button>
 
           <p className="text-cream-muted text-sm text-center">
+            <Link href="/forgot-password" className="text-cream-muted hover:text-orange">
+              Forgot password?
+            </Link>
+          </p>
+
+          <p className="text-cream-muted text-sm text-center">
             Don&apos;t have an account?{" "}
             <Link href="/register" className="text-cream hover:text-orange">
               Create one
