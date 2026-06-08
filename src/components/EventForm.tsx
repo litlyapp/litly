@@ -809,7 +809,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
           placeholder={
             form.event_type === "virtual"
               ? "https://zoom.us/j/… or similar"
-              : "Optional — link for patrons joining remotely (livestream, Zoom, etc.)"
+              : "Optional — link to event page, Eventbrite listing, livestream, etc."
           }
           value={form.virtual_url}
           onChange={(e) => set("virtual_url", e.target.value)}
