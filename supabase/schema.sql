@@ -51,6 +51,7 @@ create table public.events (
   genre genre not null,
   event_type event_type not null,
   date_time timestamptz not null,
+  timezone text,
   end_time timestamptz,
   location_name text,
   address text,

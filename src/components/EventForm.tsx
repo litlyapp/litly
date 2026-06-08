@@ -10,12 +10,84 @@ import type { Genre, EventType, FeaturedReader } from "@/types/database";
 import { GENRES } from "@/lib/genres";
 import { type RecurrenceRule, generateOccurrenceDates, generateNextOccurrence } from "@/lib/recurrence";
 
+// Common US time zones for the picker
+export const TIME_ZONES: { value: string; label: string }[] = [
+  { value: "America/New_York", label: "Eastern (ET)" },
+  { value: "America/Chicago", label: "Central (CT)" },
+  { value: "America/Denver", label: "Mountain (MT)" },
+  { value: "America/Phoenix", label: "Arizona (no DST)" },
+  { value: "America/Los_Angeles", label: "Pacific (PT)" },
+  { value: "America/Anchorage", label: "Alaska (AKT)" },
+  { value: "Pacific/Honolulu", label: "Hawaii (HST)" },
+];
+
+const DEFAULT_TIMEZONE =
+  typeof Intl !== "undefined"
+    ? Intl.DateTimeFormat().resolvedOptions().timeZone
+    : "America/New_York";
+
+// Offset (ms) to add to a UTC instant to get the wall-clock time in `timeZone`
+function tzOffsetMs(date: Date, timeZone: string): number {
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const parts = dtf.formatToParts(date).reduce<Record<string, string>>((acc, p) => {
+    acc[p.type] = p.value;
+    return acc;
+  }, {});
+  const asUTC = Date.UTC(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+    Number(parts.hour),
+    Number(parts.minute),
+    Number(parts.second)
+  );
+  return asUTC - date.getTime();
+}
+
+// Convert a "YYYY-MM-DDTHH:MM" wall-clock string in `timeZone` to a UTC ISO string
+function zonedToUtcIso(local: string, timeZone: string): string {
+  if (!local) return "";
+  const naive = new Date(`${local}:00Z`); // treat the wall-clock as if it were UTC
+  const offset = tzOffsetMs(naive, timeZone);
+  return new Date(naive.getTime() - offset).toISOString();
+}
+
+// Convert a UTC ISO string to a "YYYY-MM-DDTHH:MM" wall-clock string in `timeZone`
+function utcIsoToZoned(iso: string | null | undefined, timeZone: string): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const parts = dtf.formatToParts(date).reduce<Record<string, string>>((acc, p) => {
+    acc[p.type] = p.value;
+    return acc;
+  }, {});
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+}
+
 interface EventData {
   title: string;
   description: string | null;
   genre: Genre[];
   event_type: EventType;
   date_time: string;
+  timezone?: string | null;
   end_time: string | null;
   location_name: string | null;
   address: string | null;
@@ -93,25 +165,25 @@ async function resolveZip(
   return null;
 }
 
-function toDatetimeLocal(iso: string | null | undefined): string {
-  if (!iso) return "";
-  // Convert UTC ISO to local time "YYYY-MM-DDTHH:MM" for the picker
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
 export default function EventForm({ organizerId, initialData, eventId, seriesContext }: Props) {
   const router = useRouter();
   const supabase = createClient();
   const isEditing = !!eventId;
 
+  const [timezone, setTimezone] = useState<string>(
+    initialData?.timezone ?? DEFAULT_TIMEZONE
+  );
+
   const [form, setForm] = useState({
     title: initialData?.title ?? "",
     description: initialData?.description ?? "",
     event_type: initialData?.event_type ?? ("in_person" as EventType),
-    date_time: toDatetimeLocal(initialData?.date_time),
-    end_time: toDatetimeLocal(initialData?.end_time),
+    date_time: initialData?.date_time
+      ? utcIsoToZoned(initialData.date_time, initialData?.timezone ?? DEFAULT_TIMEZONE)
+      : "",
+    end_time: initialData?.end_time
+      ? utcIsoToZoned(initialData.end_time, initialData?.timezone ?? DEFAULT_TIMEZONE)
+      : "",
     location_name: initialData?.location_name ?? "",
     address: initialData?.address ?? "",
     city: initialData?.city ?? "",
@@ -254,8 +326,9 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       description: form.description.trim() || null,
       genre: genres,
       event_type: form.event_type,
-      date_time: new Date(form.date_time).toISOString(),
-      end_time: form.end_time ? new Date(form.end_time).toISOString() : null,
+      date_time: zonedToUtcIso(form.date_time, timezone),
+      timezone,
+      end_time: form.end_time ? zonedToUtcIso(form.end_time, timezone) : null,
       location_name:
         form.event_type === "in_person"
           ? form.location_name.trim() || null
@@ -299,6 +372,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
           description: sharedFields.description,
           genre: sharedFields.genre,
           event_type: sharedFields.event_type,
+          timezone: sharedFields.timezone,
           location_name: sharedFields.location_name,
           address: sharedFields.address,
           city: sharedFields.city,
@@ -529,6 +603,28 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
           value={form.end_time}
           onChange={(v) => set("end_time", v)}
         />
+        <div>
+          <label className="block text-cream-muted text-xs uppercase tracking-wider mb-1.5">
+            Time zone
+          </label>
+          <select
+            value={timezone}
+            onChange={(e) => setTimezone(e.target.value)}
+            className="bg-navy-light border border-cream/20 text-cream rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-orange w-full sm:w-64"
+          >
+            {!TIME_ZONES.some((z) => z.value === timezone) && (
+              <option value={timezone}>{timezone}</option>
+            )}
+            {TIME_ZONES.map((z) => (
+              <option key={z.value} value={z.value}>
+                {z.label} — {z.value.replace("_", " ")}
+              </option>
+            ))}
+          </select>
+          <p className="text-cream-muted text-xs mt-1.5">
+            The date and time above are in this time zone.
+          </p>
+        </div>
       </div>
 
       {/* Recurrence — only for new events */}

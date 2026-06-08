@@ -108,6 +108,7 @@ export type Database = {
           genre: Genre[];
           event_type: EventType;
           date_time: string;
+          timezone: string | null;
           end_time: string | null;
           location_name: string | null;
           address: string | null;
@@ -143,6 +144,7 @@ export type Database = {
           genre: Genre[];
           event_type: EventType;
           date_time: string;
+          timezone?: string | null;
           end_time?: string | null;
           location_name?: string | null;
           address?: string | null;
