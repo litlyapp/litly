@@ -40,6 +40,8 @@ export default async function HomePage() {
   const { count } = await supabase
     .from("events")
     .select("id", { count: "exact", head: true })
+    .eq("is_cancelled", false)
+    .is("parent_event_id", null)
     .gte("date_time", new Date().toISOString());
 
   return (
