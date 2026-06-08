@@ -836,9 +836,9 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
             <button
               type="button"
               onClick={() => setCancelConfirm(true)}
-              className="text-sm text-cream-muted hover:text-orange transition"
+              className="w-full py-3 rounded-full border border-orange/40 text-orange text-sm font-medium hover:bg-orange/10 transition"
             >
-              Cancel this event…
+              Cancel this event
             </button>
           ) : (
             <div className="bg-orange/10 border border-orange/30 rounded-2xl p-5 space-y-3">
