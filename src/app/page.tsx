@@ -36,13 +36,24 @@ export default async function HomePage() {
     isOrganizer = roleResult.data?.role === "organizer";
   }
 
-  // Total upcoming event count for the tagline
-  const { count } = await supabase
+  // Total upcoming event count for the tagline.
+  // Match the events page: fetch upcoming non-cancelled events (including
+  // recurring children), then dedupe by series so each series counts once.
+  const { data: countRows } = await supabase
     .from("events")
-    .select("id", { count: "exact", head: true })
+    .select("id, parent_event_id")
     .eq("is_cancelled", false)
-    .is("parent_event_id", null)
-    .gte("date_time", new Date().toISOString());
+    .gte("date_time", new Date().toISOString())
+    .order("date_time", { ascending: true });
+
+  const seenSeries = new Set<string>();
+  let count = 0;
+  for (const row of countRows ?? []) {
+    const seriesKey = (row as { parent_event_id?: string | null }).parent_event_id ?? row.id;
+    if (seenSeries.has(seriesKey)) continue;
+    seenSeries.add(seriesKey);
+    count++;
+  }
 
   return (
     <div>
