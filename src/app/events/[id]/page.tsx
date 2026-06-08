@@ -334,7 +334,7 @@ export default async function EventDetailPage({
                 rel="noopener noreferrer"
                 className="text-orange hover:underline"
               >
-                {event.event_type === "virtual" ? "Event access link ↗" : "Join remotely ↗"}
+                {event.event_type === "virtual" ? "Event access link ↗" : "More info ↗"}
               </a>
             </div>
           )}
