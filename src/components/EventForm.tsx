@@ -210,11 +210,18 @@ async function geocode(
 
 // Resolve zip code → state + country via Nominatim
 async function resolveZip(
-  zip: string
+  zip: string,
+  city?: string
 ): Promise<{ state: string; country: string } | null> {
   try {
+    // Include the city (when known) in a free-text query so Nominatim can
+    // disambiguate postal codes that collide across countries (e.g. a US zip
+    // that also matches a postal code in South Korea or elsewhere).
+    const params = city
+      ? `q=${encodeURIComponent(`${city} ${zip}`)}`
+      : `postalcode=${encodeURIComponent(zip)}`;
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&limit=1&postalcode=${encodeURIComponent(zip)}&addressdetails=1`,
+      `https://nominatim.openstreetmap.org/search?format=json&limit=1&addressdetails=1&${params}`,
       { headers: { "Accept-Language": "en" } }
     );
     const data = await res.json();
@@ -743,7 +750,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
                 onBlur={async (e) => {
                   const zip = e.target.value.trim();
                   if (!zip) return;
-                  const result = await resolveZip(zip);
+                  const result = await resolveZip(zip, form.city.trim() || undefined);
                   if (result) {
                     if (result.state) set("state", result.state);
                     if (result.country) set("country", result.country);
