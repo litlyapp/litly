@@ -135,13 +135,24 @@ export default async function EventDetailPage({
 
   if (event.lat && event.lng) {
     const delta = 0.45;
-    const { data: nearby } = await supabase
+    let nearbyQuery = supabase
       .from("events")
       .select("id, title, genre, event_type, date_time, location_name, city, state, country, virtual_url, open_mic, banner_url, ticket_url, description, is_imported, source_url, source_name, lat, lng, organizer:organizer_profiles(id, name)")
       .eq("event_type", "in_person")
       .eq("is_cancelled", false)
       .gte("date_time", new Date().toISOString())
-      .neq("id", id)
+      .neq("id", id);
+
+    // Exclude the rest of this event's own series (siblings + parent) —
+    // use .or() since .neq() on a nullable column would also drop NULLs
+    if (seriesParentId) {
+      nearbyQuery = nearbyQuery.or(
+        `parent_event_id.is.null,parent_event_id.neq.${seriesParentId}`
+      );
+      nearbyQuery = nearbyQuery.neq("id", seriesParentId);
+    }
+
+    const { data: nearby } = await nearbyQuery
       .gte("lat", event.lat - delta)
       .lte("lat", event.lat + delta)
       .gte("lng", event.lng - delta)
