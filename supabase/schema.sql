@@ -16,7 +16,9 @@ create type genre as enum (
   'craft_talk',
   'open_mic',
   'mixed',
-  'workshop'
+  'workshop',
+  'in_conversation',
+  'slam'
 );
 
 -- Users (mirrors auth.users, stores app-level role)

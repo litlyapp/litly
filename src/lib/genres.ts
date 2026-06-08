@@ -5,12 +5,13 @@ export const GENRES: { value: Genre; label: string }[] = [
   { value: "fiction", label: "Fiction" },
   { value: "nonfiction", label: "Nonfiction" },
   { value: "essay", label: "Essay" },
-  { value: "hybrid_experimental", label: "Hybrid / Experimental" },
   { value: "translation", label: "Translation" },
   { value: "ya", label: "YA" },
   { value: "craft_talk", label: "Craft Talk" },
   { value: "open_mic", label: "Open Mic" },
   { value: "workshop", label: "Workshop" },
+  { value: "in_conversation", label: "In Conversation" },
+  { value: "slam", label: "Slam" },
 ];
 
 export const GENRE_LABELS: Record<Genre, string> = Object.fromEntries(

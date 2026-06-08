@@ -24,7 +24,7 @@ Extract structured event data from the following text or webpage content. Return
 {
   "title": "Event title (string, required)",
   "description": "Event description (string or null)",
-  "genre": ["array of applicable genres — pick all that apply from: poetry, fiction, nonfiction, essay, hybrid_experimental, translation, ya, craft_talk, open_mic"],
+  "genre": ["array of applicable genres — pick all that apply from: poetry, fiction, nonfiction, essay, translation, ya, craft_talk, open_mic, workshop, in_conversation, slam"],
   "event_type": "in_person or virtual",
   "date_time": "ISO 8601 datetime string (e.g. 2026-07-15T19:00:00) or null if not found",
   "end_time": "ISO 8601 datetime string or null",

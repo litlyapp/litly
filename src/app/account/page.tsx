@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -83,6 +84,17 @@ export default function AccountPage() {
         <h1 className="font-serif text-4xl text-cream mb-1">Account</h1>
         <p className="text-cream-muted">Manage your litly account.</p>
       </div>
+
+      <Link
+        href="/following"
+        className="flex items-center justify-between bg-navy-light border border-cream/10 rounded-2xl p-6 mb-6 hover:border-orange/40 transition"
+      >
+        <div>
+          <p className="text-cream font-medium">Following</p>
+          <p className="text-cream-muted text-xs">Organizers you follow</p>
+        </div>
+        <span className="text-orange text-sm">View →</span>
+      </Link>
 
       <div className="bg-navy-light border border-cream/10 rounded-2xl p-6 space-y-4">
         <label className="text-cream-muted text-xs uppercase tracking-wider block">
