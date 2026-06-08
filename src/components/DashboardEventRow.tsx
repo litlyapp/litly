@@ -31,15 +31,12 @@ interface Props {
   upcomingInSeries?: number;
 }
 
-type DeleteScope = "this" | "future" | "all";
-
 function formatDate(iso: string) {
   return `${formatEventDate(iso)} · ${formatEventTime(iso)}`;
 }
 
 export default function DashboardEventRow({ event, divider, isPast, rsvpCount, viewCount, saveCount, clickCount, upcomingInSeries }: Props) {
   const [confirming, setConfirming] = useState(false);
-  const [deleteScope, setDeleteScope] = useState<DeleteScope>("this");
   const [deleting, setDeleting] = useState(false);
   const [, startTransition] = useTransition();
   const router = useRouter();
@@ -51,22 +48,13 @@ export default function DashboardEventRow({ event, divider, isPast, rsvpCount, v
   async function handleDelete() {
     setDeleting(true);
 
-    if (!isRecurring || deleteScope === "this") {
-      await supabase.from("events").delete().eq("id", event.id);
-    } else if (deleteScope === "future") {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any)
-        .from("events")
-        .delete()
-        .eq("parent_event_id", parentId)
-        .gte("date_time", event.date_time);
-      if (!event.parent_event_id) {
-        await supabase.from("events").delete().eq("id", event.id);
-      }
-    } else if (deleteScope === "all") {
+    if (isRecurring) {
+      // Delete all children then the parent
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any).from("events").delete().eq("parent_event_id", parentId);
       await supabase.from("events").delete().eq("id", parentId);
+    } else {
+      await supabase.from("events").delete().eq("id", event.id);
     }
 
     startTransition(() => router.refresh());
@@ -128,33 +116,11 @@ export default function DashboardEventRow({ event, divider, isPast, rsvpCount, v
       <div className="flex items-start gap-2 shrink-0">
         {confirming ? (
           <div className="flex flex-col items-end gap-2">
-            {/* Series delete scope picker */}
-            {isRecurring && (
-              <div className="flex flex-col gap-1 text-right">
-                {(
-                  [
-                    { scope: "this" as DeleteScope, label: "This occurrence only" },
-                    { scope: "future" as DeleteScope, label: "This and future occurrences" },
-                    { scope: "all" as DeleteScope, label: "Entire series" },
-                  ] as const
-                ).map(({ scope, label }) => (
-                  <label key={scope} className="flex items-center justify-end gap-2 cursor-pointer">
-                    <span className="text-cream-muted text-xs">{label}</span>
-                    <input
-                      type="radio"
-                      name={`deleteScope-${event.id}`}
-                      value={scope}
-                      checked={deleteScope === scope}
-                      onChange={() => setDeleteScope(scope)}
-                      className="accent-orange"
-                    />
-                  </label>
-                ))}
-              </div>
-            )}
-            {!isRecurring && (
-              <span className="text-cream-muted text-xs">Delete this event?</span>
-            )}
+            <span className="text-cream-muted text-xs">
+              {isRecurring
+                ? `Delete entire series${upcomingInSeries !== undefined ? ` (${upcomingInSeries + 1} occurrences)` : ""}?`
+                : "Delete this event?"}
+            </span>
             <div className="flex gap-2">
               <button
                 onClick={handleDelete}
