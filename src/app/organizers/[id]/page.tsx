@@ -31,6 +31,8 @@ export default async function OrganizerProfilePage({
         "id, title, description, genre, event_type, date_time, end_time, location_name, city, state, country, virtual_url, open_mic, rsvp_enabled, created_at, organizer:organizer_profiles(id, name, org_type)"
       )
       .eq("organizer_id", id)
+      .eq("is_cancelled", false)
+      .is("parent_event_id", null)
       .gte("date_time", now)
       .order("date_time", { ascending: true }),
     supabase
@@ -39,6 +41,8 @@ export default async function OrganizerProfilePage({
         "id, title, description, genre, event_type, date_time, end_time, location_name, city, state, country, virtual_url, open_mic, rsvp_enabled, created_at, organizer:organizer_profiles(id, name, org_type)"
       )
       .eq("organizer_id", id)
+      .eq("is_cancelled", false)
+      .is("parent_event_id", null)
       .lt("date_time", now)
       .order("date_time", { ascending: false })
       .limit(12),

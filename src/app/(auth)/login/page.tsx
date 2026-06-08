@@ -27,7 +27,7 @@ function LoginForm() {
     setError(null);
     setLoading(true);
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({
       email: form.email,
       password: form.password,
     });
@@ -38,7 +38,14 @@ function LoginForm() {
       return;
     }
 
-    router.push(next);
+    // Send organizers to dashboard, patrons to homepage (or the requested next page)
+    let destination = next !== "/" ? next : "/";
+    if (destination === "/" && user) {
+      const { data: userRow } = await supabase.from("users").select("role").eq("id", user.id).single();
+      if (userRow?.role === "organizer") destination = "/dashboard";
+    }
+
+    router.push(destination);
     router.refresh();
   }
 
