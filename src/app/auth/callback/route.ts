@@ -4,13 +4,26 @@ import { createClient as createServiceClient } from "@supabase/supabase-js";
 import type { EmailOtpType, User } from "@supabase/supabase-js";
 
 async function maybeCreateOrganizerProfile(user: User) {
-  const meta = user.user_metadata;
-  if (meta?.role !== "organizer") return;
-
   const serviceClient = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
+
+  // Fetch fresh metadata via admin API — user.user_metadata from PKCE flow is unreliable
+  const { data: adminData } = await serviceClient.auth.admin.getUserById(user.id);
+  const meta = adminData?.user?.user_metadata ?? user.user_metadata;
+
+  // Gate on metadata role, with users table as fallback
+  let isOrganizer = meta?.role === "organizer";
+  if (!isOrganizer) {
+    const { data: userRow } = await serviceClient
+      .from("users")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    isOrganizer = userRow?.role === "organizer";
+  }
+  if (!isOrganizer) return;
 
   // Skip if profile already exists
   const { data: existing } = await serviceClient
@@ -20,13 +33,15 @@ async function maybeCreateOrganizerProfile(user: User) {
     .maybeSingle();
   if (existing) return;
 
-  await serviceClient.from("organizer_profiles").insert({
+  const { error } = await serviceClient.from("organizer_profiles").insert({
     user_id: user.id,
-    org_type: meta.org_type ?? "individual",
-    name: meta.org_name ?? meta.display_name ?? "Organizer",
-    bio: meta.bio ?? null,
-    website: meta.website ?? null,
+    org_type: meta?.org_type ?? "individual",
+    name: meta?.org_name ?? meta?.display_name ?? "Organizer",
+    bio: meta?.bio ?? null,
+    website: meta?.website ?? null,
   });
+
+  if (error) console.error("[auth/callback] organizer_profiles insert failed:", error);
 }
 
 export async function GET(request: Request) {
