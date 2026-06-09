@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import type { OrgType } from "@/types/database";
 
 export default function BecomeOrganizerPage() {
@@ -14,6 +15,22 @@ export default function BecomeOrganizerPage() {
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Pre-fill from user_metadata if available
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      const meta = user.user_metadata;
+      setForm((prev) => ({
+        ...prev,
+        orgName: meta?.org_name ?? meta?.display_name ?? prev.orgName,
+        orgType: meta?.org_type ?? prev.orgType,
+        bio: meta?.bio ?? prev.bio,
+        website: meta?.website ?? prev.website,
+      }));
+    });
+  }, []);
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -39,18 +56,16 @@ export default function BecomeOrganizerPage() {
       return;
     }
 
-    // Refresh session so the new role is picked up, then go post an event
-    router.refresh();
-    router.push("/events/new");
+    window.location.href = "/dashboard";
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-16">
       <div className="w-full max-w-md">
         <div className="text-center mb-10">
-          <h1 className="font-serif text-4xl text-cream mb-2">Post events on litly</h1>
+          <h1 className="font-serif text-4xl text-cream mb-2">One last step</h1>
           <p className="text-cream-muted">
-            Set up your organizer profile — it only takes a moment.
+            Confirm your organizer profile to start posting events.
           </p>
         </div>
 
@@ -102,7 +117,7 @@ export default function BecomeOrganizerPage() {
             disabled={loading}
             className="w-full bg-orange text-cream font-semibold rounded-full py-3 hover:bg-orange/90 transition disabled:opacity-60"
           >
-            {loading ? "Setting up your profile…" : "Continue to post an event"}
+            {loading ? "Setting up your profile…" : "Go to dashboard"}
           </button>
         </form>
       </div>
