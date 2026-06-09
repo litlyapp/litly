@@ -976,7 +976,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
               type="date"
               value={seriesEndDate}
               onChange={(e) => setSeriesEndDate(e.target.value)}
-              className="w-full min-w-0 bg-navy-light border border-cream/20 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange [color-scheme:dark]"
+              className="w-full bg-navy-light border border-cream/20 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange [color-scheme:dark]"
             />
             <p className="text-cream-muted/60 text-xs mt-1">
               No new occurrences will be generated after this date.

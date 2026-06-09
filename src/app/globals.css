@@ -16,8 +16,10 @@
   box-sizing: border-box;
 }
 
-/* Prevent iOS Safari from auto-zooming when focusing inputs smaller than 16px */
-input, textarea, select {
+/* Prevent iOS Safari from auto-zooming when focusing inputs smaller than 16px.
+   Excludes date inputs — they open a native picker and don't trigger zoom,
+   but bumping their font-size widens them and causes overflow on mobile. */
+input:not([type="date"]), textarea, select {
   font-size: max(16px, 1em);
 }
 

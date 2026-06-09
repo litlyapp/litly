@@ -188,7 +188,7 @@ export default function RecurrenceOptions({ startDateIso, value, onChange, ongoi
                 value={value.until}
                 min={startDateIso.slice(0, 10)}
                 onChange={(e) => setUntilCustom(e.target.value)}
-                className="w-full min-w-0 bg-navy-light border border-cream/20 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange [color-scheme:dark]"
+                className="w-full bg-navy-light border border-cream/20 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange [color-scheme:dark]"
               />
             </div>
           )}
