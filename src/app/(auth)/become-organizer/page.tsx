@@ -16,11 +16,11 @@ export default function BecomeOrganizerPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Pre-fill from user_metadata if available
+  // Auth guard + pre-fill from user_metadata if available
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return;
+      if (!user) { window.location.href = "/login?next=/become-organizer"; return; }
       const meta = user.user_metadata;
       setForm((prev) => ({
         ...prev,
