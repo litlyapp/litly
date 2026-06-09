@@ -8,7 +8,7 @@ const CONFIRMATION_PATTERN = /confirm|verify|activate|subscri|welcome|opt.?in/i;
 
 function verifyMailgunSignature(timestamp: string, token: string, signature: string): boolean {
   const signingKey = process.env.MAILGUN_WEBHOOK_SIGNING_KEY;
-  if (!signingKey) return true; // skip verification if key not configured
+  if (!signingKey) return false; // reject all requests if key is not configured
   const value = timestamp + token;
   const expected = createHmac("sha256", signingKey).update(value).digest("hex");
   return expected === signature;

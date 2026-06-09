@@ -28,6 +28,12 @@ export default function EventFilters({
   const activeFrom = searchParams.get("from") ?? "";
   const activeTo = searchParams.get("to") ?? "";
   const [locating, setLocating] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function debouncedSetParam(key: string, value: string) {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setParam(key, value), 300);
+  }
 
   const push = useCallback(
     (params: URLSearchParams) => {
@@ -102,7 +108,7 @@ export default function EventFilters({
           type="text"
           placeholder="Event name…"
           defaultValue={activeQ}
-          onChange={(e) => setParam("q", e.target.value)}
+          onChange={(e) => debouncedSetParam("q", e.target.value)}
           className="w-full bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange"
         />
       </div>
@@ -117,7 +123,7 @@ export default function EventFilters({
             type="text"
             placeholder="City or country…"
             defaultValue={activeLocation}
-            onChange={(e) => setParam("location", e.target.value)}
+            onChange={(e) => debouncedSetParam("location", e.target.value)}
             className="flex-1 bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange"
           />
           <button

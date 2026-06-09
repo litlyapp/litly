@@ -12,7 +12,9 @@ function LoginForm() {
 
   const registered = searchParams.get("registered") === "1";
   const confirmed = searchParams.get("confirmed") === "1";
-  const next = searchParams.get("next") ?? "/";
+  // Validate next is a same-origin relative path to prevent open redirect
+  const rawNext = searchParams.get("next") ?? "/";
+  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/";
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState<string | null>(null);

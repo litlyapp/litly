@@ -134,34 +134,37 @@ export async function GET(req: Request) {
       })
       .join("");
 
-    await sendEmail({
-      to: email,
-      subject: `Your weekly litly digest — ${totalRsvps} new RSVP${totalRsvps !== 1 ? "s" : ""}`,
-      text: [
-        `Hi ${org.organizerName},`,
-        ``,
-        `Here's your weekly RSVP summary from litly:`,
-        ``,
-        eventLines,
-        ``,
-        `View your dashboard: https://thelitlyapp.com/dashboard`,
-        ``,
-        `— litly`,
-      ].join("\n"),
-      html: emailWrapper(`
-        <h1 style="font-size:22px;margin:0 0 8px;color:#1B2A3E">Your weekly digest</h1>
-        <p style="color:#5a4a3a;margin:0 0 24px">Hi ${org.organizerName}, here's what happened this week.</p>
-        <table style="width:100%;border-collapse:collapse">
-          ${eventHtmlRows}
-        </table>
-        <div style="margin-top:28px">
-          <a href="https://thelitlyapp.com/dashboard" style="background:#E8622A;color:#fff;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:14px;font-weight:600">View dashboard</a>
-        </div>
-        <p style="margin-top:32px;font-size:12px;color:#7a6a5a">Weekly digest from litly. Only sent when you have new RSVPs.</p>
-      `),
-    });
-
-    sent++;
+    try {
+      await sendEmail({
+        to: email,
+        subject: `Your weekly litly digest — ${totalRsvps} new RSVP${totalRsvps !== 1 ? "s" : ""}`,
+        text: [
+          `Hi ${org.organizerName},`,
+          ``,
+          `Here's your weekly RSVP summary from litly:`,
+          ``,
+          eventLines,
+          ``,
+          `View your dashboard: https://thelitlyapp.com/dashboard`,
+          ``,
+          `— litly`,
+        ].join("\n"),
+        html: emailWrapper(`
+          <h1 style="font-size:22px;margin:0 0 8px;color:#1B2A3E">Your weekly digest</h1>
+          <p style="color:#5a4a3a;margin:0 0 24px">Hi ${org.organizerName}, here's what happened this week.</p>
+          <table style="width:100%;border-collapse:collapse">
+            ${eventHtmlRows}
+          </table>
+          <div style="margin-top:28px">
+            <a href="https://thelitlyapp.com/dashboard" style="background:#E8622A;color:#fff;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:14px;font-weight:600">View dashboard</a>
+          </div>
+          <p style="margin-top:32px;font-size:12px;color:#7a6a5a">Weekly digest from litly. Only sent when you have new RSVPs.</p>
+        `),
+      });
+      sent++;
+    } catch (emailErr) {
+      console.error(`[weekly-digest] Failed to send digest to ${email}:`, emailErr);
+    }
   }
 
   return NextResponse.json({ ok: true, sent });
