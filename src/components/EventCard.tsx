@@ -82,7 +82,7 @@ export default function EventCard({
         )}
         {event.ticket_url && (
           <span className="px-2.5 py-0.5 rounded-full bg-cream/10 text-cream-muted text-xs">
-            {event.ticket_type === "paid" ? "Paid ticket" : "Free ticket"}
+            {event.ticket_type === "paid" ? "Paid ticket" : event.ticket_type === "free" ? "Free ticket" : "Ticket"}
           </span>
         )}
         {isRsvp && (

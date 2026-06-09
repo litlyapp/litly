@@ -36,7 +36,9 @@ export default function AddToCalendarButton({ eventId, dateTime, endTime, timeZo
 
   const gcalUrl = (() => {
     const start = toGCalDate(dateTime);
-    const end = endTime ? toGCalDate(endTime) : start;
+    const end = endTime
+      ? toGCalDate(endTime)
+      : toGCalDate(new Date(new Date(dateTime).getTime() + 2 * 60 * 60 * 1000).toISOString());
     const params = new URLSearchParams({
       action: "TEMPLATE",
       text: title,

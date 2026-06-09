@@ -32,7 +32,9 @@ export async function GET(
   if (!event) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const dtStart = toIcsDate(event.date_time);
-  const dtEnd = event.end_time ? toIcsDate(event.end_time) : dtStart;
+  const dtEnd = event.end_time
+    ? toIcsDate(event.end_time)
+    : toIcsDate(new Date(new Date(event.date_time).getTime() + 2 * 60 * 60 * 1000).toISOString());
 
   const locationParts = [event.location_name, event.address, event.city, event.state, event.country].filter(Boolean);
   const location = event.event_type === "virtual" && event.virtual_url

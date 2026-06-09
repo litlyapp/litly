@@ -29,9 +29,10 @@ export async function POST(request: Request) {
   }
 
   // Add to org
-  await serviceClient
+  const { error: memberError } = await serviceClient
     .from("org_members")
     .upsert({ org_id: invite.org_id, user_id: user.id, role: "editor" }, { onConflict: "org_id,user_id", ignoreDuplicates: true });
+  if (memberError) return NextResponse.json({ error: "Failed to add org membership" }, { status: 500 });
 
   // Mark invite accepted
   await serviceClient

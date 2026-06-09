@@ -23,7 +23,7 @@ export async function POST(req: Request) {
   const formData = new FormData();
   formData.append("from", `litly Support <support@thelitlyapp.com>`);
   formData.append("to", "knuth.cdgo@gmail.com");
-  formData.append("reply-to", user.email!);
+  formData.append("reply-to", user.email ?? "");
   formData.append("subject", `[litly Support] ${subject}`);
   formData.append(
     "text",

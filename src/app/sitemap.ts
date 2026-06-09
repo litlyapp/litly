@@ -4,9 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = await createClient();
 
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
   const { data: events } = await supabase
     .from("events")
     .select("id")
+    .eq("is_cancelled", false)
+    .gte("date_time", sixMonthsAgo.toISOString())
     .order("date_time", { ascending: false });
 
   const { data: organizers } = await supabase

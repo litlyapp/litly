@@ -29,6 +29,13 @@ export async function POST(req: Request) {
 
   if (rsvpError) return NextResponse.json({ error: rsvpError.message }, { status: 500 });
 
+  // Re-check cancellation after insert to close the race window
+  const { data: recheck } = await supabase.from("events").select("is_cancelled").eq("id", eventId).single();
+  if (recheck?.is_cancelled) {
+    await supabase.from("rsvps").delete().eq("user_id", user.id).eq("event_id", eventId);
+    return NextResponse.json({ error: "This event has been cancelled." }, { status: 400 });
+  }
+
   // Fetch event details for the confirmation email
   const { data: event } = await supabase
     .from("events")

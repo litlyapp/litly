@@ -75,9 +75,21 @@ export default async function JoinPage({
     }
 
     // Accept invite
-    await svc
+    const { error: memberError } = await svc
       .from("org_members")
       .upsert({ org_id: invite.org_id, user_id: user.id, role: "editor" }, { onConflict: "org_id,user_id", ignoreDuplicates: true });
+
+    if (memberError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center px-4">
+          <div className="max-w-md text-center">
+            <h1 className="font-serif text-3xl text-cream mb-4">Something went wrong</h1>
+            <p className="text-cream-muted mb-6">We couldn&apos;t add you to the organization. Please try again or contact support.</p>
+            <Link href="/" className="text-orange hover:text-orange/80 transition">Go to litly →</Link>
+          </div>
+        </div>
+      );
+    }
 
     await svc.from("org_invites").update({ accepted_at: new Date().toISOString() }).eq("id", invite.id);
 
