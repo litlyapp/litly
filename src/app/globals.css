@@ -16,6 +16,11 @@
   box-sizing: border-box;
 }
 
+/* Prevent iOS Safari from auto-zooming when focusing inputs smaller than 16px */
+input, textarea, select {
+  font-size: max(16px, 1em);
+}
+
 html {
   height: 100%;
   overflow: hidden;
