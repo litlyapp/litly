@@ -86,10 +86,10 @@ export default function OrgSwitcher({
     <div ref={ref} className="relative">
       <button
         onClick={() => { setOpen((o) => !o); setCreating(false); setError(null); }}
-        className="flex items-center gap-1.5 text-cream-muted hover:text-cream transition text-sm"
+        className="flex items-center gap-2 bg-navy-light border border-cream/25 text-cream font-medium rounded-full px-4 py-1.5 hover:border-cream/50 hover:bg-navy transition text-base"
       >
         {activeOrg?.name ?? "Select org"}
-        <svg className={`w-3.5 h-3.5 transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <svg className={`w-4 h-4 text-cream/60 transition-transform shrink-0 ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
       </button>

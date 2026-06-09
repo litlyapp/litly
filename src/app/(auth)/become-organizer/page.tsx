@@ -119,6 +119,14 @@ export default function BecomeOrganizerPage() {
           >
             {loading ? "Setting up your profile…" : "Go to dashboard"}
           </button>
+
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="w-full text-cream-muted text-sm py-2 hover:text-cream transition"
+          >
+            Cancel
+          </button>
         </form>
       </div>
     </div>

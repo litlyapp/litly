@@ -27,11 +27,22 @@ export async function POST(request: Request) {
     .eq("id", user.id);
   if (roleError) return NextResponse.json({ error: roleError.message }, { status: 500 });
 
+  // Check if the user already owns an org (has a profile with their user_id).
+  // If so, additional orgs are created without user_id to avoid the unique constraint —
+  // membership is tracked via org_members regardless.
+  const { data: existingProfile } = await serviceClient
+    .from("organizer_profiles")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const isFirstOrg = !existingProfile;
+
   // Create organizer profile
   const { data: newProfile, error: profileError } = await serviceClient
     .from("organizer_profiles")
     .insert({
-      user_id: user.id,
+      ...(isFirstOrg ? { user_id: user.id } : {}),
       name: orgName,
       org_type: orgType,
       bio: bio || null,
