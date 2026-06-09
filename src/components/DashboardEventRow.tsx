@@ -39,6 +39,7 @@ function formatDate(iso: string, timeZone?: string | null) {
 export default function DashboardEventRow({ event, divider, isPast, rsvpCount, viewCount, saveCount, clickCount, upcomingInSeries }: Props) {
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   const router = useRouter();
   const supabase = createClient();
@@ -48,14 +49,17 @@ export default function DashboardEventRow({ event, divider, isPast, rsvpCount, v
 
   async function handleDelete() {
     setDeleting(true);
+    setDeleteError(null);
 
     if (isRecurring) {
-      // Delete all children then the parent
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).from("events").delete().eq("parent_event_id", parentId);
-      await supabase.from("events").delete().eq("id", parentId);
+      const { error: childError } = await (supabase as any).from("events").delete().eq("parent_event_id", parentId);
+      if (childError) { setDeleteError(childError.message); setDeleting(false); return; }
+      const { error: parentError } = await supabase.from("events").delete().eq("id", parentId);
+      if (parentError) { setDeleteError(parentError.message); setDeleting(false); return; }
     } else {
-      await supabase.from("events").delete().eq("id", event.id);
+      const { error } = await supabase.from("events").delete().eq("id", event.id);
+      if (error) { setDeleteError(error.message); setDeleting(false); return; }
     }
 
     startTransition(() => router.refresh());
@@ -122,6 +126,7 @@ export default function DashboardEventRow({ event, divider, isPast, rsvpCount, v
                 ? `Delete entire series${upcomingInSeries !== undefined ? ` (${upcomingInSeries + 1} occurrences)` : ""}?`
                 : "Delete this event?"}
             </span>
+            {deleteError && <p className="text-orange text-xs text-right">{deleteError}</p>}
             <div className="flex gap-2">
               <button
                 onClick={handleDelete}

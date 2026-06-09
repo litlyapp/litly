@@ -55,6 +55,22 @@ export default function TeamClient({
     router.refresh();
   }
 
+  async function resendInvite(email: string) {
+    setInviting(true);
+    setInviteError(null);
+    setInviteSuccess(false);
+    const res = await fetch("/api/org/invite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, orgId }),
+    });
+    const data = await res.json();
+    setInviting(false);
+    if (!res.ok) { setInviteError(data.error); return; }
+    setInviteSuccess(true);
+    router.refresh();
+  }
+
   async function revokeInvite(inviteId: string) {
     if (!confirm("Cancel this invitation?")) return;
     const res = await fetch("/api/org/invite", {
@@ -170,11 +186,9 @@ export default function TeamClient({
                 </div>
                 <div className="flex items-center gap-3">
                   <button
-                    onClick={() => {
-                      setInviteEmail(inv.email);
-                      setInviteSuccess(false);
-                    }}
-                    className="text-cream-muted hover:text-orange text-xs transition"
+                    onClick={() => resendInvite(inv.email)}
+                    disabled={inviting}
+                    className="text-cream-muted hover:text-orange text-xs transition disabled:opacity-60"
                   >
                     Resend
                   </button>
