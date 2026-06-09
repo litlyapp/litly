@@ -41,11 +41,12 @@ export default function OrgSwitcher({
 
   async function switchOrg(orgId: string) {
     setOpen(false);
-    await fetch("/api/org/switch", {
+    const res = await fetch("/api/org/switch", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ orgId }),
     });
+    if (!res.ok) { setError("Failed to switch org. Please try again."); return; }
     router.refresh();
   }
 
@@ -68,11 +69,12 @@ export default function OrgSwitcher({
     }
 
     // Switch to the newly created org
-    await fetch("/api/org/switch", {
+    const switchRes = await fetch("/api/org/switch", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ orgId: data.orgId }),
     });
+    if (!switchRes.ok) { setError("Org created but failed to switch to it. Refresh and select it manually."); setSubmitting(false); return; }
 
     setCreating(false);
     setOrgName("");
