@@ -120,14 +120,21 @@ export default async function EventsPage({
             {events?.length === 1 ? "event" : "events"}
           </p>
         </div>
-        {isOrganizer && (
+        {isOrganizer ? (
           <Link
             href="/events/new"
             className="bg-orange text-cream font-semibold px-5 py-2.5 rounded-full hover:bg-orange/90 transition text-sm shrink-0"
           >
             + New event
           </Link>
-        )}
+        ) : !user ? (
+          <Link
+            href="/register"
+            className="bg-orange text-cream font-semibold px-5 py-2.5 rounded-full hover:bg-orange/90 transition text-sm shrink-0"
+          >
+            Post an event
+          </Link>
+        ) : null}
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
