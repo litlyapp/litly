@@ -21,7 +21,7 @@ export default async function NewEventPage({
     .eq("user_id", user.id)
     .single();
 
-  if (!profile) redirect("/dashboard");
+  if (!profile) redirect("/become-organizer");
 
   // Pre-fill from an existing event if ?from=<id> is set
   const { from } = await searchParams;
