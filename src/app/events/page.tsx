@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import EventCard from "@/components/EventCard";
 import EventFilters from "@/components/EventFilters";
@@ -29,7 +30,7 @@ export default async function EventsPage({
   // Fetch all organizer profiles for the dropdown
   const { data: organizers } = await supabase
     .from("organizer_profiles")
-    .select("id, name")
+    .select("id, name, avatar_url")
     .order("name");
 
   // Build events query
@@ -139,6 +140,34 @@ export default async function EventsPage({
 
         {/* Event grid */}
         <div className="flex-1">
+          {/* Organizer profile banner */}
+          {params.organizer && (() => {
+            const org = (organizers ?? []).find((o) => o.id === params.organizer);
+            const avatarUrl = org?.avatar_url;
+            if (!org) return null;
+            return (
+              <Link
+                href={`/organizers/${org.id}`}
+                className="flex items-center gap-4 bg-navy-light border border-cream/10 rounded-2xl px-5 py-4 mb-6 hover:border-orange/40 transition group"
+              >
+                <div className="relative w-12 h-12 shrink-0">
+                  {avatarUrl ? (
+                    <Image src={avatarUrl} alt={org.name} fill className="rounded-full object-cover" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-orange/20 flex items-center justify-center text-orange font-serif text-xl">
+                      {org.name[0]}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-cream font-medium truncate">{org.name}</p>
+                  <p className="text-cream-muted text-xs">View organizer profile</p>
+                </div>
+                <span className="text-orange text-sm group-hover:translate-x-0.5 transition-transform">→</span>
+              </Link>
+            );
+          })()}
+
           {!events || events.length === 0 ? (
             <div className="bg-navy-light rounded-2xl border border-cream/10 p-10 text-center">
               <p className="font-serif text-2xl text-cream mb-2">No events found</p>

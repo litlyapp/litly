@@ -73,6 +73,7 @@ export type Database = {
           bio: string | null;
           website: string | null;
           social_links: SocialLinks | null;
+          avatar_url: string | null;
         };
         Insert: {
           id?: string;
@@ -82,6 +83,7 @@ export type Database = {
           bio?: string | null;
           website?: string | null;
           social_links?: SocialLinks | null;
+          avatar_url?: string | null;
         };
         Update: {
           org_type?: OrgType;
@@ -89,6 +91,7 @@ export type Database = {
           bio?: string | null;
           website?: string | null;
           social_links?: SocialLinks | null;
+          avatar_url?: string | null;
         };
         Relationships: [
           {

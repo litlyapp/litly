@@ -20,7 +20,7 @@ export default async function OrganizerProfilePage({
 
   if (!organizerRaw) notFound();
 
-  const organizer = organizerRaw as typeof organizerRaw & { avatar_url?: string | null };
+  const organizer = organizerRaw;
 
   const now = new Date().toISOString();
 
