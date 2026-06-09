@@ -128,6 +128,15 @@ export default function NavClient({ user, role }: Props) {
         <div className="md:hidden absolute top-16 left-0 right-0 bg-navy border-b border-cream/10 z-50 px-4 py-4 flex flex-col gap-1">
           <MobileLink href="/events" onClick={close} active={isActive("/events")}>Events</MobileLink>
           <MobileLink href="/events/map" onClick={close} active={isActive("/events/map")}>Map</MobileLink>
+          {role !== "organizer" && (
+            <MobileLink
+              href={user ? "/become-organizer" : "/register"}
+              onClick={close}
+              active={isActive("/become-organizer") || isActive("/register")}
+            >
+              Post an event
+            </MobileLink>
+          )}
           <MobileLink href="/support" onClick={close} active={isActive("/support")}>Support litly</MobileLink>
 
           {user ? (
