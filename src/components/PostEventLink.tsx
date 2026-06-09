@@ -12,12 +12,12 @@ export default function PostEventLink({ className }: { className?: string }) {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
       supabase
-        .from("organizer_profiles")
-        .select("id")
-        .eq("user_id", user.id)
-        .maybeSingle()
+        .from("users")
+        .select("role")
+        .eq("id", user.id)
+        .single()
         .then(({ data }) => {
-          setHref(data ? "/events/new" : "/become-organizer");
+          setHref(data?.role === "organizer" ? "/events/new" : "/become-organizer");
         });
     });
   }, []);
