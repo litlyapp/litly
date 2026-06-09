@@ -41,12 +41,11 @@ export async function GET(request: Request) {
   if (token_hash && type) {
     const { data, error } = await supabase.auth.verifyOtp({ type, token_hash });
     if (!error) {
-      if (type === "signup" && data.user) {
-        await maybeCreateOrganizerProfile(data.user);
-        return NextResponse.redirect(`${origin}/login?confirmed=1`);
+      if (type === "recovery") {
+        return NextResponse.redirect(`${origin}/reset-password`);
       }
-      const redirectTo = type === "recovery" ? "/reset-password" : next;
-      return NextResponse.redirect(`${origin}${redirectTo}`);
+      if (data.user) await maybeCreateOrganizerProfile(data.user);
+      return NextResponse.redirect(`${origin}/login?confirmed=1`);
     }
   }
 
