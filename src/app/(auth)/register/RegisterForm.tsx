@@ -19,6 +19,7 @@ export default function RegisterForm({ invite }: Props) {
   const [form, setForm] = useState({
     email: "",
     password: "",
+    displayName: "",
     orgName: "",
     orgType: "individual" as OrgType,
     bio: "",
@@ -42,7 +43,11 @@ export default function RegisterForm({ invite }: Props) {
       options: {
         data: {
           role,
-          display_name: role === "organizer" && !invite ? form.orgName : undefined,
+          display_name: role === "organizer" && !invite
+            ? form.orgName
+            : role === "patron" && form.displayName
+            ? form.displayName
+            : undefined,
           org_type: role === "organizer" && !invite ? form.orgType : undefined,
           org_name: role === "organizer" && !invite ? form.orgName : undefined,
           bio: role === "organizer" && !invite ? (form.bio || undefined) : undefined,
@@ -118,6 +123,17 @@ export default function RegisterForm({ invite }: Props) {
 
             <div className="border-b border-cream/10 pb-4 mb-4">
               <p className="text-cream-muted text-sm mb-3">Account</p>
+
+              {role === "patron" && (
+                <input
+                  name="displayName"
+                  type="text"
+                  placeholder="Your name (optional)"
+                  value={form.displayName}
+                  onChange={handleChange}
+                  className="w-full bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-4 py-3 focus:outline-none focus:border-orange mb-3"
+                />
+              )}
 
               <input
                 name="email"
