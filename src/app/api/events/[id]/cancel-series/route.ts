@@ -14,21 +14,23 @@ export async function POST(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: profile } = await supabase
-    .from("organizer_profiles")
-    .select("id")
-    .eq("user_id", user.id)
-    .single();
-  if (!profile) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-  // Resolve parent event — id may be the parent or a child
+  // Fetch event first, then verify user is a member of the owning org
   const { data: thisEvent } = await supabase
     .from("events")
     .select("id, parent_event_id, organizer_id, title, date_time, timezone, location_name, city, state, event_type")
     .eq("id", id)
-    .eq("organizer_id", profile.id)
     .single();
+
   if (!thisEvent) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const { data: membership } = await supabase
+    .from("org_members")
+    .select("org_id")
+    .eq("org_id", thisEvent.organizer_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!membership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const ev = thisEvent as typeof thisEvent & { parent_event_id: string | null };
   const parentId = ev.parent_event_id ?? ev.id;

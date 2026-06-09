@@ -15,13 +15,35 @@ export default async function NewEventPage({
 
   if (!user) redirect("/login?next=/events/new");
 
-  const { data: profile } = await supabase
+  // Try own organizer profile first; fall back to org_members for editors
+  const { data: ownProfile } = await supabase
     .from("organizer_profiles")
     .select("id, name")
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
-  if (!profile) redirect("/become-organizer");
+  let profile: { id: string; name: string } | null = ownProfile;
+
+  if (!profile) {
+    const { data: membership } = await supabase
+      .from("org_members")
+      .select("org_id")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (!membership) redirect("/become-organizer");
+
+    const { data: orgProfile } = await supabase
+      .from("organizer_profiles")
+      .select("id, name")
+      .eq("id", membership.org_id)
+      .maybeSingle();
+
+    if (!orgProfile) redirect("/become-organizer");
+    profile = orgProfile;
+  }
 
   // Pre-fill from an existing event if ?from=<id> is set
   const { from } = await searchParams;

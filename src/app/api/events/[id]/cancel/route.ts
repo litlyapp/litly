@@ -16,23 +16,23 @@ export async function POST(
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // Verify ownership
-  const { data: profile } = await supabase
-    .from("organizer_profiles")
-    .select("id")
-    .eq("user_id", user.id)
-    .single();
-
-  if (!profile) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
+  // Fetch event first, then verify user is a member of the owning org
   const { data: event } = await supabase
     .from("events")
     .select("id, title, date_time, timezone, location_name, city, state, event_type, organizer_id")
     .eq("id", id)
-    .eq("organizer_id", profile.id)
     .single();
 
   if (!event) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const { data: membership } = await supabase
+    .from("org_members")
+    .select("org_id")
+    .eq("org_id", event.organizer_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!membership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   // Mark cancelled
   const { error: updateError } = await supabase

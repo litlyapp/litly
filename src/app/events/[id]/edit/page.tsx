@@ -13,22 +13,23 @@ export default async function EditEventPage({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/login?next=/events/${id}/edit`);
 
-  const { data: profile } = await supabase
-    .from("organizer_profiles")
-    .select("id")
-    .eq("user_id", user.id)
-    .single();
-
-  if (!profile) redirect("/");
-
+  // Fetch event, then verify user is a member of the owning org
   const { data: event } = await supabase
     .from("events")
     .select("*")
     .eq("id", id)
-    .eq("organizer_id", profile.id)
     .single();
 
   if (!event) notFound();
+
+  const { data: membership } = await supabase
+    .from("org_members")
+    .select("org_id")
+    .eq("org_id", event.organizer_id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!membership) notFound();
 
   const ev = event as typeof event & {
     recurrence_rule: object | null;
@@ -67,7 +68,7 @@ export default async function EditEventPage({
         )}
       </div>
       <EventForm
-        organizerId={profile.id}
+        organizerId={event.organizer_id}
         initialData={event}
         eventId={id}
         seriesContext={seriesContext}
