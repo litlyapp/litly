@@ -9,9 +9,14 @@ async function maybeCreateOrganizerProfile(userId: string) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  const { data: userData } = await serviceClient.auth.admin.getUserById(userId);
-  const meta = userData?.user?.user_metadata;
-  if (!meta || meta.role !== "organizer") return;
+  // Check the users table role (set by DB trigger on signup — more reliable than user_metadata timing)
+  const { data: userRow } = await serviceClient
+    .from("users")
+    .select("role")
+    .eq("id", userId)
+    .single();
+
+  if (userRow?.role !== "organizer") return;
 
   // Skip if profile already exists
   const { data: existing } = await serviceClient
@@ -21,12 +26,16 @@ async function maybeCreateOrganizerProfile(userId: string) {
     .maybeSingle();
   if (existing) return;
 
+  // Read metadata for org details
+  const { data: userData } = await serviceClient.auth.admin.getUserById(userId);
+  const meta = userData?.user?.user_metadata;
+
   await serviceClient.from("organizer_profiles").insert({
     user_id: userId,
-    org_type: meta.org_type ?? "individual",
-    name: meta.org_name ?? meta.display_name ?? "Organizer",
-    bio: meta.bio ?? null,
-    website: meta.website ?? null,
+    org_type: meta?.org_type ?? "individual",
+    name: meta?.org_name ?? meta?.display_name ?? "Organizer",
+    bio: meta?.bio ?? null,
+    website: meta?.website ?? null,
   });
 }
 
