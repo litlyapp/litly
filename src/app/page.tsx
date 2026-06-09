@@ -28,12 +28,12 @@ export default async function HomePage() {
   let savedEventIds = new Set<string>();
   let isOrganizer = false;
   if (user) {
-    const [savedResult, roleResult] = await Promise.all([
+    const [savedResult, profileResult] = await Promise.all([
       supabase.from("saved_events").select("event_id").eq("user_id", user.id),
-      supabase.from("users").select("role").eq("id", user.id).single(),
+      supabase.from("organizer_profiles").select("id").eq("user_id", user.id).maybeSingle(),
     ]);
     savedEventIds = new Set((savedResult.data ?? []).map((s) => s.event_id));
-    isOrganizer = roleResult.data?.role === "organizer";
+    isOrganizer = !!profileResult.data;
   }
 
   // Total upcoming event count for the tagline.
