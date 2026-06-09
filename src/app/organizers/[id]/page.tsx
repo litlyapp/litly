@@ -106,7 +106,6 @@ export default async function OrganizerProfilePage({
           {user && user.id !== organizer.user_id && (
             <FollowButton
               organizerId={id}
-              patronId={user.id}
               initialFollowing={isFollowing}
             />
           )}

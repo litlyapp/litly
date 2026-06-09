@@ -6,13 +6,11 @@ import { createClient } from "@/lib/supabase/client";
 
 interface Props {
   organizerId: string;
-  patronId: string;
   initialFollowing: boolean;
 }
 
 export default function FollowButton({
   organizerId,
-  patronId,
   initialFollowing,
 }: Props) {
   const [following, setFollowing] = useState(initialFollowing);
@@ -26,11 +24,15 @@ export default function FollowButton({
     const next = !following;
     setFollowing(next);
 
+    // Always resolve the current user server-side — never trust a prop for auth-sensitive writes
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setFollowing(!next); setLoading(false); return; }
+
     let error;
     if (next) {
-      ({ error } = await supabase.from("follows").insert({ patron_id: patronId, organizer_id: organizerId }));
+      ({ error } = await supabase.from("follows").insert({ patron_id: user.id, organizer_id: organizerId }));
     } else {
-      ({ error } = await supabase.from("follows").delete().eq("patron_id", patronId).eq("organizer_id", organizerId));
+      ({ error } = await supabase.from("follows").delete().eq("patron_id", user.id).eq("organizer_id", organizerId));
     }
 
     if (error) { setFollowing(!next); setLoading(false); return; }
