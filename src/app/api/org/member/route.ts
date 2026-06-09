@@ -29,11 +29,11 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
   }
 
-  // Prevent demoting the last admin
+  // Prevent demoting the last admin (applies regardless of who is being demoted)
   if (role === "editor") {
     const svc = serviceClient();
     const { count } = await svc.from("org_members").select("id", { count: "exact", head: true }).eq("org_id", orgId).eq("role", "admin");
-    if ((count ?? 0) <= 1 && targetUserId === user.id) {
+    if ((count ?? 0) <= 1) {
       return NextResponse.json({ error: "Cannot demote the last admin" }, { status: 400 });
     }
   }
@@ -58,10 +58,11 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
   }
 
-  // Last-admin guard
-  if (targetUserId === user.id) {
-    const svc = serviceClient();
-    const { count } = await svc.from("org_members").select("id", { count: "exact", head: true }).eq("org_id", orgId).eq("role", "admin");
+  // Last-admin guard — check if target is an admin before counting
+  const svc2 = serviceClient();
+  const { data: targetMember } = await svc2.from("org_members").select("role").eq("org_id", orgId).eq("user_id", targetUserId).maybeSingle();
+  if (targetMember?.role === "admin") {
+    const { count } = await svc2.from("org_members").select("id", { count: "exact", head: true }).eq("org_id", orgId).eq("role", "admin");
     if ((count ?? 0) <= 1) {
       return NextResponse.json({ error: "Cannot remove the last admin. Promote another member first." }, { status: 400 });
     }

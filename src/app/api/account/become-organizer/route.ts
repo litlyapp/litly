@@ -50,9 +50,10 @@ export async function POST(request: Request) {
   if (profileError) return NextResponse.json({ error: profileError.message }, { status: 500 });
 
   // Make them the admin of their new org
-  await serviceClient
+  const { error: memberError } = await serviceClient
     .from("org_members")
-    .upsert({ org_id: newProfile.id, user_id: user.id, role: "admin" }, { onConflict: "org_id,user_id", ignoreDuplicates: true });
+    .upsert({ org_id: newProfile.id, user_id: user.id, role: "admin" }, { onConflict: "org_id,user_id", ignoreDuplicates: false });
+  if (memberError) return NextResponse.json({ error: memberError.message }, { status: 500 });
 
   // Update auth metadata so future sessions reflect the new role
   await serviceClient.auth.admin.updateUserById(user.id, {
