@@ -27,6 +27,17 @@ export async function POST(request: Request) {
     .eq("id", user.id);
   if (roleError) return NextResponse.json({ error: roleError.message }, { status: 500 });
 
+  // Count how many orgs this user already belongs to as admin
+  const { count: orgCount } = await serviceClient
+    .from("org_members")
+    .select("org_id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("role", "admin");
+
+  if ((orgCount ?? 0) >= 5) {
+    return NextResponse.json({ error: "You can manage a maximum of 5 organizations." }, { status: 400 });
+  }
+
   // Check if the user already owns an org (has a profile with their user_id).
   // If so, additional orgs are created without user_id to avoid the unique constraint —
   // membership is tracked via org_members regardless.
