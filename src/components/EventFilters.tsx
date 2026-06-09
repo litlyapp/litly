@@ -7,6 +7,7 @@ import { GENRES } from "@/lib/genres";
 interface Organizer {
   id: string;
   name: string;
+  avatar_url?: string | null;
 }
 
 export default function EventFilters({

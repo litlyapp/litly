@@ -15,7 +15,8 @@ export default function RegisterForm({ invite }: Props) {
   const supabase = createClient();
 
   const [step, setStep] = useState<1 | 2>(invite ? 2 : 1);
-  const [role, setRole] = useState<UserRole | null>(invite ? "organizer" : null);
+  // Invite users register as patron — invite acceptance promotes them to org editor
+  const [role, setRole] = useState<UserRole | null>(invite ? "patron" : null);
   const [form, setForm] = useState({
     email: "",
     password: "",
