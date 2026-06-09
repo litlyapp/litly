@@ -62,9 +62,11 @@ export async function GET(request: Request) {
 
   if (code) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
-      if (data.user) await maybeCreateOrganizerProfile(data.user.id);
-      return NextResponse.redirect(`${origin}${next}`);
+    if (!error && data.user) {
+      await maybeCreateOrganizerProfile(data.user.id);
+      // If no explicit next, treat as signup confirmation
+      const redirectTo = next === "/" ? "/login?confirmed=1" : next;
+      return NextResponse.redirect(`${origin}${redirectTo}`);
     }
   }
 
