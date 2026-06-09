@@ -184,18 +184,18 @@ export default function EventFilters({
         <label className="text-cream-muted text-xs uppercase tracking-wider mb-2 block">
           Date range
         </label>
-        <div className="space-y-2">
+        <div className="space-y-2 min-w-0 overflow-hidden">
           <input
             type="date"
             value={activeFrom}
             onChange={(e) => setParam("from", e.target.value)}
-            className="w-full bg-navy border border-cream/30 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange transition-colors [color-scheme:dark]"
+            className="w-full min-w-0 bg-navy border border-cream/30 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange transition-colors [color-scheme:dark]"
           />
           <input
             type="date"
             value={activeTo}
             onChange={(e) => setParam("to", e.target.value)}
-            className="w-full bg-navy border border-cream/30 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange transition-colors [color-scheme:dark]"
+            className="w-full min-w-0 bg-navy border border-cream/30 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange transition-colors [color-scheme:dark]"
           />
         </div>
       </div>
