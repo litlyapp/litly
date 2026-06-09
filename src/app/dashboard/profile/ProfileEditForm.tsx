@@ -177,9 +177,6 @@ function DeleteAccountSection() {
 
   return (
     <div className="bg-navy-light border border-red-900/40 rounded-2xl p-6 space-y-4">
-      <label className="text-cream-muted text-xs uppercase tracking-wider block">
-        Danger zone
-      </label>
       {!confirming ? (
         <button
           type="button"
