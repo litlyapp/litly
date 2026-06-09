@@ -55,6 +55,18 @@ export default function TeamClient({
     router.refresh();
   }
 
+  async function revokeInvite(inviteId: string) {
+    if (!confirm("Cancel this invitation?")) return;
+    const res = await fetch("/api/org/invite", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ inviteId, orgId }),
+    });
+    const data = await res.json();
+    if (!res.ok) { setActionError(data.error); return; }
+    router.refresh();
+  }
+
   async function changeRole(targetUserId: string, role: "admin" | "editor") {
     setActionError(null);
     const res = await fetch("/api/org/member", {
@@ -156,15 +168,23 @@ export default function TeamClient({
                     Expires {new Date(inv.expires_at).toLocaleDateString()}
                   </p>
                 </div>
-                <button
-                  onClick={() => {
-                    setInviteEmail(inv.email);
-                    setInviteSuccess(false);
-                  }}
-                  className="text-cream-muted hover:text-orange text-xs transition"
-                >
-                  Resend
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => {
+                      setInviteEmail(inv.email);
+                      setInviteSuccess(false);
+                    }}
+                    className="text-cream-muted hover:text-orange text-xs transition"
+                  >
+                    Resend
+                  </button>
+                  <button
+                    onClick={() => revokeInvite(inv.id)}
+                    className="text-cream-muted hover:text-orange text-xs transition"
+                  >
+                    Revoke
+                  </button>
+                </div>
               </div>
             ))}
           </div>

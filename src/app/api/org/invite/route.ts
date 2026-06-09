@@ -92,3 +92,39 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ ok: true });
 }
+
+// DELETE /api/org/invite — revoke a pending invite
+export async function DELETE(request: Request) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { inviteId, orgId } = await request.json();
+  if (!inviteId || !orgId) return NextResponse.json({ error: "inviteId and orgId required" }, { status: 400 });
+
+  const serviceClient = createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  const { data: membership } = await serviceClient
+    .from("org_members")
+    .select("role")
+    .eq("org_id", orgId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!membership || membership.role !== "admin") {
+    return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+  }
+
+  const { error } = await serviceClient
+    .from("org_invites")
+    .delete()
+    .eq("id", inviteId)
+    .eq("org_id", orgId);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  return NextResponse.json({ ok: true });
+}
