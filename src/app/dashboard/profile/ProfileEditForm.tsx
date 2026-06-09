@@ -172,7 +172,7 @@ function DeleteAccountSection() {
       setDeleting(false);
       return;
     }
-    router.push("/");
+    window.location.href = "/";
   }
 
   return (

@@ -68,8 +68,7 @@ export default function AccountPage() {
     setDeleting(true);
     const res = await fetch("/api/account/delete", { method: "POST" });
     if (res.ok) {
-      router.push("/");
-      router.refresh();
+      window.location.href = "/";
     } else {
       const body = await res.json();
       setError(body.error ?? "Failed to delete account.");
