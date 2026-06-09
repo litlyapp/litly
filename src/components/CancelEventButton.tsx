@@ -23,8 +23,7 @@ export default function CancelEventButton({ eventId, isRecurring }: Props) {
 
     const res = await fetch(endpoint, { method: "POST" });
     if (res.ok) {
-      router.push("/dashboard");
-      router.refresh();
+      window.location.href = "/dashboard";
     } else {
       const body = await res.json();
       setError(body.error ?? "Failed to cancel.");

@@ -22,6 +22,7 @@ interface Props {
     open_mic: boolean;
     parent_event_id?: string | null;
     recurrence_rule?: object | null;
+    is_cancelled?: boolean;
   };
   divider?: boolean;
   isPast?: boolean;
@@ -84,6 +85,11 @@ export default function DashboardEventRow({ event, divider, isPast, rsvpCount, v
           {isRecurring && (
             <span className="px-2 py-0.5 rounded-full bg-cream/10 text-cream-muted text-xs">
               🔁 Series{upcomingInSeries !== undefined ? ` · ${upcomingInSeries} upcoming` : ""}
+            </span>
+          )}
+          {event.is_cancelled && (
+            <span className="px-2 py-0.5 rounded-full bg-orange/20 text-orange text-xs font-medium">
+              Cancelled
             </span>
           )}
           {event.rsvp_enabled && rsvpCount !== undefined && rsvpCount > 0 && (

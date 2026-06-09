@@ -35,8 +35,13 @@ export default function ResetPasswordPage() {
       return;
     }
 
+    // Check role to send organizers to dashboard, patrons to homepage
+    const { data: { user: updatedUser } } = await supabase.auth.getUser();
+    const { data: userRow } = await supabase.from("users").select("role").eq("id", updatedUser!.id).single();
+    const destination = userRow?.role === "organizer" ? "/dashboard" : "/";
+
     setStatus("done");
-    setTimeout(() => router.push("/"), 2000);
+    setTimeout(() => router.push(destination), 2000);
   }
 
   return (

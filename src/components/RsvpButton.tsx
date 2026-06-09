@@ -26,11 +26,17 @@ export default function RsvpButton({ eventId, initialRsvp, user }: Props) {
     const next = !rsvp;
     setRsvp(next);
 
-    await fetch("/api/rsvp", {
+    const res = await fetch("/api/rsvp", {
       method: next ? "POST" : "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ eventId }),
     });
+
+    if (!res.ok) {
+      setRsvp(!next); // roll back optimistic update
+      setLoading(false);
+      return;
+    }
 
     setLoading(false);
     startTransition(() => router.refresh());
