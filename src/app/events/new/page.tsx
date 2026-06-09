@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getActiveOrgId } from "@/lib/activeOrg";
 import EventForm from "@/components/EventForm";
 
 export default async function NewEventPage({
@@ -15,35 +16,25 @@ export default async function NewEventPage({
 
   if (!user) redirect("/login?next=/events/new");
 
-  // Try own organizer profile first; fall back to org_members for editors
-  const { data: ownProfile } = await supabase
+  // Use the active org from cookie
+  const { data: memberships } = await supabase
+    .from("org_members")
+    .select("org_id")
+    .eq("user_id", user.id);
+
+  const orgIds = (memberships ?? []).map((m) => m.org_id);
+  if (orgIds.length === 0) redirect("/become-organizer");
+
+  const activeOrgId = await getActiveOrgId(orgIds);
+  if (!activeOrgId) redirect("/become-organizer");
+
+  const { data: profile } = await supabase
     .from("organizer_profiles")
     .select("id, name")
-    .eq("user_id", user.id)
+    .eq("id", activeOrgId)
     .maybeSingle();
 
-  let profile: { id: string; name: string } | null = ownProfile;
-
-  if (!profile) {
-    const { data: membership } = await supabase
-      .from("org_members")
-      .select("org_id")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-
-    if (!membership) redirect("/become-organizer");
-
-    const { data: orgProfile } = await supabase
-      .from("organizer_profiles")
-      .select("id, name")
-      .eq("id", membership.org_id)
-      .maybeSingle();
-
-    if (!orgProfile) redirect("/become-organizer");
-    profile = orgProfile;
-  }
+  if (!profile) redirect("/become-organizer");
 
   // Pre-fill from an existing event if ?from=<id> is set
   const { from } = await searchParams;

@@ -20,14 +20,6 @@ export async function POST(request: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  // Check not already an organizer
-  const { data: existing } = await serviceClient
-    .from("organizer_profiles")
-    .select("id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (existing) return NextResponse.json({ error: "Already an organizer" }, { status: 400 });
-
   // Update role in users table
   const { error: roleError } = await serviceClient
     .from("users")
@@ -60,5 +52,5 @@ export async function POST(request: Request) {
     user_metadata: { role: "organizer" },
   });
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, orgId: newProfile.id });
 }

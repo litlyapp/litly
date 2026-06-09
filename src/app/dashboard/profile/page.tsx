@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getActiveOrgId } from "@/lib/activeOrg";
 import ProfileEditForm from "./ProfileEditForm";
 
 export const dynamic = "force-dynamic";
@@ -11,34 +12,25 @@ export default async function ProfilePage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/dashboard/profile");
 
-  // Try own organizer profile first; fall back to primary admin org for invited members
-  const { data: ownProfileRaw } = await supabase
+  // Load the active org (admin only can edit profile)
+  const { data: memberships } = await supabase
+    .from("org_members")
+    .select("org_id, role")
+    .eq("user_id", user.id);
+
+  if (!memberships || memberships.length === 0) redirect("/dashboard");
+
+  const orgIds = memberships.map((m) => m.org_id);
+  const activeOrgId = await getActiveOrgId(orgIds);
+  const activeMembership = memberships.find((m) => m.org_id === activeOrgId);
+
+  if (activeMembership?.role !== "admin") redirect("/dashboard");
+
+  const { data: profileRaw } = await supabase
     .from("organizer_profiles")
     .select("*")
-    .eq("user_id", user.id)
+    .eq("id", activeOrgId!)
     .maybeSingle();
-
-  let profileRaw = ownProfileRaw;
-
-  if (!profileRaw) {
-    const { data: adminMembership } = await supabase
-      .from("org_members")
-      .select("org_id")
-      .eq("user_id", user.id)
-      .eq("role", "admin")
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-
-    if (adminMembership) {
-      const { data: orgProfile } = await supabase
-        .from("organizer_profiles")
-        .select("*")
-        .eq("id", adminMembership.org_id)
-        .maybeSingle();
-      profileRaw = orgProfile ?? null;
-    }
-  }
 
   if (!profileRaw) redirect("/dashboard");
 

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { getActiveOrgId } from "@/lib/activeOrg";
 import TeamClient from "./TeamClient";
 
 export const dynamic = "force-dynamic";
@@ -11,16 +12,21 @@ export default async function TeamPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login?next=/dashboard/team");
 
-  // Must be admin of some org
+  // Must be admin of the active org
   const { data: memberships } = await supabase
     .from("org_members")
     .select("org_id, role")
-    .eq("user_id", user.id)
-    .eq("role", "admin");
+    .eq("user_id", user.id);
 
   if (!memberships || memberships.length === 0) redirect("/dashboard");
 
-  const adminOrgId = memberships[0].org_id;
+  const orgIds = memberships.map((m) => m.org_id);
+  const activeOrgId = await getActiveOrgId(orgIds);
+  const activeMembership = memberships.find((m) => m.org_id === activeOrgId);
+
+  if (activeMembership?.role !== "admin") redirect("/dashboard");
+
+  const adminOrgId = activeOrgId!;
 
   const svc = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

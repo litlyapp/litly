@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import DashboardEventRow from "@/components/DashboardEventRow";
+import OrgSwitcher from "./OrgSwitcher";
+import { getActiveOrgId } from "@/lib/activeOrg";
 import type { Genre, EventType } from "@/types/database";
 
 export const dynamic = "force-dynamic";
@@ -40,43 +42,47 @@ export default async function DashboardPage() {
   if (!memberships || memberships.length === 0) redirect("/become-organizer");
 
   const orgIds = memberships.map((m) => m.org_id);
-  const isAdmin = memberships.some((m) => m.role === "admin");
-  const adminOrgId = memberships.find((m) => m.role === "admin")?.org_id ?? null;
+  const activeOrgId = await getActiveOrgId(orgIds);
+  const activeMembership = memberships.find((m) => m.org_id === activeOrgId);
+  const isAdmin = activeMembership?.role === "admin";
+  const adminOrgId = isAdmin ? activeOrgId : null;
 
-  // Fetch org names
+  // Fetch all org names for the switcher
   const { data: orgs } = await supabase
     .from("organizer_profiles")
     .select("id, name")
     .in("id", orgIds);
 
-  const primaryOrgName = (orgs ?? [])[0]?.name ?? "Dashboard";
+  const orgList = (orgs ?? []).map((o) => ({
+    id: o.id,
+    name: o.name,
+    role: memberships.find((m) => m.org_id === o.id)?.role ?? "editor",
+  }));
 
   const now = new Date().toISOString();
 
   const eventSelect = "id, title, genre, event_type, date_time, timezone, location_name, virtual_url, rsvp_enabled, open_mic, parent_event_id, recurrence_rule, is_cancelled, view_count, ticket_click_count";
 
   const [upcomingResult, pastResult, totalUpcomingResult] = await Promise.all([
-    // Only show parent events and standalone events (exclude series children)
     supabase
       .from("events")
       .select(eventSelect)
-      .in("organizer_id", orgIds)
+      .eq("organizer_id", activeOrgId!)
       .is("parent_event_id", null)
       .gte("date_time", now)
       .order("date_time", { ascending: true }),
     supabase
       .from("events")
       .select(eventSelect)
-      .in("organizer_id", orgIds)
+      .eq("organizer_id", activeOrgId!)
       .is("parent_event_id", null)
       .lt("date_time", now)
       .order("date_time", { ascending: false })
       .limit(20),
-    // Total upcoming count including all occurrences (for the stat card)
     supabase
       .from("events")
       .select("id", { count: "exact", head: true })
-      .in("organizer_id", orgIds)
+      .eq("organizer_id", activeOrgId!)
       .gte("date_time", now),
   ]);
 
@@ -129,7 +135,7 @@ export default async function DashboardPage() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1 className="font-serif text-4xl text-cream mb-1">Dashboard</h1>
-            <p className="text-cream-muted">{primaryOrgName}</p>
+            <OrgSwitcher orgs={orgList} activeOrgId={activeOrgId!} />
           </div>
           <Link
             href="/events/new"
