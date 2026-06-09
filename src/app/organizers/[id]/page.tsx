@@ -14,7 +14,7 @@ export default async function OrganizerProfilePage({
 
   const { data: organizerRaw } = await supabase
     .from("organizer_profiles")
-    .select("id, user_id, name, org_type, bio, website, social_links")
+    .select("id, user_id, name, org_type, bio, website, social_links, avatar_url")
     .eq("id", id)
     .single();
 
