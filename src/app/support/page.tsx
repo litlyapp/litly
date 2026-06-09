@@ -1,11 +1,10 @@
 import Link from "next/link";
 
-// Replace these with real Stripe Payment Links when ready
 const STRIPE_LINKS = {
-  5: "https://buy.stripe.com/placeholder_5",
-  10: "https://buy.stripe.com/placeholder_10",
-  25: "https://buy.stripe.com/placeholder_25",
-  custom: "https://buy.stripe.com/placeholder_custom",
+  5: "https://donate.stripe.com/5kQ8wPd9h8UX8lNcxU0Ba01",
+  10: "https://donate.stripe.com/5kQ4gz7OXb35cC30Pc0Ba02",
+  25: "https://donate.stripe.com/8x2eVd6KT0or1XpeG20Ba03",
+  custom: "https://donate.stripe.com/fZu9ATfhp5ILfOfgOa0Ba04",
 };
 
 export const metadata = {
