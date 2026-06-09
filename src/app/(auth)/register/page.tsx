@@ -39,11 +39,9 @@ export default function RegisterPage() {
       options: {
         data: {
           role,
-          display_name: form.displayName,
-          // Store organizer details in metadata so the auth callback can create the profile
-          // after email confirmation (when a proper session exists)
+          display_name: role === "organizer" ? form.orgName : undefined,
           org_type: role === "organizer" ? form.orgType : undefined,
-          org_name: role === "organizer" ? (form.orgName || form.displayName) : undefined,
+          org_name: role === "organizer" ? form.orgName : undefined,
           bio: role === "organizer" ? (form.bio || undefined) : undefined,
           website: role === "organizer" ? (form.website || undefined) : undefined,
         },
@@ -113,16 +111,6 @@ export default function RegisterPage() {
             </button>
 
             <input
-              name="displayName"
-              type="text"
-              placeholder="Display name"
-              required
-              value={form.displayName}
-              onChange={handleChange}
-              className="w-full bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-4 py-3 focus:outline-none focus:border-orange"
-            />
-
-            <input
               name="email"
               type="email"
               placeholder="Email"
@@ -161,7 +149,8 @@ export default function RegisterPage() {
                   <input
                     name="orgName"
                     type="text"
-                    placeholder="Organization or series name (optional)"
+                    placeholder="Your name or organization name"
+                    required
                     value={form.orgName}
                     onChange={handleChange}
                     className="w-full bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-4 py-3 focus:outline-none focus:border-orange mb-3"
