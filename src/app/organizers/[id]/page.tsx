@@ -57,20 +57,15 @@ export default async function OrganizerProfilePage({
   } = await supabase.auth.getUser();
 
   let isFollowing = false;
-  let userRole: string | null = null;
 
   if (user) {
-    const [followResult, roleResult] = await Promise.all([
-      supabase
-        .from("follows")
-        .select("id")
-        .eq("patron_id", user.id)
-        .eq("organizer_id", id)
-        .maybeSingle(),
-      supabase.from("users").select("role").eq("id", user.id).single(),
-    ]);
-    isFollowing = !!followResult.data;
-    userRole = roleResult.data?.role ?? null;
+    const { data: followResult } = await supabase
+      .from("follows")
+      .select("id")
+      .eq("patron_id", user.id)
+      .eq("organizer_id", id)
+      .maybeSingle();
+    isFollowing = !!followResult;
   }
 
   const socialLinks = organizer.social_links as Record<string, string> | null;
@@ -107,8 +102,8 @@ export default async function OrganizerProfilePage({
             </div>
           </div>
 
-          {/* Follow button — only show to patrons (not self, not other organizers) */}
-          {user && userRole === "patron" && user.id !== organizer.user_id && (
+          {/* Follow button — show to any logged-in user except on their own org profile */}
+          {user && user.id !== organizer.user_id && (
             <FollowButton
               organizerId={id}
               patronId={user.id}
