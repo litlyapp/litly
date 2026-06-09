@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import InstallButton from "./InstallButton";
+import PostEventLink from "./PostEventLink";
 
 export default function Footer() {
   return (
@@ -12,7 +13,7 @@ export default function Footer() {
         <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2">
           <Link href="/events" className="hover:text-cream transition">Events</Link>
           <Link href="/events/map" className="hover:text-cream transition">Map</Link>
-          <Link href="/register" className="hover:text-cream transition">Post an event</Link>
+          <PostEventLink className="hover:text-cream transition" />
           <InstallButton variant="footer" />
         </nav>
         <p className="text-cream-muted/50 text-xs">

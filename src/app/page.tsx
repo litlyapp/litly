@@ -181,7 +181,7 @@ export default async function HomePage() {
           </div>
           <div className="flex gap-3 shrink-0">
             <Link
-              href={isOrganizer ? "/events/new" : "/register"}
+              href={isOrganizer ? "/events/new" : user ? "/become-organizer" : "/register"}
               className="bg-orange text-cream font-semibold px-6 py-3 rounded-full hover:bg-orange/90 transition whitespace-nowrap"
             >
               Post an event
