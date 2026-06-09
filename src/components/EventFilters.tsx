@@ -189,13 +189,13 @@ export default function EventFilters({
             type="date"
             value={activeFrom}
             onChange={(e) => setParam("from", e.target.value)}
-            className="w-full bg-navy-light border border-cream/20 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange transition-colors [color-scheme:dark]"
+            className="w-full bg-navy border border-cream/30 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange transition-colors [color-scheme:dark]"
           />
           <input
             type="date"
             value={activeTo}
             onChange={(e) => setParam("to", e.target.value)}
-            className="w-full bg-navy-light border border-cream/20 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange transition-colors [color-scheme:dark]"
+            className="w-full bg-navy border border-cream/30 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange transition-colors [color-scheme:dark]"
           />
         </div>
       </div>

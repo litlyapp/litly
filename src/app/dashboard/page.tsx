@@ -125,35 +125,37 @@ export default async function DashboardPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-10">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="font-serif text-4xl text-cream mb-1">Dashboard</h1>
-          <p className="text-cream-muted">{primaryOrgName}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {isAdmin && adminOrgId && (
-            <Link
-              href="/dashboard/team"
-              className="border border-cream/20 text-cream-muted font-medium px-4 py-2.5 rounded-full hover:border-cream/40 hover:text-cream transition text-sm"
-            >
-              Team
-            </Link>
-          )}
-          {isAdmin && (
-            <Link
-              href="/dashboard/profile"
-              className="border border-cream/20 text-cream-muted font-medium px-4 py-2.5 rounded-full hover:border-cream/40 hover:text-cream transition text-sm"
-            >
-              Edit profile
-            </Link>
-          )}
+      <div className="mb-8">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="font-serif text-4xl text-cream mb-1">Dashboard</h1>
+            <p className="text-cream-muted">{primaryOrgName}</p>
+          </div>
           <Link
             href="/events/new"
-            className="bg-orange text-cream font-semibold px-5 py-2.5 rounded-full hover:bg-orange/90 transition text-sm"
+            className="shrink-0 bg-orange text-cream font-semibold px-4 py-2.5 rounded-full hover:bg-orange/90 transition text-sm"
           >
             + New event
           </Link>
         </div>
+        {isAdmin && (
+          <div className="flex items-center gap-3 mt-4 flex-wrap">
+            {adminOrgId && (
+              <Link
+                href="/dashboard/team"
+                className="border border-cream/20 text-cream-muted font-medium px-4 py-2 rounded-full hover:border-cream/40 hover:text-cream transition text-sm"
+              >
+                Team
+              </Link>
+            )}
+            <Link
+              href="/dashboard/profile"
+              className="border border-cream/20 text-cream-muted font-medium px-4 py-2 rounded-full hover:border-cream/40 hover:text-cream transition text-sm"
+            >
+              Edit profile
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Stats strip */}
