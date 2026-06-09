@@ -26,13 +26,6 @@ export default async function EventsPage({
   const params = await searchParams;
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  let isOrganizer = false;
-  if (user) {
-    const { data } = await supabase.from("organizer_profiles").select("id").eq("user_id", user.id).maybeSingle();
-    isOrganizer = !!data;
-  }
-
   // Fetch all organizer profiles for the dropdown
   const { data: organizers } = await supabase
     .from("organizer_profiles")
@@ -93,15 +86,17 @@ export default async function EventsPage({
 
   const { data: rawEvents } = await query;
 
-  // Fetch the logged-in user's saved event IDs so cards render with correct heart state
+  // Fetch the logged-in user's saved event IDs and organizer status
   const { data: { user } } = await supabase.auth.getUser();
   let savedEventIds = new Set<string>();
+  let isOrganizer = false;
   if (user) {
-    const { data: saved } = await supabase
-      .from("saved_events")
-      .select("event_id")
-      .eq("user_id", user.id);
-    savedEventIds = new Set((saved ?? []).map((s) => s.event_id));
+    const [savedResult, profileResult] = await Promise.all([
+      supabase.from("saved_events").select("event_id").eq("user_id", user.id),
+      supabase.from("organizer_profiles").select("id").eq("user_id", user.id).maybeSingle(),
+    ]);
+    savedEventIds = new Set((savedResult.data ?? []).map((s) => s.event_id));
+    isOrganizer = !!profileResult.data;
   }
 
   // Deduplicate recurring series: keep only the next upcoming occurrence per series.
