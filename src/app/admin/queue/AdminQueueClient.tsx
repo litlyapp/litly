@@ -85,11 +85,16 @@ export default function AdminQueueClient({
   }
 
   async function handleReject(id: string) {
-    await fetch("/api/admin/queue-action", {
+    const res = await fetch("/api/admin/queue-action", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, action: "rejected", password }),
     });
+    if (!res.ok) {
+      const d = await res.json();
+      setError(d.error ?? "Failed to reject");
+      return;
+    }
     setItems((prev) => prev.filter((i) => i.id !== id));
   }
 

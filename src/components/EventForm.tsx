@@ -571,8 +571,6 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
 
       router.push(`/events/${data.id}`);
     }
-
-    router.refresh();
   }
 
   const inputClass =
