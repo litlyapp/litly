@@ -19,6 +19,12 @@ export async function POST(req: Request) {
   if (!subject?.trim() || !message?.trim()) {
     return NextResponse.json({ error: "Subject and message are required" }, { status: 400 });
   }
+  if (subject.length > 200) {
+    return NextResponse.json({ error: "Subject must be 200 characters or fewer" }, { status: 400 });
+  }
+  if (message.length > 5000) {
+    return NextResponse.json({ error: "Message must be 5000 characters or fewer" }, { status: 400 });
+  }
 
   const formData = new FormData();
   formData.append("from", `litly Support <support@thelitlyapp.com>`);

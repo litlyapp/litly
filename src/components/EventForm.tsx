@@ -375,6 +375,8 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       return "Location name is required for in-person events.";
     if (form.event_type === "virtual" && !form.virtual_url.trim())
       return "A link is required for virtual events.";
+    if (form.virtual_url.trim() && !/^https?:\/\//i.test(form.virtual_url.trim()))
+      return "Virtual event link must start with http:// or https://";
     if (form.ticket_type && !form.ticket_url.trim())
       return "A ticket URL is required when a ticket type is selected.";
     if (form.ticket_url.trim() && !/^https?:\/\//i.test(form.ticket_url.trim()))

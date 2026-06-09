@@ -341,7 +341,7 @@ export default async function EventDetailPage({
             <div className="flex items-center gap-3 text-cream">
               <GlobeIcon />
               <a
-                href={event.virtual_url}
+                href={/^https?:\/\//i.test(event.virtual_url ?? "") ? event.virtual_url! : "#"}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-orange hover:underline"

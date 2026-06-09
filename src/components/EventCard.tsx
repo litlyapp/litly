@@ -139,7 +139,7 @@ export default function EventCard({
           {event.is_imported && event.source_name && (
             <span className="text-cream-muted/50 text-xs shrink-0">
               via {event.source_url ? (
-                <a href={event.source_url} target="_blank" rel="noopener noreferrer" className="hover:text-cream-muted transition">
+                <a href={/^https?:\/\//i.test(event.source_url ?? "") ? event.source_url! : "#"} target="_blank" rel="noopener noreferrer" className="hover:text-cream-muted transition">
                   {event.source_name}
                 </a>
               ) : event.source_name}

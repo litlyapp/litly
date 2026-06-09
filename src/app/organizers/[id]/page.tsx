@@ -122,7 +122,7 @@ export default async function OrganizerProfilePage({
           <div className="flex flex-wrap gap-3 mt-5">
             {organizer.website && (
               <a
-                href={organizer.website}
+                href={/^https?:\/\//i.test(organizer.website ?? "") ? organizer.website! : "#"}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-4 py-1.5 rounded-full border border-cream/20 text-cream-muted text-sm hover:text-cream hover:border-cream/40 transition"

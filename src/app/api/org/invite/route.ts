@@ -10,6 +10,9 @@ export async function POST(request: Request) {
 
   const { email, orgId } = await request.json();
   if (!email || !orgId) return NextResponse.json({ error: "email and orgId required" }, { status: 400 });
+  if (typeof email !== "string" || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
+  }
 
   const serviceClient = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

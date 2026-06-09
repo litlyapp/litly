@@ -14,6 +14,15 @@ export async function POST(request: Request) {
   if (!orgName || !orgType) {
     return NextResponse.json({ error: "Name and type are required" }, { status: 400 });
   }
+  if (orgName.length > 100) {
+    return NextResponse.json({ error: "Organization name must be 100 characters or fewer" }, { status: 400 });
+  }
+  if (bio && bio.length > 1000) {
+    return NextResponse.json({ error: "Bio must be 1000 characters or fewer" }, { status: 400 });
+  }
+  if (website && !/^https?:\/\//i.test(website)) {
+    return NextResponse.json({ error: "Website must start with http:// or https://" }, { status: 400 });
+  }
 
   const serviceClient = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
