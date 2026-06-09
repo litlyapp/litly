@@ -43,6 +43,9 @@ export default async function Nav() {
           >
             Map
           </Link>
+          {role !== "organizer" && (
+            <NavLink href={user ? "/become-organizer" : "/register"}>Post an event</NavLink>
+          )}
           <NavLink href="/support">Support litly</NavLink>
         </div>
 
