@@ -23,6 +23,13 @@ input:not([type="date"]), textarea, select {
   font-size: max(16px, 1em);
 }
 
+/* iOS Safari adds a native calendar icon outside the text area on date inputs,
+   causing them to overflow their container. -webkit-fill-available constrains
+   the total rendered width (including the icon) to the available space. */
+input[type="date"] {
+  width: -webkit-fill-available;
+}
+
 html {
   height: 100%;
   overflow: hidden;
