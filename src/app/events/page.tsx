@@ -26,6 +26,13 @@ export default async function EventsPage({
   const params = await searchParams;
   const supabase = await createClient();
 
+  const { data: { user } } = await supabase.auth.getUser();
+  let isOrganizer = false;
+  if (user) {
+    const { data } = await supabase.from("organizer_profiles").select("id").eq("user_id", user.id).maybeSingle();
+    isOrganizer = !!data;
+  }
+
   // Fetch all organizer profiles for the dropdown
   const { data: organizers } = await supabase
     .from("organizer_profiles")
@@ -109,12 +116,22 @@ export default async function EventsPage({
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-10">
-      <div className="mb-8">
-        <h1 className="font-serif text-4xl text-cream mb-1">Events</h1>
-        <p className="text-cream-muted">
-          {events?.length ?? 0} upcoming{" "}
-          {events?.length === 1 ? "event" : "events"}
-        </p>
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="font-serif text-4xl text-cream mb-1">Events</h1>
+          <p className="text-cream-muted">
+            {events?.length ?? 0} upcoming{" "}
+            {events?.length === 1 ? "event" : "events"}
+          </p>
+        </div>
+        {isOrganizer && (
+          <Link
+            href="/events/new"
+            className="bg-orange text-cream font-semibold px-5 py-2.5 rounded-full hover:bg-orange/90 transition text-sm shrink-0"
+          >
+            + New event
+          </Link>
+        )}
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
