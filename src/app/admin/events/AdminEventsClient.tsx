@@ -25,19 +25,29 @@ function formatDate(iso: string) {
   });
 }
 
-export default function AdminEventsClient({ initialEvents }: { initialEvents: AdminEvent[] }) {
+export default function AdminEventsClient() {
   const [authed, setAuthed] = useState(false);
   const [password, setPassword] = useState("");
-  const [events, setEvents] = useState(initialEvents);
+  const [events, setEvents] = useState<AdminEvent[]>([]);
+  const [loadingData, setLoadingData] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const router = useRouter();
   const supabase = createClient();
 
-  function handlePasswordSubmit(e: React.FormEvent) {
+  async function handlePasswordSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (password.trim()) setAuthed(true);
+    if (!password.trim()) return;
+    setLoadingData(true);
+    const { data } = await supabase
+      .from("events")
+      .select(`id, title, genre, event_type, date_time, is_imported, source_name, banner_url,
+               organizer:organizer_profiles(id, name)`)
+      .order("date_time", { ascending: false });
+    setEvents(data ?? []);
+    setLoadingData(false);
+    setAuthed(true);
   }
 
   async function handleDelete(id: string) {
@@ -76,9 +86,10 @@ export default function AdminEventsClient({ initialEvents }: { initialEvents: Ad
           />
           <button
             type="submit"
-            className="w-full bg-orange text-cream font-semibold rounded-full py-3 hover:bg-orange/90 transition"
+            disabled={loadingData}
+            className="w-full bg-orange text-cream font-semibold rounded-full py-3 hover:bg-orange/90 transition disabled:opacity-60"
           >
-            Enter
+            {loadingData ? "Loading…" : "Enter"}
           </button>
         </form>
       </div>

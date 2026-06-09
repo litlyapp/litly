@@ -43,12 +43,17 @@ export async function GET(req: Request) {
     const seriesEndDate = parent.series_end_date ? new Date(parent.series_end_date + "T23:59:59") : null;
 
     // Count upcoming non-cancelled occurrences in this series
-    const { count: upcomingCount } = await supabase
+    const { count: upcomingCount, error: countError } = await supabase
       .from("events")
       .select("id", { count: "exact", head: true })
       .eq("parent_event_id", parent.id)
       .eq("is_cancelled", false)
       .gte("date_time", now);
+
+    if (countError) {
+      console.error(`Failed to count occurrences for series ${parent.id}:`, countError.message);
+      continue; // skip rather than assuming needed = 10
+    }
 
     const needed = 10 - (upcomingCount ?? 0);
     if (needed <= 0) continue;

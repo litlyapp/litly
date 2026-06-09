@@ -27,23 +27,35 @@ function toDatetimeLocal(iso: string | null | undefined): string {
 const inputClass =
   "w-full bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange";
 
-export default function AdminQueueClient({
-  initialItems,
-}: {
-  initialItems: PendingImport[];
-}) {
+export default function AdminQueueClient() {
   const [authed, setAuthed] = useState(false);
   const [password, setPassword] = useState("");
-  const [items, setItems] = useState(initialItems);
+  const [items, setItems] = useState<PendingImport[]>([]);
+  const [loadingData, setLoadingData] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [editData, setEditData] = useState<Record<string, unknown>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  function handlePasswordSubmit(e: React.FormEvent) {
+  async function handlePasswordSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (password.trim()) setAuthed(true);
+    if (!password.trim()) return;
+    setLoadingData(true);
+    const res = await fetch("/api/admin/queue-data", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    });
+    if (!res.ok) {
+      setError("Invalid password.");
+      setLoadingData(false);
+      return;
+    }
+    const { items: fetched } = await res.json();
+    setItems(fetched);
+    setLoadingData(false);
+    setAuthed(true);
   }
 
   function startEdit(item: PendingImport) {
@@ -121,11 +133,13 @@ export default function AdminQueueClient({
             className={`w-full ${inputClass}`}
             autoFocus
           />
+          {error && <p className="text-orange text-sm">{error}</p>}
           <button
             type="submit"
-            className="w-full bg-orange text-cream font-semibold rounded-full py-3 hover:bg-orange/90 transition"
+            disabled={loadingData}
+            className="w-full bg-orange text-cream font-semibold rounded-full py-3 hover:bg-orange/90 transition disabled:opacity-60"
           >
-            Enter
+            {loadingData ? "Loading…" : "Enter"}
           </button>
         </form>
       </div>
