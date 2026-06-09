@@ -72,11 +72,17 @@ export default function AdminQueueClient({
     }
 
     // Mark as approved
-    await fetch("/api/admin/queue-action", {
+    const approveRes = await fetch("/api/admin/queue-action", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: item.id, action: "approved", password }),
     });
+    if (!approveRes.ok) {
+      const d = await approveRes.json();
+      setError(d.error ?? "Event imported but failed to mark as approved");
+      setLoading(false);
+      return;
+    }
 
     setItems((prev) => prev.filter((i) => i.id !== item.id));
     setEditing(null);
