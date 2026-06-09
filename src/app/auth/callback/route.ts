@@ -4,44 +4,88 @@ import { createClient as createServiceClient } from "@supabase/supabase-js";
 import type { EmailOtpType, User } from "@supabase/supabase-js";
 
 async function maybeCreateOrganizerProfile(user: User) {
-  const serviceClient = createServiceClient(
+  const svc = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
   // Fetch fresh metadata via admin API — user.user_metadata from PKCE flow is unreliable
-  const { data: adminData } = await serviceClient.auth.admin.getUserById(user.id);
+  const { data: adminData } = await svc.auth.admin.getUserById(user.id);
   const meta = adminData?.user?.user_metadata ?? user.user_metadata;
 
   // Gate on metadata role, with users table as fallback
   let isOrganizer = meta?.role === "organizer";
   if (!isOrganizer) {
-    const { data: userRow } = await serviceClient
-      .from("users")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+    const { data: userRow } = await svc.from("users").select("role").eq("id", user.id).single();
     isOrganizer = userRow?.role === "organizer";
   }
-  if (!isOrganizer) return;
+  if (!isOrganizer) {
+    // Still check for pending invite — patron might have been invited to an org
+    await maybeAcceptPendingInvite(user);
+    return;
+  }
 
   // Skip if profile already exists
-  const { data: existing } = await serviceClient
+  const { data: existing } = await svc
     .from("organizer_profiles")
     .select("id")
     .eq("user_id", user.id)
     .maybeSingle();
-  if (existing) return;
 
-  const { error } = await serviceClient.from("organizer_profiles").insert({
-    user_id: user.id,
-    org_type: meta?.org_type ?? "individual",
-    name: meta?.org_name ?? meta?.display_name ?? "Organizer",
-    bio: meta?.bio ?? null,
-    website: meta?.website ?? null,
-  });
+  let profileId: string | undefined = existing?.id;
 
-  if (error) console.error("[auth/callback] organizer_profiles insert failed:", error);
+  if (!existing) {
+    const { data: newProfile, error } = await svc.from("organizer_profiles").insert({
+      user_id: user.id,
+      org_type: meta?.org_type ?? "individual",
+      name: meta?.org_name ?? meta?.display_name ?? "Organizer",
+      bio: meta?.bio ?? null,
+      website: meta?.website ?? null,
+    }).select("id").single();
+
+    if (error) { console.error("[auth/callback] organizer_profiles insert failed:", error); return; }
+    profileId = newProfile.id;
+  }
+
+  // Ensure admin membership row exists
+  if (profileId) {
+    await svc.from("org_members").upsert(
+      { org_id: profileId, user_id: user.id, role: "admin" },
+      { onConflict: "org_id,user_id", ignoreDuplicates: true }
+    );
+  }
+
+  await maybeAcceptPendingInvite(user);
+}
+
+async function maybeAcceptPendingInvite(user: User) {
+  const svc = createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+  if (!user.email) return;
+  const { data: invite } = await svc
+    .from("org_invites")
+    .select("id, org_id, expires_at")
+    .eq("email", user.email.toLowerCase())
+    .is("accepted_at", null)
+    .gt("expires_at", new Date().toISOString())
+    .maybeSingle();
+
+  if (!invite) return;
+
+  await svc.from("org_members").upsert(
+    { org_id: invite.org_id, user_id: user.id, role: "editor" },
+    { onConflict: "org_id,user_id", ignoreDuplicates: true }
+  );
+  await svc.from("org_invites").update({ accepted_at: new Date().toISOString() }).eq("id", invite.id);
+
+  // Ensure organizer role on the users table
+  const { data: userRow } = await svc.from("users").select("role").eq("id", user.id).single();
+  if (userRow?.role !== "organizer") {
+    await svc.from("users").update({ role: "organizer" }).eq("id", user.id);
+    await svc.auth.admin.updateUserById(user.id, { user_metadata: { role: "organizer" } });
+  }
 }
 
 export async function GET(request: Request) {

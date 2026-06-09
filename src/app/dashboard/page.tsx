@@ -31,13 +31,25 @@ export default async function DashboardPage() {
 
   if (!user) redirect("/login?next=/dashboard");
 
-  const { data: profile } = await supabase
+  // Load all orgs this user belongs to (as admin or editor)
+  const { data: memberships } = await supabase
+    .from("org_members")
+    .select("org_id, role")
+    .eq("user_id", user.id);
+
+  if (!memberships || memberships.length === 0) redirect("/become-organizer");
+
+  const orgIds = memberships.map((m) => m.org_id);
+  const isAdmin = memberships.some((m) => m.role === "admin");
+  const adminOrgId = memberships.find((m) => m.role === "admin")?.org_id ?? null;
+
+  // Fetch org names
+  const { data: orgs } = await supabase
     .from("organizer_profiles")
     .select("id, name")
-    .eq("user_id", user.id)
-    .single();
+    .in("id", orgIds);
 
-  if (!profile) redirect("/become-organizer");
+  const primaryOrgName = (orgs ?? [])[0]?.name ?? "Dashboard";
 
   const now = new Date().toISOString();
 
@@ -48,14 +60,14 @@ export default async function DashboardPage() {
     supabase
       .from("events")
       .select(eventSelect)
-      .eq("organizer_id", profile.id)
+      .in("organizer_id", orgIds)
       .is("parent_event_id", null)
       .gte("date_time", now)
       .order("date_time", { ascending: true }),
     supabase
       .from("events")
       .select(eventSelect)
-      .eq("organizer_id", profile.id)
+      .in("organizer_id", orgIds)
       .is("parent_event_id", null)
       .lt("date_time", now)
       .order("date_time", { ascending: false })
@@ -64,7 +76,7 @@ export default async function DashboardPage() {
     supabase
       .from("events")
       .select("id", { count: "exact", head: true })
-      .eq("organizer_id", profile.id)
+      .in("organizer_id", orgIds)
       .gte("date_time", now),
   ]);
 
@@ -72,7 +84,6 @@ export default async function DashboardPage() {
   const pastEvents = (pastResult.data ?? []) as DashboardEvent[];
   const totalUpcoming = totalUpcomingResult.count ?? 0;
 
-  // Count upcoming non-cancelled children per series parent
   const upcomingChildCounts: Record<string, number> = {};
   for (const event of upcomingEvents) {
     if (!event.recurrence_rule) continue;
@@ -117,15 +128,25 @@ export default async function DashboardPage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="font-serif text-4xl text-cream mb-1">Dashboard</h1>
-          <p className="text-cream-muted">{profile.name}</p>
+          <p className="text-cream-muted">{primaryOrgName}</p>
         </div>
         <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard/profile"
-            className="border border-cream/20 text-cream-muted font-medium px-4 py-2.5 rounded-full hover:border-cream/40 hover:text-cream transition text-sm"
-          >
-            Edit profile
-          </Link>
+          {isAdmin && adminOrgId && (
+            <Link
+              href="/dashboard/team"
+              className="border border-cream/20 text-cream-muted font-medium px-4 py-2.5 rounded-full hover:border-cream/40 hover:text-cream transition text-sm"
+            >
+              Team
+            </Link>
+          )}
+          {isAdmin && (
+            <Link
+              href="/dashboard/profile"
+              className="border border-cream/20 text-cream-muted font-medium px-4 py-2.5 rounded-full hover:border-cream/40 hover:text-cream transition text-sm"
+            >
+              Edit profile
+            </Link>
+          )}
           <Link
             href="/events/new"
             className="bg-orange text-cream font-semibold px-5 py-2.5 rounded-full hover:bg-orange/90 transition text-sm"

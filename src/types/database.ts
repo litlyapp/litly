@@ -15,6 +15,7 @@ export type Genre =
 export type UserRole = "patron" | "organizer";
 export type EventType = "in_person" | "virtual";
 export type OrgType = "individual" | "organization";
+export type OrgRole = "admin" | "editor";
 
 export interface FeaturedReader {
   name: string;
@@ -251,6 +252,52 @@ export type Database = {
           user_id?: string;
           event_id?: string;
           created_at?: string;
+        };
+        Relationships: [];
+      };
+      org_members: {
+        Row: {
+          id: string;
+          org_id: string;
+          user_id: string;
+          role: OrgRole;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          user_id: string;
+          role: OrgRole;
+          created_at?: string;
+        };
+        Update: {
+          role?: OrgRole;
+        };
+        Relationships: [];
+      };
+      org_invites: {
+        Row: {
+          id: string;
+          org_id: string;
+          email: string;
+          token: string;
+          invited_by: string | null;
+          created_at: string;
+          expires_at: string;
+          accepted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          email: string;
+          token?: string;
+          invited_by?: string | null;
+          created_at?: string;
+          expires_at?: string;
+          accepted_at?: string | null;
+        };
+        Update: {
+          accepted_at?: string | null;
         };
         Relationships: [];
       };
