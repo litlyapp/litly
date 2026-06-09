@@ -377,6 +377,8 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       return "A link is required for virtual events.";
     if (form.ticket_type && !form.ticket_url.trim())
       return "A ticket URL is required when a ticket type is selected.";
+    if (form.ticket_url.trim() && !/^https?:\/\//i.test(form.ticket_url.trim()))
+      return "Ticket URL must start with http:// or https://";
     if (form.end_time && form.date_time && form.end_time <= form.date_time)
       return "End time must be after the start time.";
     // Convert using the selected timezone so this check is correct regardless of browser locale

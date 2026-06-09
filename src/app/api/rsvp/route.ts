@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { sendEmail, emailWrapper } from "@/lib/sendEmail";
+import { sendEmail, emailWrapper, escapeHtml } from "@/lib/sendEmail";
 import { formatEventDate, formatEventTime } from "@/lib/formatDate";
 
 export async function POST(req: Request) {
@@ -66,12 +66,12 @@ export async function POST(req: Request) {
         `— litly`,
       ].join("\n"),
       html: emailWrapper(`
-        <h1 style="font-size:24px;margin:0 0 8px;color:#1B2A3E">You're going to<br/><em>${event.title}</em></h1>
+        <h1 style="font-size:24px;margin:0 0 8px;color:#1B2A3E">You're going to<br/><em>${escapeHtml(event.title)}</em></h1>
         <p style="color:#5a4a3a;margin:0 0 24px">Your RSVP is confirmed.</p>
         <table style="border-collapse:collapse;width:100%;margin-bottom:24px">
-          <tr><td style="padding:8px 0;color:#7a6a5a;width:90px">Date</td><td style="padding:8px 0;color:#1B2A3E">${date}</td></tr>
-          <tr><td style="padding:8px 0;color:#7a6a5a">Time</td><td style="padding:8px 0;color:#1B2A3E">${time}</td></tr>
-          <tr><td style="padding:8px 0;color:#7a6a5a">Location</td><td style="padding:8px 0;color:#1B2A3E">${location}</td></tr>
+          <tr><td style="padding:8px 0;color:#7a6a5a;width:90px">Date</td><td style="padding:8px 0;color:#1B2A3E">${escapeHtml(date)}</td></tr>
+          <tr><td style="padding:8px 0;color:#7a6a5a">Time</td><td style="padding:8px 0;color:#1B2A3E">${escapeHtml(time)}</td></tr>
+          <tr><td style="padding:8px 0;color:#7a6a5a">Location</td><td style="padding:8px 0;color:#1B2A3E">${escapeHtml(location)}</td></tr>
         </table>
         <a href="https://thelitlyapp.com/events/${eventId}" style="background:#E8622A;color:#fff;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:14px;font-weight:600">View event</a>
         <p style="margin-top:32px;font-size:12px;color:#7a6a5a">You received this because you RSVPd on litly.</p>

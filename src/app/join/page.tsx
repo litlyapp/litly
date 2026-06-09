@@ -91,7 +91,11 @@ export default async function JoinPage({
       );
     }
 
-    await svc.from("org_invites").update({ accepted_at: new Date().toISOString() }).eq("id", invite.id);
+    const { error: acceptError } = await svc.from("org_invites").update({ accepted_at: new Date().toISOString() }).eq("id", invite.id);
+    if (acceptError) {
+      console.error("[join] Failed to mark invite accepted:", acceptError);
+      // Non-fatal — membership was already added; continue
+    }
 
     // Ensure organizer role
     const { data: userRow } = await svc.from("users").select("role").eq("id", user.id).single();

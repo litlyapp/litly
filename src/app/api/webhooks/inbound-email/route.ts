@@ -9,6 +9,12 @@ const CONFIRMATION_PATTERN = /confirm|verify|activate|subscri|welcome|opt.?in/i;
 function verifyMailgunSignature(timestamp: string, token: string, signature: string): boolean {
   const signingKey = process.env.MAILGUN_WEBHOOK_SIGNING_KEY;
   if (!signingKey) return false; // reject all requests if key is not configured
+
+  // Reject if timestamp is more than 5 minutes old (replay protection)
+  const tsSeconds = parseInt(timestamp, 10);
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  if (isNaN(tsSeconds) || Math.abs(nowSeconds - tsSeconds) > 300) return false;
+
   const value = timestamp + token;
   const expected = createHmac("sha256", signingKey).update(value).digest("hex");
   return expected === signature;

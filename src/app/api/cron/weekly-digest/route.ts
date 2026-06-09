@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { sendEmail, emailWrapper } from "@/lib/sendEmail";
+import { sendEmail, emailWrapper, escapeHtml } from "@/lib/sendEmail";
 import { formatEventDate, formatEventTime } from "@/lib/formatDate";
 
 export const dynamic = "force-dynamic";
@@ -124,8 +124,8 @@ export async function GET(req: Request) {
         return `
           <tr>
             <td style="padding:12px 0;border-bottom:1px solid #d4c9b5">
-              <a href="https://thelitlyapp.com/events/${e.eventId}" style="color:#1B2A3E;font-weight:600;text-decoration:none">${e.title}</a><br/>
-              <span style="color:#7a6a5a;font-size:13px">${formatEventDate(e.date_time, e.timezone)} · ${loc}</span>
+              <a href="https://thelitlyapp.com/events/${e.eventId}" style="color:#1B2A3E;font-weight:600;text-decoration:none">${escapeHtml(e.title)}</a><br/>
+              <span style="color:#7a6a5a;font-size:13px">${escapeHtml(formatEventDate(e.date_time, e.timezone))} · ${escapeHtml(loc)}</span>
             </td>
             <td style="padding:12px 0;border-bottom:1px solid #d4c9b5;text-align:right;white-space:nowrap">
               <strong style="color:#E8622A">${e.count} new RSVP${e.count !== 1 ? "s" : ""}</strong>
@@ -151,7 +151,7 @@ export async function GET(req: Request) {
         ].join("\n"),
         html: emailWrapper(`
           <h1 style="font-size:22px;margin:0 0 8px;color:#1B2A3E">Your weekly digest</h1>
-          <p style="color:#5a4a3a;margin:0 0 24px">Hi ${org.organizerName}, here's what happened this week.</p>
+          <p style="color:#5a4a3a;margin:0 0 24px">Hi ${escapeHtml(org.organizerName)}, here's what happened this week.</p>
           <table style="width:100%;border-collapse:collapse">
             ${eventHtmlRows}
           </table>

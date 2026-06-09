@@ -1,5 +1,15 @@
 const LOGO_URL = "https://thelitlyapp.com/logo.png";
 
+// Escape user-controlled content before inserting into HTML email bodies
+export function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
+
 export function emailWrapper(body: string): string {
   return `
     <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1B2A3E">
@@ -34,6 +44,11 @@ export async function sendEmail({
   text: string;
   html?: string;
 }) {
+  if (!process.env.MAILGUN_API_KEY) {
+    console.error("[sendEmail] MAILGUN_API_KEY is not configured");
+    throw new Error("Email service not configured");
+  }
+
   const formData = new FormData();
   formData.append("from", "litly <noreply@thelitlyapp.com>");
   formData.append("to", to);

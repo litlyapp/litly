@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
-import { sendEmail, emailWrapper } from "@/lib/sendEmail";
+import { sendEmail, emailWrapper, escapeHtml } from "@/lib/sendEmail";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -74,9 +74,9 @@ export async function POST(request: Request) {
     subject: `You've been invited to manage ${orgName} on litly`,
     text: `You've been invited to join ${orgName} as a team member on litly.\n\nAccept your invitation: ${joinUrl}\n\nThis link expires in 7 days.`,
     html: emailWrapper(`
-      <h1 style="font-size:22px;margin:0 0 8px;color:#1B2A3E">You're invited to join ${orgName}</h1>
+      <h1 style="font-size:22px;margin:0 0 8px;color:#1B2A3E">You're invited to join ${escapeHtml(orgName)}</h1>
       <p style="color:#5a4a3a;margin:0 0 24px">
-        You've been invited to help manage <strong>${orgName}</strong> on litly as an editor —
+        You've been invited to help manage <strong>${escapeHtml(orgName)}</strong> on litly as an editor —
         you'll be able to post and edit events for this organization.
       </p>
       <a href="${joinUrl}"

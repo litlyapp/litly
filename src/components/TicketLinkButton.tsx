@@ -9,6 +9,9 @@ interface Props {
 }
 
 export default function TicketLinkButton({ eventId, href, label }: Props) {
+  // Only allow http/https URLs — block javascript: and other unsafe protocols
+  const safeHref = /^https?:\/\//i.test(href) ? href : "#";
+
   function handleClick() {
     const supabase = createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -17,7 +20,7 @@ export default function TicketLinkButton({ eventId, href, label }: Props) {
 
   return (
     <a
-      href={href}
+      href={safeHref}
       target="_blank"
       rel="noopener noreferrer"
       onClick={handleClick}
