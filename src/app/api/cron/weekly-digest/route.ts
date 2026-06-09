@@ -81,10 +81,29 @@ export async function GET(req: Request) {
   }
 
   // Fetch organizer emails from auth.users via service role
+  // Note: additional orgs (multi-org) have null user_id — look up via org_members admin role instead
   let sent = 0;
   for (const org of byOrganizer.values()) {
-    const { data: userData } = await supabase.auth.admin.getUserById(org.userId);
-    const email = userData?.user?.email;
+    let email: string | undefined;
+
+    if (org.userId) {
+      const { data: userData } = await supabase.auth.admin.getUserById(org.userId);
+      email = userData?.user?.email;
+    } else {
+      // Fallback: find admin member of this org
+      const { data: adminMember } = await supabase
+        .from("org_members")
+        .select("user_id")
+        .eq("org_id", org.organizerId)
+        .eq("role", "admin")
+        .limit(1)
+        .maybeSingle();
+      if (adminMember?.user_id) {
+        const { data: userData } = await supabase.auth.admin.getUserById(adminMember.user_id);
+        email = userData?.user?.email;
+      }
+    }
+
     if (!email) continue;
 
     const totalRsvps = Array.from(org.events.values()).reduce((sum, e) => sum + e.count, 0);

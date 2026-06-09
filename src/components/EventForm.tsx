@@ -369,6 +369,13 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       return "Location name is required for in-person events.";
     if (form.event_type === "virtual" && !form.virtual_url.trim())
       return "A link is required for virtual events.";
+    if (form.ticket_type && !form.ticket_url.trim())
+      return "A ticket URL is required when a ticket type is selected.";
+    if (form.end_time && form.date_time && form.end_time <= form.date_time)
+      return "End time must be after the start time.";
+    const eventDate = form.date_time ? new Date(form.date_time) : null;
+    if (eventDate && eventDate < new Date() && !isEditing)
+      return "Event date is in the past. Please check the date and time.";
     for (const r of readers) {
       if (!r.name.trim()) return "All featured readers need a name.";
     }
@@ -469,19 +476,29 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
           siblingsQuery = siblingsQuery.gte("date_time", sharedFields.date_time);
         }
 
-        await siblingsQuery;
+        const { error: siblingsError } = await siblingsQuery;
+        if (siblingsError) {
+          setError(`Event saved but series update failed: ${siblingsError.message}`);
+          setLoading(false);
+          return;
+        }
       }
 
       // If editing the parent event, also persist series settings
       if (isParentEvent && eventId) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any)
+        const { error: seriesSettingsError } = await (supabase as any)
           .from("events")
           .update({
             is_ongoing: seriesOngoing,
             series_end_date: seriesEndDate || null,
           })
           .eq("id", eventId);
+        if (seriesSettingsError) {
+          setError(`Event saved but series settings failed to update: ${seriesSettingsError.message}`);
+          setLoading(false);
+          return;
+        }
       }
 
       router.push(`/events/${eventId}`);
@@ -531,7 +548,13 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
 
         if (children.length > 0) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabase as any).from("events").insert(children);
+          const { error: ongoingChildError } = await (supabase as any).from("events").insert(children);
+          if (ongoingChildError) {
+            setError(`Event created but some occurrences failed: ${ongoingChildError.message}`);
+            setLoading(false);
+            router.push(`/events/${data.id}`);
+            return;
+          }
         }
       }
 

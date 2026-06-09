@@ -1,9 +1,18 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
+import { createHmac } from "crypto";
 
 const CONFIRMATION_FORWARD_TO = "knuth.cdgo@gmail.com";
 const CONFIRMATION_PATTERN = /confirm|verify|activate|subscri|welcome|opt.?in/i;
+
+function verifyMailgunSignature(timestamp: string, token: string, signature: string): boolean {
+  const signingKey = process.env.MAILGUN_WEBHOOK_SIGNING_KEY;
+  if (!signingKey) return true; // skip verification if key not configured
+  const value = timestamp + token;
+  const expected = createHmac("sha256", signingKey).update(value).digest("hex");
+  return expected === signature;
+}
 
 async function forwardToGmail(from: string, subject: string, bodyPlain: string, bodyHtml: string) {
   const formData = new FormData();
@@ -14,11 +23,14 @@ async function forwardToGmail(from: string, subject: string, bodyPlain: string, 
   if (bodyHtml) formData.append("html", bodyHtml);
 
   const credentials = Buffer.from(`api:${process.env.MAILGUN_API_KEY}`).toString("base64");
-  await fetch("https://api.mailgun.net/v3/thelitlyapp.com/messages", {
+  const res = await fetch("https://api.mailgun.net/v3/thelitlyapp.com/messages", {
     method: "POST",
     headers: { Authorization: `Basic ${credentials}` },
     body: formData,
   });
+  if (!res.ok) {
+    console.error("[inbound-email] forwardToGmail failed:", await res.text());
+  }
 }
 
 export async function POST(request: Request) {
@@ -31,6 +43,14 @@ export async function POST(request: Request) {
 
   try {
     const formData = await request.formData();
+
+    // Verify Mailgun webhook signature
+    const timestamp = formData.get("timestamp")?.toString() ?? "";
+    const token = formData.get("token")?.toString() ?? "";
+    const signature = formData.get("signature")?.toString() ?? "";
+    if (!verifyMailgunSignature(timestamp, token, signature)) {
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+    }
 
     const from = formData.get("from")?.toString() ?? "";
     const subject = formData.get("subject")?.toString() ?? "";

@@ -44,7 +44,7 @@ export default async function SavedPage() {
 
   if (!user) redirect("/login?next=/saved");
 
-  // Fetch RSVPs with full event data
+  // Fetch RSVPs with full event data (exclude cancelled events)
   const { data: rsvpRows } = await supabase
     .from("rsvps")
     .select<string, RsvpRow>(
@@ -52,7 +52,7 @@ export default async function SavedPage() {
       event_id,
       event:events(
         id, title, description, genre, event_type, date_time, timezone, end_time,
-        location_name, city, state, country, address, lat, lng, virtual_url, open_mic, rsvp_enabled, created_at,
+        location_name, city, state, country, address, lat, lng, virtual_url, open_mic, rsvp_enabled, created_at, is_cancelled,
         organizer:organizer_profiles(id, name, org_type)
       )
     `
@@ -60,7 +60,7 @@ export default async function SavedPage() {
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
-  // Fetch saved events with full event data
+  // Fetch saved events with full event data (exclude cancelled events)
   const { data: savedRows } = await supabase
     .from("saved_events")
     .select<string, SavedRow>(
@@ -68,7 +68,7 @@ export default async function SavedPage() {
       event_id,
       event:events(
         id, title, description, genre, event_type, date_time, timezone, end_time,
-        location_name, city, state, country, address, lat, lng, virtual_url, open_mic, rsvp_enabled, created_at,
+        location_name, city, state, country, address, lat, lng, virtual_url, open_mic, rsvp_enabled, created_at, is_cancelled,
         organizer:organizer_profiles(id, name, org_type)
       )
     `
@@ -84,15 +84,15 @@ export default async function SavedPage() {
     (savedRows ?? []).map((r) => r.event_id).filter(Boolean) as string[]
   );
 
-  // RSVPs pinned to top — extract event objects
+  // RSVPs pinned to top — extract event objects, exclude cancelled
   const rsvpEvents = (rsvpRows ?? [])
     .map((r) => (Array.isArray(r.event) ? r.event[0] : r.event))
-    .filter(Boolean);
+    .filter((e) => e && !(e as typeof e & { is_cancelled?: boolean }).is_cancelled);
 
-  // Saved-only: exclude events the user has also RSVP'd to
+  // Saved-only: exclude events the user has also RSVP'd to, and exclude cancelled
   const savedOnlyEvents = (savedRows ?? [])
     .map((r) => (Array.isArray(r.event) ? r.event[0] : r.event))
-    .filter((e) => e && !rsvpEventIds.has(e.id));
+    .filter((e) => e && !rsvpEventIds.has(e.id) && !(e as typeof e & { is_cancelled?: boolean }).is_cancelled);
 
   const totalCount = rsvpEvents.length + savedOnlyEvents.length;
 
