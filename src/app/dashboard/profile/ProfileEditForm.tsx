@@ -151,7 +151,69 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
       </button>
 
       <ChangePasswordSection />
+      <DeleteAccountSection />
     </form>
+  );
+}
+
+function DeleteAccountSection() {
+  const router = useRouter();
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleDelete() {
+    setDeleting(true);
+    setError(null);
+    const res = await fetch("/api/account/delete", { method: "POST" });
+    if (!res.ok) {
+      const data = await res.json();
+      setError(data.error ?? "Something went wrong.");
+      setDeleting(false);
+      return;
+    }
+    router.push("/");
+  }
+
+  return (
+    <div className="bg-navy-light border border-red-900/40 rounded-2xl p-6 space-y-4">
+      <label className="text-cream-muted text-xs uppercase tracking-wider block">
+        Danger zone
+      </label>
+      {!confirming ? (
+        <button
+          type="button"
+          onClick={() => setConfirming(true)}
+          className="px-5 py-2 rounded-full border border-red-500/50 text-red-400 text-sm font-medium hover:bg-red-500/10 transition"
+        >
+          Delete account
+        </button>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-cream-muted text-sm">
+            This will permanently delete your account and all your events. This cannot be undone.
+          </p>
+          {error && <p className="text-orange text-xs">{error}</p>}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setConfirming(false)}
+              className="px-5 py-2 rounded-full border border-cream/20 text-cream-muted text-sm hover:border-cream/40 transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleting}
+              className="px-5 py-2 rounded-full bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition disabled:opacity-60"
+            >
+              {deleting ? "Deleting…" : "Yes, delete my account"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
