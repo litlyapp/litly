@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import ProfileEditForm from "./ProfileEditForm";
 
@@ -27,6 +28,16 @@ export default async function ProfilePage() {
         <p className="text-cream-muted">Update your public organizer profile.</p>
       </div>
       <ProfileEditForm profile={profile} />
+
+      <div className="mt-10 pt-6 border-t border-cream/10 text-center">
+        <p className="text-cream-muted text-sm mb-2">Password, email, and account settings</p>
+        <Link
+          href="/account"
+          className="text-orange hover:text-orange/80 text-sm underline underline-offset-2 transition"
+        >
+          Manage your account →
+        </Link>
+      </div>
     </div>
   );
 }
