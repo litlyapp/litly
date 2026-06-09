@@ -24,9 +24,7 @@ export default function NavClient({ user, role }: Props) {
 
   async function signOut() {
     await supabase.auth.signOut();
-    close();
-    router.push("/");
-    router.refresh();
+    window.location.href = "/";
   }
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");

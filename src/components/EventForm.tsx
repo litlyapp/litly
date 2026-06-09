@@ -347,8 +347,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         setCancelConfirm(false);
         return;
       }
-      router.push("/dashboard");
-      router.refresh();
+      window.location.href = "/dashboard";
     } catch {
       setError("Network error. Please try again.");
       setCancelling(false);
