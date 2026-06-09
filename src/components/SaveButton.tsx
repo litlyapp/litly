@@ -28,16 +28,14 @@ export default function SaveButton({ eventId, initialSaved }: Props) {
     const next = !saved;
     setSaved(next);
 
+    let error;
     if (next) {
-      await supabase.from("saved_events").insert({ user_id: user.id, event_id: eventId });
+      ({ error } = await supabase.from("saved_events").insert({ user_id: user.id, event_id: eventId }));
     } else {
-      await supabase
-        .from("saved_events")
-        .delete()
-        .eq("user_id", user.id)
-        .eq("event_id", eventId);
+      ({ error } = await supabase.from("saved_events").delete().eq("user_id", user.id).eq("event_id", eventId));
     }
 
+    if (error) { setSaved(!next); return; }
     startTransition(() => router.refresh());
   }
 

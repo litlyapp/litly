@@ -26,18 +26,14 @@ export default function FollowButton({
     const next = !following;
     setFollowing(next);
 
+    let error;
     if (next) {
-      await supabase
-        .from("follows")
-        .insert({ patron_id: patronId, organizer_id: organizerId });
+      ({ error } = await supabase.from("follows").insert({ patron_id: patronId, organizer_id: organizerId }));
     } else {
-      await supabase
-        .from("follows")
-        .delete()
-        .eq("patron_id", patronId)
-        .eq("organizer_id", organizerId);
+      ({ error } = await supabase.from("follows").delete().eq("patron_id", patronId).eq("organizer_id", organizerId));
     }
 
+    if (error) { setFollowing(!next); setLoading(false); return; }
     setLoading(false);
     startTransition(() => router.refresh());
   }
