@@ -37,7 +37,7 @@ export default async function DashboardPage() {
     .eq("user_id", user.id)
     .single();
 
-  if (!profile) redirect("/");
+  if (!profile) redirect("/become-organizer");
 
   const now = new Date().toISOString();
 
