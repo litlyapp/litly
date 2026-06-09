@@ -43,6 +43,7 @@ export default async function Nav() {
           >
             Map
           </Link>
+          <NavLink href="/support">Support litly</NavLink>
         </div>
 
         {/* Auth controls + mobile menu (client) */}
