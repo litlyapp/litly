@@ -118,6 +118,12 @@ function tzOffsetMs(date: Date, timeZone: string): number {
   return asUTC - date.getTime();
 }
 
+// Extract the wall-clock "YYYY-MM-DDTHH:MM" components from a Date object (browser-local interpretation)
+function dateToWallClock(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 // Convert a "YYYY-MM-DDTHH:MM" wall-clock string in `timeZone` to a UTC ISO string
 function zonedToUtcIso(local: string, timeZone: string): string {
   if (!local) return "";
@@ -373,7 +379,8 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       return "A ticket URL is required when a ticket type is selected.";
     if (form.end_time && form.date_time && form.end_time <= form.date_time)
       return "End time must be after the start time.";
-    const eventDate = form.date_time ? new Date(form.date_time) : null;
+    // Convert using the selected timezone so this check is correct regardless of browser locale
+    const eventDate = form.date_time ? new Date(zonedToUtcIso(form.date_time, timezone)) : null;
     if (eventDate && eventDate < new Date() && !isEditing)
       return "Event date is in the past. Please check the date and time.";
     for (const r of readers) {
@@ -524,6 +531,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
 
       // For ongoing events: seed first 9 children immediately (parent = occurrence 1, total = 10)
       if (recurrenceRule && form.date_time && newEventOngoing) {
+        // Parse in browser-local time for recurrence math (wall-clock values are correct)
         const startDate = new Date(form.date_time);
         const durationMs = form.end_time
           ? new Date(form.end_time).getTime() - startDate.getTime()
@@ -534,14 +542,16 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         for (let i = 0; i < 9; i++) {
           const next = generateNextOccurrence(cursor, recurrenceRule);
           if (!next) break;
+          // Convert wall-clock date → correct UTC using the event's timezone, not browser locale
+          const nextUtcMs = new Date(zonedToUtcIso(dateToWallClock(next), timezone)).getTime();
           children.push({
             organizer_id: organizerId,
             parent_event_id: data.id,
             ...sharedFields,
             recurrence_rule: null,
             is_ongoing: false,
-            date_time: next.toISOString(),
-            end_time: durationMs !== null ? new Date(next.getTime() + durationMs).toISOString() : null,
+            date_time: new Date(nextUtcMs).toISOString(),
+            end_time: durationMs !== null ? new Date(nextUtcMs + durationMs).toISOString() : null,
           });
           cursor = next;
         }
@@ -560,6 +570,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
 
       // Generate and insert child occurrences (skipped for ongoing — seeded above)
       if (recurrenceRule && form.date_time && !newEventOngoing) {
+        // Parse in browser-local time for recurrence math (wall-clock values are correct)
         const startDate = new Date(form.date_time);
         const occurrenceDates = generateOccurrenceDates(startDate, recurrenceRule);
 
@@ -568,17 +579,19 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
             ? new Date(form.end_time).getTime() - startDate.getTime()
             : null;
 
-        const children = occurrenceDates.map((d) => ({
-          organizer_id: organizerId,
-          parent_event_id: data.id,
-          ...sharedFields,
-          recurrence_rule: null,
-          is_ongoing: false,
-          date_time: d.toISOString(),
-          end_time: durationMs !== null
-            ? new Date(d.getTime() + durationMs).toISOString()
-            : null,
-        }));
+        // Convert each wall-clock occurrence date → correct UTC using the event's timezone
+        const children = occurrenceDates.map((d) => {
+          const utcMs = new Date(zonedToUtcIso(dateToWallClock(d), timezone)).getTime();
+          return {
+            organizer_id: organizerId,
+            parent_event_id: data.id,
+            ...sharedFields,
+            recurrence_rule: null,
+            is_ongoing: false,
+            date_time: new Date(utcMs).toISOString(),
+            end_time: durationMs !== null ? new Date(utcMs + durationMs).toISOString() : null,
+          };
+        });
 
         if (children.length > 0) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any

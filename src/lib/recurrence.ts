@@ -71,6 +71,9 @@ export function generateOccurrenceDates(startDate: Date, rule: RecurrenceRule): 
     }
   } else if (rule.frequency === "monthly_date") {
     let year = startDate.getFullYear();
+    // Start at next month. getMonth()+1 produces 1–12 (1-based), but new Date(year, month, ...)
+    // accepts values outside 0–11 and overflows correctly (e.g. month=12 → January next year).
+    // The guard `if (month > 11)` handles the December parent case (getMonth()=11, +1=12).
     let month = startDate.getMonth() + 1;
     if (month > 11) { month = 0; year++; }
     while (true) {
@@ -84,6 +87,7 @@ export function generateOccurrenceDates(startDate: Date, rule: RecurrenceRule): 
   } else if (rule.frequency === "monthly_day") {
     if (rule.day_of_week === undefined || rule.week_of_month === undefined) return dates;
     let year = startDate.getFullYear();
+    // Same intentional 1-based overflow trick as monthly_date above.
     let month = startDate.getMonth() + 1;
     if (month > 11) { month = 0; year++; }
     while (true) {
