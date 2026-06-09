@@ -45,8 +45,7 @@ function LoginForm() {
       if (userRow?.role === "organizer") destination = "/dashboard";
     }
 
-    router.push(destination);
-    router.refresh();
+    window.location.href = destination;
   }
 
   return (
