@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { ACTIVE_ORG_COOKIE } from "@/lib/activeOrg";
 
 export const dynamic = "force-dynamic";
 
@@ -85,6 +87,16 @@ export default async function JoinPage({
       await svc.from("users").update({ role: "organizer" }).eq("id", user.id);
       await svc.auth.admin.updateUserById(user.id, { user_metadata: { role: "organizer" } });
     }
+
+    // Switch active org cookie to the newly joined org
+    const cookieStore = await cookies();
+    cookieStore.set(ACTIVE_ORG_COOKIE, invite.org_id, {
+      path: "/",
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 24 * 365,
+    });
 
     redirect("/dashboard?joined=1");
   }

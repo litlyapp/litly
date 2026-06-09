@@ -42,7 +42,13 @@ export default function AdminEventsClient({ initialEvents }: { initialEvents: Ad
 
   async function handleDelete(id: string) {
     setDeleting(id);
-    await supabase.from("events").delete().eq("id", id);
+    const { error } = await supabase.from("events").delete().eq("id", id);
+    if (error) {
+      alert("Failed to delete event: " + error.message);
+      setDeleting(null);
+      setConfirming(null);
+      return;
+    }
     setEvents((prev) => prev.filter((e) => e.id !== id));
     setConfirming(null);
     setDeleting(null);

@@ -61,7 +61,10 @@ export default function AvatarUpload({ value, name, onChange }: Props) {
   async function handleRemove() {
     if (!value) return;
     const path = value.split("/profile-avatars/")[1];
-    if (path) await supabase.storage.from("profile-avatars").remove([path]);
+    if (path) {
+      const { error: removeError } = await supabase.storage.from("profile-avatars").remove([path]);
+      if (removeError) { setError("Failed to remove photo."); return; }
+    }
     onChange(null);
   }
 

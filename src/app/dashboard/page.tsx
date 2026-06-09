@@ -24,7 +24,13 @@ interface DashboardEvent {
   is_cancelled?: boolean;
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ joined?: string }>;
+}) {
+  const params = await searchParams;
+  const justJoined = params.joined === "1";
   const supabase = await createClient();
 
   const {
@@ -130,6 +136,13 @@ export default async function DashboardPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-10">
+      {/* Joined banner */}
+      {justJoined && (
+        <div className="bg-orange/10 border border-orange/30 rounded-2xl px-5 py-4 mb-6 text-cream text-sm">
+          Welcome to the team! You now have access to this organization's dashboard.
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-start justify-between gap-3">

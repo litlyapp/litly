@@ -65,10 +65,10 @@ export default function BannerUpload({ value, onChange }: Props) {
 
   async function handleRemove() {
     if (!value) return;
-    // Extract path from URL
     const path = value.split("/event-banners/")[1];
     if (path) {
-      await supabase.storage.from("event-banners").remove([path]);
+      const { error: removeError } = await supabase.storage.from("event-banners").remove([path]);
+      if (removeError) { setError("Failed to remove banner."); return; }
     }
     onChange(null);
   }
