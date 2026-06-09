@@ -3,7 +3,6 @@ export type Genre =
   | "fiction"
   | "nonfiction"
   | "essay"
-  | "hybrid_experimental"
   | "translation"
   | "ya"
   | "craft_talk"

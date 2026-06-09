@@ -12,6 +12,16 @@ export async function POST(req: Request) {
   const { eventId } = await req.json();
   if (!eventId) return NextResponse.json({ error: "Missing eventId" }, { status: 400 });
 
+  // Block RSVPs on cancelled events
+  const { data: eventCheck } = await supabase
+    .from("events")
+    .select("is_cancelled")
+    .eq("id", eventId)
+    .single();
+  if (eventCheck?.is_cancelled) {
+    return NextResponse.json({ error: "This event has been cancelled." }, { status: 400 });
+  }
+
   // Insert RSVP
   const { error: rsvpError } = await supabase
     .from("rsvps")
