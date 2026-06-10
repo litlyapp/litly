@@ -48,6 +48,8 @@ export default function LeafletMap({
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(initialUserLoc ?? null);
   const [radius, setRadius] = useState<number | null>(initialUserLoc ? 25 : null);
   const [mapReady, setMapReady] = useState(false);
+  const [zoom, setZoom] = useState<number | null>(null);
+  const didFitRef = useRef(false);
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState(false);
 
@@ -89,6 +91,10 @@ export default function LeafletMap({
           map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
         }
       }
+
+      // Re-cluster markers whenever the zoom level changes
+      map.on("zoomend", () => setZoom(map.getZoom()));
+      setZoom(map.getZoom());
 
       // Signal that map is ready so markers can be drawn
       setMapReady(true);
@@ -155,10 +161,36 @@ export default function LeafletMap({
       locationMap.get(key)!.push(event);
     });
 
+    // Cluster locations whose dots would overlap at the current zoom level
+    // (within ~44px on screen). Clusters re-split as the user zooms in.
+    const currentZoom = map.getZoom();
+    const CLUSTER_PX = 44;
+    type Cluster = { locations: { lat: number; lng: number; events: typeof filtered }[] };
+    const clusters: Cluster[] = [];
     locationMap.forEach((locationEvents, key) => {
       const [lat, lng] = key.split(",").map(Number);
-      const color = "#E8622A";
+      const pt = map.project([lat, lng], currentZoom);
+      const existing = clusters.find((c) =>
+        c.locations.some((loc) => {
+          const other = map.project([loc.lat, loc.lng], currentZoom);
+          return pt.distanceTo(other) < CLUSTER_PX;
+        })
+      );
+      if (existing) {
+        existing.locations.push({ lat, lng, events: locationEvents });
+      } else {
+        clusters.push({ locations: [{ lat, lng, events: locationEvents }] });
+      }
+    });
+
+    clusters.forEach((cluster) => {
+      const locationEvents = cluster.locations.flatMap((loc) => loc.events);
       const count = locationEvents.length;
+      const isMultiLocation = cluster.locations.length > 1;
+      // Center the marker on the cluster's locations (weighted equally)
+      const lat = cluster.locations.reduce((s, l) => s + l.lat, 0) / cluster.locations.length;
+      const lng = cluster.locations.reduce((s, l) => s + l.lng, 0) / cluster.locations.length;
+      const color = "#E8622A";
 
       const svgIcon = L.divIcon({
         className: "",
@@ -190,23 +222,32 @@ export default function LeafletMap({
         </div>
       `;
 
-      const popup = L.popup({
-        className: "litly-popup",
-        closeButton: false,
-        maxWidth: 280,
-      }).setContent(popupContent);
+      const marker = L.marker([lat, lng], { icon: svgIcon }).addTo(layer);
 
-      L.marker([lat, lng], { icon: svgIcon })
-        .bindPopup(popup)
-        .addTo(layer);
+      if (isMultiLocation) {
+        // Clicking a multi-location cluster zooms in until it splits
+        marker.on("click", () => {
+          const bounds = L.latLngBounds(cluster.locations.map((l) => [l.lat, l.lng]));
+          map.flyToBounds(bounds, { padding: [60, 60], maxZoom: 16, duration: 0.6 });
+        });
+      } else {
+        const popup = L.popup({
+          className: "litly-popup",
+          closeButton: false,
+          maxWidth: 280,
+        }).setContent(popupContent);
+        marker.bindPopup(popup);
+      }
     });
 
-    // Fit bounds to filtered events (only on initial load without radius)
-    if (!userLoc && filtered.length > 0) {
+    // Fit bounds to filtered events (only on initial load without radius —
+    // not on zoom-driven redraws, which would snap the view back)
+    if (!userLoc && filtered.length > 0 && !didFitRef.current) {
+      didFitRef.current = true;
       const bounds = L.latLngBounds(filtered.filter(e => e.lat && e.lng).map((e) => [e.lat!, e.lng!]));
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
     }
-  }, [events, userLoc, radius, mapReady]);
+  }, [events, userLoc, radius, mapReady, zoom]);
 
   function handleLocate() {
     if (!navigator.geolocation) { setLocError(true); return; }
