@@ -30,6 +30,10 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -59,6 +63,26 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
       router.refresh();
+    }
+  }
+
+  async function handleDeleteOrg() {
+    setDeleting(true);
+    setDeleteError(null);
+
+    const res = await fetch("/api/org/delete", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orgId: profile.id }),
+    });
+
+    if (res.ok) {
+      window.location.href = "/dashboard";
+    } else {
+      const body = await res.json();
+      setDeleteError(body.error ?? "Failed to delete org.");
+      setDeleting(false);
+      setDeleteConfirm(false);
     }
   }
 
@@ -150,6 +174,44 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
       >
         {saving ? "Saving…" : saved ? "Saved!" : "Save profile"}
       </button>
+
+      {/* Delete org */}
+      <div className="border-t border-cream/10 pt-8">
+        {deleteError && <p className="text-orange text-xs mb-3">{deleteError}</p>}
+        {!deleteConfirm ? (
+          <button
+            type="button"
+            onClick={() => setDeleteConfirm(true)}
+            className="w-full py-3 rounded-full border border-orange/40 text-orange text-sm font-medium hover:bg-orange/10 transition"
+          >
+            Delete org
+          </button>
+        ) : (
+          <div className="bg-orange/10 border border-orange/30 rounded-2xl p-5 space-y-3">
+            <p className="text-cream text-sm font-medium">Delete {profile.name}?</p>
+            <p className="text-cream-muted text-xs">
+              This permanently deletes this org, its team, and all of its events. This cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={handleDeleteOrg}
+                disabled={deleting}
+                className="px-5 py-2 rounded-full bg-orange text-cream text-sm font-medium hover:bg-orange/90 transition disabled:opacity-60"
+              >
+                {deleting ? "Deleting…" : "Yes, delete this org"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeleteConfirm(false)}
+                className="px-5 py-2 rounded-full border border-cream/20 text-cream-muted hover:text-cream hover:border-cream/40 transition text-sm"
+              >
+                Keep org
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </form>
   );
 }

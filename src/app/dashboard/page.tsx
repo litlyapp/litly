@@ -164,14 +164,14 @@ export default async function DashboardPage({
                 href="/dashboard/team"
                 className="border border-cream/20 text-cream-muted font-medium px-4 py-2 rounded-full hover:border-cream/40 hover:text-cream transition text-sm"
               >
-                Team
+                Org team
               </Link>
             )}
             <Link
               href="/dashboard/profile"
               className="border border-cream/20 text-cream-muted font-medium px-4 py-2 rounded-full hover:border-cream/40 hover:text-cream transition text-sm"
             >
-              Edit profile
+              Edit org profile
             </Link>
           </div>
         )}

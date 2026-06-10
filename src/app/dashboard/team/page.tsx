@@ -53,7 +53,7 @@ export default async function TeamPage() {
     <div className="max-w-2xl mx-auto px-4 py-10">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="font-serif text-4xl text-cream mb-1">Team</h1>
+          <h1 className="font-serif text-4xl text-cream mb-1">Org team</h1>
           <p className="text-cream-muted">{orgProfile?.name}</p>
         </div>
         <Link

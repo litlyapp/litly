@@ -39,7 +39,7 @@ export default async function ProfilePage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-10">
       <div className="mb-8">
-        <h1 className="font-serif text-4xl text-cream mb-1">Edit profile</h1>
+        <h1 className="font-serif text-4xl text-cream mb-1">Edit org profile</h1>
         <p className="text-cream-muted">Update your public organizer profile.</p>
       </div>
       <ProfileEditForm profile={profile} />
