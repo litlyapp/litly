@@ -16,33 +16,22 @@ export default function LandingSearch() {
     router.push(`/events${params.toString() ? `?${params}` : ""}`);
   }
 
-  async function handleNearMe(e: React.MouseEvent) {
+  function handleNearMe(e: React.MouseEvent) {
     e.preventDefault();
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      router.push("/events/map");
+      return;
+    }
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`,
-            { headers: { "Accept-Language": "en" } }
-          );
-          const data = await res.json();
-          const city =
-            data.address?.city ||
-            data.address?.town ||
-            data.address?.village ||
-            data.address?.county ||
-            "";
-          const country = data.address?.country || "";
-          const location = city ? `${city}, ${country}` : country;
-          const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
-          handleSubmit(fakeEvent, location);
-        } catch {
-          setLocating(false);
-        }
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        router.push(`/events/map?lat=${latitude}&lng=${longitude}`);
       },
-      () => setLocating(false)
+      () => {
+        setLocating(false);
+        router.push("/events/map");
+      }
     );
   }
 
@@ -62,7 +51,7 @@ export default function LandingSearch() {
         type="button"
         onClick={handleNearMe}
         disabled={locating}
-        title="Near me"
+        title="Map near me"
         className="border border-cream/25 text-cream-muted px-3 py-3 rounded-full hover:border-cream/50 hover:text-cream transition shrink-0 disabled:opacity-60"
       >
         {locating ? (

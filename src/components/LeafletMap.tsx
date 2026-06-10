@@ -32,15 +32,21 @@ function distanceMiles(lat1: number, lng1: number, lat2: number, lng2: number) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-export default function LeafletMap({ events }: { events: MapEvent[] }) {
+export default function LeafletMap({
+  events,
+  initialUserLoc,
+}: {
+  events: MapEvent[];
+  initialUserLoc?: { lat: number; lng: number } | null;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
   const markerLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
   const circleRef = useRef<import("leaflet").Circle | null>(null);
   const LRef = useRef<typeof import("leaflet") | null>(null);
 
-  const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
-  const [radius, setRadius] = useState<number | null>(null);
+  const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(initialUserLoc ?? null);
+  const [radius, setRadius] = useState<number | null>(initialUserLoc ? 25 : null);
   const [mapReady, setMapReady] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState(false);
@@ -59,8 +65,8 @@ export default function LeafletMap({ events }: { events: MapEvent[] }) {
       if (!containerRef.current) return;
 
       map = L.map(containerRef.current, {
-        center: [40.7128, -74.006],
-        zoom: 11,
+        center: initialUserLoc ? [initialUserLoc.lat, initialUserLoc.lng] : [40.7128, -74.006],
+        zoom: initialUserLoc ? 11 : 11,
         zoomControl: true,
       });
       mapRef.current = map;
@@ -72,11 +78,16 @@ export default function LeafletMap({ events }: { events: MapEvent[] }) {
 
       markerLayerRef.current = L.layerGroup().addTo(map);
 
-      // Fit to events on load; user can request their location via button
-      const valid = events.filter((e) => e.lat && e.lng);
-      if (valid.length > 0) {
-        const bounds = L.latLngBounds(valid.map((e) => [e.lat!, e.lng!]));
-        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+      // If we already have the user's location, center there; otherwise
+      // fit to events on load (user can request their location via button)
+      if (initialUserLoc) {
+        map.setView([initialUserLoc.lat, initialUserLoc.lng], 11);
+      } else {
+        const valid = events.filter((e) => e.lat && e.lng);
+        if (valid.length > 0) {
+          const bounds = L.latLngBounds(valid.map((e) => [e.lat!, e.lng!]));
+          map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+        }
       }
 
       // Signal that map is ready so markers can be drawn

@@ -28,6 +28,12 @@ const LeafletMap = dynamic(() => import("./LeafletMap"), {
   ),
 });
 
-export default function EventMap({ events }: { events: MapEvent[] }) {
-  return <LeafletMap events={events} />;
+export default function EventMap({
+  events,
+  initialUserLoc,
+}: {
+  events: MapEvent[];
+  initialUserLoc?: { lat: number; lng: number } | null;
+}) {
+  return <LeafletMap events={events} initialUserLoc={initialUserLoc} />;
 }
