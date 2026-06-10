@@ -29,12 +29,15 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
   }
 
-  // Prevent demoting the last admin (applies regardless of who is being demoted)
+  // Prevent demoting the last admin — only relevant when the target is currently an admin
   if (role === "editor") {
     const svc = serviceClient();
-    const { count } = await svc.from("org_members").select("id", { count: "exact", head: true }).eq("org_id", orgId).eq("role", "admin");
-    if ((count ?? 0) <= 1) {
-      return NextResponse.json({ error: "Cannot demote the last admin" }, { status: 400 });
+    const { data: targetMember } = await svc.from("org_members").select("role").eq("org_id", orgId).eq("user_id", targetUserId).maybeSingle();
+    if (targetMember?.role === "admin") {
+      const { count } = await svc.from("org_members").select("id", { count: "exact", head: true }).eq("org_id", orgId).eq("role", "admin");
+      if ((count ?? 0) <= 1) {
+        return NextResponse.json({ error: "Cannot demote the last admin" }, { status: 400 });
+      }
     }
   }
 

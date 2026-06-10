@@ -11,6 +11,7 @@ interface Props {
 
 export default function SaveButton({ eventId, initialSaved }: Props) {
   const [saved, setSaved] = useState(initialSaved);
+  const [loading, setLoading] = useState(false);
   const [, startTransition] = useTransition();
   const router = useRouter();
   const supabase = createClient();
@@ -18,25 +19,31 @@ export default function SaveButton({ eventId, initialSaved }: Props) {
   async function toggle(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
+    if (loading) return; // guard against double-click double-insert
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.push("/login");
-      return;
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/login");
+        return;
+      }
+
+      const next = !saved;
+      setSaved(next);
+
+      let error;
+      if (next) {
+        ({ error } = await supabase.from("saved_events").insert({ user_id: user.id, event_id: eventId }));
+      } else {
+        ({ error } = await supabase.from("saved_events").delete().eq("user_id", user.id).eq("event_id", eventId));
+      }
+
+      if (error) { setSaved(!next); return; }
+      startTransition(() => router.refresh());
+    } finally {
+      setLoading(false);
     }
-
-    const next = !saved;
-    setSaved(next);
-
-    let error;
-    if (next) {
-      ({ error } = await supabase.from("saved_events").insert({ user_id: user.id, event_id: eventId }));
-    } else {
-      ({ error } = await supabase.from("saved_events").delete().eq("user_id", user.id).eq("event_id", eventId));
-    }
-
-    if (error) { setSaved(!next); return; }
-    startTransition(() => router.refresh());
   }
 
   return (

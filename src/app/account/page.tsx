@@ -98,12 +98,18 @@ export default function AccountPage() {
 
   async function handleDeleteAccount() {
     setDeleting(true);
-    const res = await fetch("/api/account/delete", { method: "POST" });
-    if (res.ok) {
-      window.location.href = "/";
-    } else {
-      const body = await res.json();
-      setDeleteError(body.error ?? "Failed to delete account.");
+    try {
+      const res = await fetch("/api/account/delete", { method: "POST" });
+      if (res.ok) {
+        window.location.href = "/";
+      } else {
+        const body = await res.json();
+        setDeleteError(body.error ?? "Failed to delete account.");
+        setDeleting(false);
+        setDeleteConfirm(false);
+      }
+    } catch {
+      setDeleteError("Network error. Please try again.");
       setDeleting(false);
       setDeleteConfirm(false);
     }

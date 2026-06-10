@@ -29,14 +29,8 @@ export async function POST(request: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  // Update role in users table
-  const { error: roleError } = await serviceClient
-    .from("users")
-    .update({ role: "organizer" })
-    .eq("id", user.id);
-  if (roleError) return NextResponse.json({ error: roleError.message }, { status: 500 });
-
-  // Count how many orgs this user already belongs to as admin
+  // Check the org cap BEFORE granting the organizer role, so a rejected
+  // request doesn't leave the user flipped to organizer with no new org
   const { count: orgCount } = await serviceClient
     .from("org_members")
     .select("org_id", { count: "exact", head: true })
@@ -46,6 +40,13 @@ export async function POST(request: Request) {
   if ((orgCount ?? 0) >= 5) {
     return NextResponse.json({ error: "You can manage a maximum of 5 organizations." }, { status: 400 });
   }
+
+  // Update role in users table
+  const { error: roleError } = await serviceClient
+    .from("users")
+    .update({ role: "organizer" })
+    .eq("id", user.id);
+  if (roleError) return NextResponse.json({ error: roleError.message }, { status: 500 });
 
   // Check if the user already owns an org (has a profile with their user_id).
   // If so, additional orgs are created without user_id to avoid the unique constraint —

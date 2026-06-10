@@ -12,17 +12,21 @@ export default function SupportPage() {
     e.preventDefault();
     setStatus("sending");
 
-    const res = await fetch("/api/support", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subject, message }),
-    });
+    try {
+      const res = await fetch("/api/support", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject, message }),
+      });
 
-    if (res.ok) {
-      setStatus("sent");
-      setSubject("");
-      setMessage("");
-    } else {
+      if (res.ok) {
+        setStatus("sent");
+        setSubject("");
+        setMessage("");
+      } else {
+        setStatus("error");
+      }
+    } catch {
       setStatus("error");
     }
   }

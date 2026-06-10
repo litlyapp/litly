@@ -26,7 +26,12 @@ export default function FollowButton({
 
     // Always resolve the current user server-side — never trust a prop for auth-sensitive writes
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setFollowing(!next); setLoading(false); return; }
+    if (!user) {
+      setFollowing(!next);
+      setLoading(false);
+      router.push("/login"); // logged out — send to login instead of silently doing nothing
+      return;
+    }
 
     let error;
     if (next) {

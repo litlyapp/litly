@@ -41,13 +41,17 @@ export default function OrgSwitcher({
 
   async function switchOrg(orgId: string) {
     setOpen(false);
-    const res = await fetch("/api/org/switch", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orgId }),
-    });
-    if (!res.ok) { setError("Failed to switch org. Please try again."); return; }
-    router.refresh();
+    try {
+      const res = await fetch("/api/org/switch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgId }),
+      });
+      if (!res.ok) { setError("Failed to switch org. Please try again."); return; }
+      router.refresh();
+    } catch {
+      setError("Network error. Please try again.");
+    }
   }
 
   async function handleCreate(e: React.FormEvent) {
@@ -55,33 +59,37 @@ export default function OrgSwitcher({
     setSubmitting(true);
     setError(null);
 
-    const res = await fetch("/api/account/become-organizer", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orgName: orgName.trim(), orgType }),
-    });
-    const data = await res.json();
+    try {
+      const res = await fetch("/api/account/become-organizer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgName: orgName.trim(), orgType }),
+      });
+      const data = await res.json();
 
-    if (!res.ok) {
-      setError(data.error ?? "Failed to create org");
+      if (!res.ok) {
+        setError(data.error ?? "Failed to create org");
+        return;
+      }
+
+      // Switch to the newly created org
+      const switchRes = await fetch("/api/org/switch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgId: data.orgId }),
+      });
+      if (!switchRes.ok) { setError("Org created but failed to switch to it. Refresh and select it manually."); return; }
+
+      setCreating(false);
+      setOrgName("");
+      setOrgType("individual");
+      setOpen(false);
+      router.refresh();
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
       setSubmitting(false);
-      return;
     }
-
-    // Switch to the newly created org
-    const switchRes = await fetch("/api/org/switch", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orgId: data.orgId }),
-    });
-    if (!switchRes.ok) { setError("Org created but failed to switch to it. Refresh and select it manually."); setSubmitting(false); return; }
-
-    setCreating(false);
-    setOrgName("");
-    setOrgType("individual");
-    setSubmitting(false);
-    setOpen(false);
-    router.refresh();
   }
 
   return (

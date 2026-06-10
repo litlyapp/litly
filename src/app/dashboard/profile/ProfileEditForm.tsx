@@ -70,17 +70,23 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
     setDeleting(true);
     setDeleteError(null);
 
-    const res = await fetch("/api/org/delete", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orgId: profile.id }),
-    });
+    try {
+      const res = await fetch("/api/org/delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgId: profile.id }),
+      });
 
-    if (res.ok) {
-      window.location.href = "/dashboard";
-    } else {
-      const body = await res.json();
-      setDeleteError(body.error ?? "Failed to delete org.");
+      if (res.ok) {
+        window.location.href = "/dashboard";
+      } else {
+        const body = await res.json();
+        setDeleteError(body.error ?? "Failed to delete org.");
+        setDeleting(false);
+        setDeleteConfirm(false);
+      }
+    } catch {
+      setDeleteError("Network error. Please try again.");
       setDeleting(false);
       setDeleteConfirm(false);
     }

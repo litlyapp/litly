@@ -43,20 +43,24 @@ export default function AdminQueueClient() {
     e.preventDefault();
     if (!password.trim()) return;
     setLoadingData(true);
-    const res = await fetch("/api/admin/queue-data", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-    });
-    if (!res.ok) {
-      setError("Invalid password.");
+    try {
+      const res = await fetch("/api/admin/queue-data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      if (!res.ok) {
+        setError(res.status === 429 ? "Too many attempts. Try again later." : "Invalid password.");
+        return;
+      }
+      const { items: fetched } = await res.json();
+      setItems(fetched);
+      setAuthed(true);
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
       setLoadingData(false);
-      return;
     }
-    const { items: fetched } = await res.json();
-    setItems(fetched);
-    setLoadingData(false);
-    setAuthed(true);
   }
 
   function startEdit(item: PendingImport) {
@@ -71,50 +75,47 @@ export default function AdminQueueClient() {
 
     const data = editing === item.id ? editData : (item.parsed_data ?? {});
 
-    const res = await fetch("/api/admin/import-event", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ event: data, password }),
-    });
+    try {
+      // Single call: imports the event AND marks the queue item approved
+      const res = await fetch("/api/admin/import-event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event: data, password, queueId: item.id }),
+      });
 
-    if (!res.ok) {
-      const d = await res.json();
-      setError(d.error ?? "Failed to import");
+      if (!res.ok) {
+        const d = await res.json();
+        setError(d.error ?? "Failed to import");
+        setLoading(false);
+        return;
+      }
+
+      setItems((prev) => prev.filter((i) => i.id !== item.id));
+      setEditing(null);
+      router.refresh();
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // Mark as approved
-    const approveRes = await fetch("/api/admin/queue-action", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: item.id, action: "approved", password }),
-    });
-    if (!approveRes.ok) {
-      const d = await approveRes.json();
-      setError(d.error ?? "Event imported but failed to mark as approved");
-      setLoading(false);
-      return;
-    }
-
-    setItems((prev) => prev.filter((i) => i.id !== item.id));
-    setEditing(null);
-    setLoading(false);
-    router.refresh();
   }
 
   async function handleReject(id: string) {
-    const res = await fetch("/api/admin/queue-action", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, action: "rejected", password }),
-    });
-    if (!res.ok) {
-      const d = await res.json();
-      setError(d.error ?? "Failed to reject");
-      return;
+    try {
+      const res = await fetch("/api/admin/queue-action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, action: "rejected", password }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        setError(d.error ?? "Failed to reject");
+        return;
+      }
+      setItems((prev) => prev.filter((i) => i.id !== id));
+    } catch {
+      setError("Network error. Please try again.");
     }
-    setItems((prev) => prev.filter((i) => i.id !== id));
   }
 
   function setField(key: string, value: unknown) {

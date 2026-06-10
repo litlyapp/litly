@@ -26,20 +26,24 @@ export default function RsvpButton({ eventId, initialRsvp, user }: Props) {
     const next = !rsvp;
     setRsvp(next);
 
-    const res = await fetch("/api/rsvp", {
-      method: next ? "POST" : "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ eventId }),
-    });
+    try {
+      const res = await fetch("/api/rsvp", {
+        method: next ? "POST" : "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ eventId }),
+      });
 
-    if (!res.ok) {
-      setRsvp(!next); // roll back optimistic update
+      if (!res.ok) {
+        setRsvp(!next); // roll back optimistic update
+        return;
+      }
+
+      startTransition(() => router.refresh());
+    } catch {
+      setRsvp(!next); // network error — roll back, don't leave the button stuck
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setLoading(false);
-    startTransition(() => router.refresh());
   }
 
   if (rsvp) {

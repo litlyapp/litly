@@ -13,11 +13,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Too many invites sent. Please try again later." }, { status: 429 });
   }
 
-  const { email, orgId } = await request.json();
-  if (!email || !orgId) return NextResponse.json({ error: "email and orgId required" }, { status: 400 });
-  if (typeof email !== "string" || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  const { email: rawEmail, orgId } = await request.json();
+  if (!rawEmail || !orgId) return NextResponse.json({ error: "email and orgId required" }, { status: 400 });
+  if (typeof rawEmail !== "string" || rawEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail.trim())) {
     return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
   }
+  // Store lowercase so auto-accept lookups (which compare lowercased) match
+  const email = rawEmail.trim().toLowerCase();
 
   const serviceClient = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -77,7 +79,8 @@ export async function POST(request: Request) {
   const orgName = orgProfile?.name ?? "a litly organization";
   const joinUrl = `https://thelitlyapp.com/join?invite=${newToken}`;
 
-  await sendEmail({
+  try {
+    await sendEmail({
     to: email,
     subject: `You've been invited to manage ${orgName} on litly`,
     text: `You've been invited to join ${orgName} as a team member on litly.\n\nAccept your invitation: ${joinUrl}\n\nThis link expires in 7 days.`,
@@ -96,7 +99,14 @@ export async function POST(request: Request) {
         This link expires in 7 days. If you didn't expect this invitation, you can ignore it.
       </p>
     `),
-  });
+    });
+  } catch (emailError) {
+    console.error("[org/invite] invite saved but email failed:", emailError);
+    return NextResponse.json(
+      { error: "The invite was saved, but the email failed to send. Click invite again to resend it." },
+      { status: 502 }
+    );
+  }
 
   return NextResponse.json({ ok: true });
 }

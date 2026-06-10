@@ -64,21 +64,23 @@ async function maybeAcceptPendingInvite(user: User) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
   if (!user.email) return;
-  const { data: invite } = await svc
+  // A user may have pending invites from several orgs — accept all of them
+  const { data: invites } = await svc
     .from("org_invites")
     .select("id, org_id, expires_at")
     .eq("email", user.email.toLowerCase())
     .is("accepted_at", null)
-    .gt("expires_at", new Date().toISOString())
-    .maybeSingle();
+    .gt("expires_at", new Date().toISOString());
 
-  if (!invite) return;
+  if (!invites || invites.length === 0) return;
 
-  await svc.from("org_members").upsert(
-    { org_id: invite.org_id, user_id: user.id, role: "editor" },
-    { onConflict: "org_id,user_id", ignoreDuplicates: true }
-  );
-  await svc.from("org_invites").update({ accepted_at: new Date().toISOString() }).eq("id", invite.id);
+  for (const invite of invites) {
+    await svc.from("org_members").upsert(
+      { org_id: invite.org_id, user_id: user.id, role: "editor" },
+      { onConflict: "org_id,user_id", ignoreDuplicates: true }
+    );
+    await svc.from("org_invites").update({ accepted_at: new Date().toISOString() }).eq("id", invite.id);
+  }
 
   // Ensure organizer role on the users table
   const { data: userRow } = await svc.from("users").select("role").eq("id", user.id).single();

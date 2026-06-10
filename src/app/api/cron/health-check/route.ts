@@ -66,7 +66,7 @@ export async function GET(req: Request) {
   // 5. Recurring event series running low (daily-series cron may have stalled)
   const { data: ongoingSeries, error: seriesError } = await supabase
     .from("events")
-    .select("id, title")
+    .select("id, title, series_end_date")
     .eq("is_ongoing", true)
     .eq("is_cancelled", false)
     .not("recurrence_rule", "is", null);
@@ -76,6 +76,8 @@ export async function GET(req: Request) {
   } else {
     const now = new Date().toISOString();
     for (const series of ongoingSeries ?? []) {
+      // A series past its end date legitimately winds down — not a stall
+      if (series.series_end_date && new Date(series.series_end_date + "T23:59:59") < new Date()) continue;
       const { count, error: countError } = await supabase
         .from("events")
         .select("id", { count: "exact", head: true })

@@ -21,18 +21,23 @@ export default function CancelEventButton({ eventId, isRecurring }: Props) {
       ? `/api/events/${eventId}/cancel-series`
       : `/api/events/${eventId}/cancel`;
 
-    const res = await fetch(endpoint, { method: "POST" });
-    if (res.ok) {
-      window.location.href = "/dashboard";
-    } else {
-      const body = await res.json();
-      if (res.status === 403) {
-        alert(body.error ?? "Only org admins can cancel events.");
-        setConfirming(false);
+    try {
+      const res = await fetch(endpoint, { method: "POST" });
+      if (res.ok) {
+        window.location.href = "/dashboard";
+      } else {
+        const body = await res.json();
+        if (res.status === 403) {
+          alert(body.error ?? "Only org admins can cancel events.");
+          setConfirming(false);
+          setCancelling(false);
+          return;
+        }
+        setError(body.error ?? "Failed to cancel.");
         setCancelling(false);
-        return;
       }
-      setError(body.error ?? "Failed to cancel.");
+    } catch {
+      setError("Network error. Please try again.");
       setCancelling(false);
     }
   }

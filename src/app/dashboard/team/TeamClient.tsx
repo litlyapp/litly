@@ -41,71 +41,93 @@ export default function TeamClient({
     setInviteError(null);
     setInviteSuccess(false);
 
-    const res = await fetch("/api/org/invite", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: inviteEmail, orgId }),
-    });
-    const data = await res.json();
-    setInviting(false);
+    try {
+      const res = await fetch("/api/org/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: inviteEmail, orgId }),
+      });
+      const data = await res.json();
 
-    if (!res.ok) { setInviteError(data.error); return; }
-    setInviteSuccess(true);
-    setInviteEmail("");
-    router.refresh();
+      if (!res.ok) { setInviteError(data.error); return; }
+      setInviteSuccess(true);
+      setInviteEmail("");
+      router.refresh();
+    } catch {
+      setInviteError("Network error. Please try again.");
+    } finally {
+      setInviting(false);
+    }
   }
 
   async function resendInvite(email: string) {
     setInviting(true);
     setInviteError(null);
     setInviteSuccess(false);
-    const res = await fetch("/api/org/invite", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, orgId }),
-    });
-    const data = await res.json();
-    setInviting(false);
-    if (!res.ok) { setInviteError(data.error); return; }
-    setInviteSuccess(true);
-    router.refresh();
+    try {
+      const res = await fetch("/api/org/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, orgId }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setInviteError(data.error); return; }
+      setInviteSuccess(true);
+      router.refresh();
+    } catch {
+      setInviteError("Network error. Please try again.");
+    } finally {
+      setInviting(false);
+    }
   }
 
   async function revokeInvite(inviteId: string) {
     if (!confirm("Cancel this invitation?")) return;
-    const res = await fetch("/api/org/invite", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ inviteId, orgId }),
-    });
-    const data = await res.json();
-    if (!res.ok) { setActionError(data.error); return; }
-    router.refresh();
+    try {
+      const res = await fetch("/api/org/invite", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inviteId, orgId }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setActionError(data.error); return; }
+      router.refresh();
+    } catch {
+      setActionError("Network error. Please try again.");
+    }
   }
 
   async function changeRole(targetUserId: string, role: "admin" | "editor") {
     setActionError(null);
-    const res = await fetch("/api/org/member", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orgId, targetUserId, role }),
-    });
-    const data = await res.json();
-    if (!res.ok) { setActionError(data.error); return; }
-    router.refresh();
+    try {
+      const res = await fetch("/api/org/member", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgId, targetUserId, role }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setActionError(data.error); return; }
+      router.refresh();
+    } catch {
+      setActionError("Network error. Please try again.");
+    }
   }
 
   async function removeMember(targetUserId: string) {
     setActionError(null);
     if (!confirm("Remove this team member?")) return;
-    const res = await fetch("/api/org/member", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orgId, targetUserId }),
-    });
-    const data = await res.json();
-    if (!res.ok) { setActionError(data.error); return; }
-    router.refresh();
+    try {
+      const res = await fetch("/api/org/member", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orgId, targetUserId }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setActionError(data.error); return; }
+      router.refresh();
+    } catch {
+      setActionError("Network error. Please try again.");
+    }
   }
 
   const adminCount = members.filter((m) => m.role === "admin").length;

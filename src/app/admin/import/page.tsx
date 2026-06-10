@@ -59,28 +59,31 @@ export default function AdminImportPage() {
     setParsed(null);
     setSuccess(false);
 
-    const res = await fetch("/api/admin/parse-event", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ input, password }),
-    });
+    try {
+      const res = await fetch("/api/admin/parse-event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input, password }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) {
-      setError(data.error ?? "Failed to parse");
+      if (!res.ok) {
+        setError(data.error ?? "Failed to parse");
+        return;
+      }
+
+      if (data.parsed.ignore) {
+        setError("Claude flagged this as a non-literary event. Edit the text or try a different source.");
+        return;
+      }
+
+      setParsed({ ...data.parsed, source_url: sourceUrl || null });
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
       setParsing(false);
-      return;
     }
-
-    if (data.parsed.ignore) {
-      setError("Claude flagged this as a non-literary event. Edit the text or try a different source.");
-      setParsing(false);
-      return;
-    }
-
-    setParsed({ ...data.parsed, source_url: sourceUrl || null });
-    setParsing(false);
   }
 
   async function handleImport() {
@@ -88,25 +91,29 @@ export default function AdminImportPage() {
     setImporting(true);
     setError(null);
 
-    const res = await fetch("/api/admin/import-event", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ event: parsed, password }),
-    });
+    try {
+      const res = await fetch("/api/admin/import-event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event: parsed, password }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) {
-      setError(data.error ?? "Failed to import");
+      if (!res.ok) {
+        setError(data.error ?? "Failed to import");
+        return;
+      }
+
+      setSuccess(true);
+      setParsed(null);
+      setInput("");
+      setSourceUrl("");
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
       setImporting(false);
-      return;
     }
-
-    setSuccess(true);
-    setImporting(false);
-    setParsed(null);
-    setInput("");
-    setSourceUrl("");
   }
 
   const inputClass =

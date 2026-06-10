@@ -43,20 +43,25 @@ export default function BecomeOrganizerPage() {
     setError(null);
     setLoading(true);
 
-    const res = await fetch("/api/account/become-organizer", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
+    try {
+      const res = await fetch("/api/account/become-organizer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
 
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error ?? "Something went wrong");
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error ?? "Something went wrong");
+        setLoading(false);
+        return;
+      }
+
+      window.location.href = "/dashboard";
+    } catch {
+      setError("Network error. Please try again.");
       setLoading(false);
-      return;
     }
-
-    window.location.href = "/dashboard";
   }
 
   return (
