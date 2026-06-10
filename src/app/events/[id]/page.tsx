@@ -192,15 +192,16 @@ export default async function EventDetailPage({
     isRsvp = !!rsvpResult.data;
   }
 
-  // Check if the viewer is the organizer of this event
+  // Check if the viewer is a member of this event's organizing org
   let isOrganizer = false;
   if (user) {
-    const { data: profile } = await supabase
-      .from("organizer_profiles")
-      .select("id")
+    const { data: membership } = await supabase
+      .from("org_members")
+      .select("org_id")
+      .eq("org_id", event.organizer_id)
       .eq("user_id", user.id)
-      .single();
-    if (profile) isOrganizer = profile.id === event.organizer_id;
+      .maybeSingle();
+    isOrganizer = !!membership;
   }
 
   const organizer = Array.isArray(event.organizer)
@@ -237,6 +238,24 @@ export default async function EventDetailPage({
           ← Events
         </Link>
       </div>
+
+      {/* Organizer controls — only shown to members of this event's org */}
+      {isOrganizer && !ev.is_cancelled && (
+        <div className="mb-6 flex flex-wrap gap-3">
+          <Link
+            href={`/events/${event.id}/edit`}
+            className="px-4 py-2 rounded-full bg-orange text-navy font-medium text-sm hover:bg-orange/90 transition"
+          >
+            Edit event
+          </Link>
+          {!isPast && (
+            <CancelEventButton
+              eventId={event.id}
+              isRecurring={isRecurring}
+            />
+          )}
+        </div>
+      )}
 
       {/* Banner */}
       {event.banner_url && (
@@ -430,16 +449,6 @@ export default async function EventDetailPage({
               </div>
             </div>
           </Link>
-        </div>
-      )}
-
-      {/* Organizer cancel controls — only shown to the event organizer */}
-      {isOrganizer && !isPast && !ev.is_cancelled && (
-        <div className="mb-6">
-          <CancelEventButton
-            eventId={event.id}
-            isRecurring={isRecurring}
-          />
         </div>
       )}
 
