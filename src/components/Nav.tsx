@@ -10,6 +10,7 @@ export default async function Nav() {
   } = await supabase.auth.getUser();
 
   let role: string | null = null;
+  let postEventHref = "/register";
   if (user) {
     const { data } = await supabase
       .from("users")
@@ -17,6 +18,13 @@ export default async function Nav() {
       .eq("id", user.id)
       .single();
     role = data?.role ?? null;
+
+    const { data: membership } = await supabase
+      .from("org_members")
+      .select("org_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    postEventHref = membership ? "/events/new" : "/become-organizer";
   }
 
   return (
@@ -43,14 +51,12 @@ export default async function Nav() {
           >
             Map
           </Link>
-          {role !== "organizer" && (
-            <NavLink href={user ? "/become-organizer" : "/register"}>Post an event</NavLink>
-          )}
+          <NavLink href={postEventHref}>Post an event</NavLink>
           <NavLink href="/support">Support litly</NavLink>
         </div>
 
         {/* Auth controls + mobile menu (client) */}
-        <NavClient user={user} role={role} />
+        <NavClient user={user} role={role} postEventHref={postEventHref} />
       </div>
     </nav>
   );
