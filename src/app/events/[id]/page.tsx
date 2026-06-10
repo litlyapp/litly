@@ -239,21 +239,15 @@ export default async function EventDetailPage({
         </Link>
       </div>
 
-      {/* Organizer controls — only shown to members of this event's org */}
+      {/* Organizer edit control — only shown to members of this event's org */}
       {isOrganizer && !ev.is_cancelled && (
-        <div className="mb-6 flex flex-wrap gap-3">
+        <div className="mb-6">
           <Link
             href={`/events/${event.id}/edit`}
             className="px-4 py-2 rounded-full bg-orange text-navy font-medium text-sm hover:bg-orange/90 transition"
           >
             Edit event
           </Link>
-          {!isPast && (
-            <CancelEventButton
-              eventId={event.id}
-              isRecurring={isRecurring}
-            />
-          )}
         </div>
       )}
 
@@ -449,6 +443,16 @@ export default async function EventDetailPage({
               </div>
             </div>
           </Link>
+        </div>
+      )}
+
+      {/* Organizer cancel control — only shown to members of this event's org */}
+      {isOrganizer && !isPast && !ev.is_cancelled && (
+        <div className="mb-6">
+          <CancelEventButton
+            eventId={event.id}
+            isRecurring={isRecurring}
+          />
         </div>
       )}
 
