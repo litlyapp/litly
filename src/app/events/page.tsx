@@ -137,6 +137,22 @@ export default async function EventsPage({
         ) : null}
       </div>
 
+      {/* Mobile-only "no results" banner — shown above filters so it's visible
+          without scrolling, since the full empty state is below the filters
+          on small screens */}
+      {(!events || events.length === 0) && (
+        <div className="lg:hidden mb-4 bg-orange/10 border border-orange/30 rounded-2xl p-4 text-center">
+          <p className="text-cream text-sm font-medium mb-1">No events found</p>
+          <p className="text-cream-muted text-xs">
+            {params.q
+              ? `No results for "${params.q}"${params.location ? ` in ${params.location}` : ""}.`
+              : params.location
+              ? `No upcoming events in ${params.location}. Try broadening your search.`
+              : "No events match your current filters. Try broadening your search."}
+          </p>
+        </div>
+      )}
+
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Sidebar filters */}
         <aside className="lg:w-64 shrink-0">
