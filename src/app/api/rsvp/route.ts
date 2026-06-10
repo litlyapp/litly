@@ -2,12 +2,17 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { sendEmail, emailWrapper, escapeHtml } from "@/lib/sendEmail";
 import { formatEventDate, formatEventTime } from "@/lib/formatDate";
+import { rateLimit } from "@/lib/rateLimit";
 
 export async function POST(req: Request) {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (!rateLimit(`rsvp:${user.id}`, 30, 60 * 60 * 1000)) {
+    return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+  }
 
   const { eventId } = await req.json();
   if (!eventId) return NextResponse.json({ error: "Missing eventId" }, { status: 400 });
@@ -87,6 +92,10 @@ export async function DELETE(req: Request) {
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (!rateLimit(`rsvp:${user.id}`, 30, 60 * 60 * 1000)) {
+    return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+  }
 
   const { eventId } = await req.json();
   if (!eventId) return NextResponse.json({ error: "Missing eventId" }, { status: 400 });
