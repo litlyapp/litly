@@ -26,6 +26,12 @@ export default function CancelEventButton({ eventId, isRecurring }: Props) {
       window.location.href = "/dashboard";
     } else {
       const body = await res.json();
+      if (res.status === 403) {
+        alert(body.error ?? "Only org admins can cancel events.");
+        setConfirming(false);
+        setCancelling(false);
+        return;
+      }
       setError(body.error ?? "Failed to cancel.");
       setCancelling(false);
     }

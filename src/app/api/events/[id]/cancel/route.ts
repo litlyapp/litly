@@ -27,12 +27,15 @@ export async function POST(
 
   const { data: membership } = await supabase
     .from("org_members")
-    .select("org_id")
+    .select("role")
     .eq("org_id", event.organizer_id)
     .eq("user_id", user.id)
     .maybeSingle();
 
   if (!membership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (membership.role !== "admin") {
+    return NextResponse.json({ error: "Only org admins can cancel events." }, { status: 403 });
+  }
 
   // Mark cancelled
   const { error: updateError } = await supabase
