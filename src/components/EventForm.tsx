@@ -313,14 +313,20 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  // Geocode address when it loses focus
+  // Geocode when address, city, or state loses focus. Include the city/state/
+  // country so a bare street address can't match the same street in another
+  // city (e.g. "124 E. Washington St." alone resolves to Milwaukee, not Ann Arbor).
   const handleAddressBlur = useCallback(async () => {
     if (!form.address.trim() || form.event_type !== "in_person") return;
     setGeocoding(true);
-    const result = await geocode(form.address);
+    const query = [form.address, form.city, form.state, form.country]
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .join(", ");
+    const result = await geocode(query);
     setGeocoded(result);
     setGeocoding(false);
-  }, [form.address, form.event_type]);
+  }, [form.address, form.city, form.state, form.country, form.event_type]);
 
   // Featured readers helpers
   function addReader() {
@@ -774,6 +780,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
                 placeholder="e.g. Durham"
                 value={form.city}
                 onChange={(e) => set("city", e.target.value)}
+                onBlur={handleAddressBlur}
                 className={inputClass}
               />
             </div>
@@ -805,6 +812,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
                 placeholder="e.g. NC"
                 value={form.state}
                 onChange={(e) => set("state", e.target.value)}
+                onBlur={handleAddressBlur}
                 className={inputClass}
               />
             </div>
