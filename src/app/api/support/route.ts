@@ -12,13 +12,23 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
   }
 
+  // Any org member (admin or editor) can contact support — membership is
+  // tracked in org_members, not legacy organizer_profiles.user_id
+  const { data: membership } = await supabase
+    .from("org_members")
+    .select("org_id")
+    .eq("user_id", user.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (!membership) return NextResponse.json({ error: "Organizers only" }, { status: 403 });
+
   const { data: profile } = await supabase
     .from("organizer_profiles")
-    .select("id, name")
-    .eq("user_id", user.id)
+    .select("name")
+    .eq("id", membership.org_id)
     .single();
-
-  if (!profile) return NextResponse.json({ error: "Organizers only" }, { status: 403 });
+  const orgName = profile?.name ?? "(unknown org)";
 
   const { subject, message } = await req.json();
   if (!subject?.trim() || !message?.trim()) {
@@ -38,7 +48,7 @@ export async function POST(req: Request) {
   formData.append("subject", `[litly Support] ${subject}`);
   formData.append(
     "text",
-    `From: ${profile.name} <${user.email}>\n\n${message}`
+    `From: ${orgName} <${user.email}>\n\n${message}`
   );
 
   const credentials = Buffer.from(`api:${process.env.MAILGUN_API_KEY}`).toString("base64");

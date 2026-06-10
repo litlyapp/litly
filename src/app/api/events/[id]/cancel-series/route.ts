@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
-import { sendEmail, emailWrapper, escapeHtml } from "@/lib/sendEmail";
+import { sendBatchEmail, emailWrapper, escapeHtml } from "@/lib/sendEmail";
 import { formatEventDate, formatEventTime } from "@/lib/formatDate";
+import { getEmailsByUserIds } from "@/lib/userEmails";
 
 export async function POST(
   _req: Request,
@@ -76,47 +77,66 @@ export async function POST(
       .select("user_id, event_id")
       .in("event_id", cancelIds);
 
-    const notifiedUsers = new Set<string>();
+    // One RSVP per user (their next upcoming occurrence) determines the
+    // date/time shown in their email, substituted via recipient-variables.
+    const firstRsvpByUser = new Map<string, string>();
     for (const rsvp of rsvps ?? []) {
-      if (notifiedUsers.has(rsvp.user_id)) continue;
-      notifiedUsers.add(rsvp.user_id);
+      if (!firstRsvpByUser.has(rsvp.user_id)) firstRsvpByUser.set(rsvp.user_id, rsvp.event_id);
+    }
 
-      const { data: userData } = await serviceClient.auth.admin.getUserById(rsvp.user_id);
-      const email = userData?.user?.email;
-      if (!email) continue;
+    const emailMap = await getEmailsByUserIds(serviceClient, firstRsvpByUser.keys());
 
-      const eventForRsvp = toCancel.find((e) => e.id === rsvp.event_id) ?? toCancel[0];
+    const seenEmails = new Set<string>();
+    const recipients: { email: string; vars: Record<string, string> }[] = [];
+    for (const [userId, eventId] of firstRsvpByUser) {
+      const email = emailMap.get(userId);
+      if (!email || seenEmails.has(email)) continue;
+      seenEmails.add(email);
+
+      const eventForRsvp = toCancel.find((e) => e.id === eventId) ?? toCancel[0];
       const date = formatEventDate(eventForRsvp.date_time, eventForRsvp.timezone);
       const time = formatEventTime(eventForRsvp.date_time, eventForRsvp.timezone);
       const location = eventForRsvp.event_type === "virtual"
         ? "Virtual event"
         : [eventForRsvp.location_name, eventForRsvp.city, eventForRsvp.state].filter(Boolean).join(", ") || "Location TBD";
 
-      await sendEmail({
-        to: email,
-        subject: `Cancelled: ${ev.title} (series)`,
-        text: [
-          `We're sorry — the ${ev.title} series has been cancelled.`,
-          ``,
-          `Your RSVP for ${date} at ${time} (${location}) has been cancelled.`,
-          ``,
-          `Browse other upcoming events: https://thelitlyapp.com/events`,
-          ``,
-          `— litly`,
-        ].join("\n"),
-        html: emailWrapper(`
-          <h1 style="font-size:22px;margin:0 0 8px;color:#1B2A3E">Series cancelled</h1>
-          <p style="color:#5a4a3a;margin:0 0 20px">We're sorry — <strong>${escapeHtml(ev.title)}</strong> has been cancelled.</p>
-          <table style="border-collapse:collapse;width:100%;margin-bottom:24px">
-            <tr><td style="padding:8px 0;color:#7a6a5a;width:110px">Date</td><td style="padding:8px 0;color:#1B2A3E">${escapeHtml(date)}</td></tr>
-            <tr><td style="padding:8px 0;color:#7a6a5a">Time</td><td style="padding:8px 0;color:#1B2A3E">${escapeHtml(time)}</td></tr>
-            <tr><td style="padding:8px 0;color:#7a6a5a">Location</td><td style="padding:8px 0;color:#1B2A3E">${escapeHtml(location)}</td></tr>
-          </table>
-          <a href="https://thelitlyapp.com/events" style="background:#E8622A;color:#fff;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:14px;font-weight:600">Browse events</a>
-          <p style="margin-top:32px;font-size:12px;color:#7a6a5a">You received this because you RSVPd on litly.</p>
-        `),
-      }).catch(console.error);
+      recipients.push({
+        email,
+        vars: {
+          date,
+          time,
+          location,
+          dateHtml: escapeHtml(date),
+          timeHtml: escapeHtml(time),
+          locationHtml: escapeHtml(location),
+        },
+      });
     }
+
+    await sendBatchEmail({
+      recipients,
+      subject: `Cancelled: ${ev.title} (series)`,
+      text: [
+        `We're sorry — the ${ev.title} series has been cancelled.`,
+        ``,
+        `Your RSVP for %recipient.date% at %recipient.time% (%recipient.location%) has been cancelled.`,
+        ``,
+        `Browse other upcoming events: https://thelitlyapp.com/events`,
+        ``,
+        `— litly`,
+      ].join("\n"),
+      html: emailWrapper(`
+        <h1 style="font-size:22px;margin:0 0 8px;color:#1B2A3E">Series cancelled</h1>
+        <p style="color:#5a4a3a;margin:0 0 20px">We're sorry — <strong>${escapeHtml(ev.title)}</strong> has been cancelled.</p>
+        <table style="border-collapse:collapse;width:100%;margin-bottom:24px">
+          <tr><td style="padding:8px 0;color:#7a6a5a;width:110px">Date</td><td style="padding:8px 0;color:#1B2A3E">%recipient.dateHtml%</td></tr>
+          <tr><td style="padding:8px 0;color:#7a6a5a">Time</td><td style="padding:8px 0;color:#1B2A3E">%recipient.timeHtml%</td></tr>
+          <tr><td style="padding:8px 0;color:#7a6a5a">Location</td><td style="padding:8px 0;color:#1B2A3E">%recipient.locationHtml%</td></tr>
+        </table>
+        <a href="https://thelitlyapp.com/events" style="background:#E8622A;color:#fff;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:14px;font-weight:600">Browse events</a>
+        <p style="margin-top:32px;font-size:12px;color:#7a6a5a">You received this because you RSVPd on litly.</p>
+      `),
+    }).catch(console.error);
   }
 
   return NextResponse.json({ ok: true, cancelled: cancelIds.length });
