@@ -4,6 +4,7 @@ import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import PasswordInput from "@/components/PasswordInput";
 
 function LoginForm() {
   const router = useRouter();
@@ -96,11 +97,11 @@ function LoginForm() {
             className="w-full bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-4 py-3 focus:outline-none focus:border-orange"
           />
 
-          <input
+          <PasswordInput
             name="password"
-            type="password"
             placeholder="Password"
             required
+            autoComplete="current-password"
             value={form.password}
             onChange={handleChange}
             className="w-full bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-4 py-3 focus:outline-none focus:border-orange"

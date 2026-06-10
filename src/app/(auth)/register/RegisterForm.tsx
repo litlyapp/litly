@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import PasswordInput from "@/components/PasswordInput";
 import type { UserRole, OrgType } from "@/types/database";
 
 interface Props {
@@ -141,12 +142,12 @@ export default function RegisterForm({ invite }: Props) {
                 className="w-full bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-4 py-3 focus:outline-none focus:border-orange mb-3"
               />
 
-              <input
+              <PasswordInput
                 name="password"
-                type="password"
                 placeholder="Password (min. 8 characters)"
                 required
                 minLength={8}
+                autoComplete="new-password"
                 value={form.password}
                 onChange={handleChange}
                 className="w-full bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-4 py-3 focus:outline-none focus:border-orange"

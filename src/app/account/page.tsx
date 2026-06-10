@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import PasswordInput from "@/components/PasswordInput";
 
 export default function AccountPage() {
   const supabase = createClient();
@@ -182,8 +183,9 @@ export default function AccountPage() {
         <label className="text-cream-muted text-xs uppercase tracking-wider block">Change password</label>
         <div>
           <label className="text-cream-muted text-xs mb-1 block">Current password</label>
-          <input
-            type="password"
+          <PasswordInput
+            placeholder=""
+            autoComplete="current-password"
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
             required
@@ -192,8 +194,9 @@ export default function AccountPage() {
         </div>
         <div>
           <label className="text-cream-muted text-xs mb-1 block">New password</label>
-          <input
-            type="password"
+          <PasswordInput
+            placeholder=""
+            autoComplete="new-password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             required
@@ -203,8 +206,9 @@ export default function AccountPage() {
         </div>
         <div>
           <label className="text-cream-muted text-xs mb-1 block">Confirm new password</label>
-          <input
-            type="password"
+          <PasswordInput
+            placeholder=""
+            autoComplete="new-password"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             required
