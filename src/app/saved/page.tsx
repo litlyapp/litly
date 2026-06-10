@@ -85,16 +85,25 @@ export default async function SavedPage() {
   );
 
   // RSVPs pinned to top — extract event objects, exclude cancelled
-  const rsvpEvents = (rsvpRows ?? [])
+  const allRsvpEvents = (rsvpRows ?? [])
     .map((r) => (Array.isArray(r.event) ? r.event[0] : r.event))
     .filter((e) => e && !(e as typeof e & { is_cancelled?: boolean }).is_cancelled);
 
   // Saved-only: exclude events the user has also RSVP'd to, and exclude cancelled
-  const savedOnlyEvents = (savedRows ?? [])
+  const allSavedOnlyEvents = (savedRows ?? [])
     .map((r) => (Array.isArray(r.event) ? r.event[0] : r.event))
     .filter((e) => e && !rsvpEventIds.has(e.id) && !(e as typeof e & { is_cancelled?: boolean }).is_cancelled);
 
-  const totalCount = rsvpEvents.length + savedOnlyEvents.length;
+  // Split upcoming vs past so old events don't mix in with what's next
+  const now = new Date().toISOString();
+  const rsvpEvents = allRsvpEvents.filter((e) => e!.date_time >= now);
+  const savedOnlyEvents = allSavedOnlyEvents.filter((e) => e!.date_time >= now);
+  const pastEvents = [...allRsvpEvents, ...allSavedOnlyEvents]
+    .filter((e) => e!.date_time < now)
+    .sort((a, b) => (a!.date_time < b!.date_time ? 1 : -1)); // most recent first
+
+  const upcomingCount = rsvpEvents.length + savedOnlyEvents.length;
+  const totalCount = upcomingCount + pastEvents.length;
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
@@ -103,7 +112,7 @@ export default async function SavedPage() {
         <p className="text-cream-muted">
           {totalCount === 0
             ? "Nothing saved yet."
-            : `${totalCount} ${totalCount === 1 ? "event" : "events"}`}
+            : `${upcomingCount} upcoming${pastEvents.length > 0 ? ` · ${pastEvents.length} past` : ""}`}
         </p>
       </div>
 
@@ -143,12 +152,32 @@ export default async function SavedPage() {
 
       {/* Saved-only section */}
       {savedOnlyEvents.length > 0 && (
-        <section>
+        <section className="mb-10">
           {rsvpEvents.length > 0 && (
             <h2 className="font-serif text-xl text-cream mb-4">Also saved</h2>
           )}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {savedOnlyEvents.map(
+              (event) =>
+                event && (
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                    savedEventIds={savedEventIds}
+                    rsvpEventIds={rsvpEventIds}
+                  />
+                )
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Past events — dimmed, below everything upcoming */}
+      {pastEvents.length > 0 && (
+        <section className="pt-2 border-t border-cream/10">
+          <h2 className="font-serif text-xl text-cream mb-4 mt-8">Past events</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 opacity-70">
+            {pastEvents.map(
               (event) =>
                 event && (
                   <EventCard

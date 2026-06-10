@@ -267,10 +267,16 @@ function OrganizerSearch({
     return () => document.removeEventListener("mousedown", handle);
   }, [activeId]);
 
+  // Match from the start of words only, so typing "l" suggests "litly admin"
+  // but not "Third Angle Poets" (substring match on "Angle")
   const filtered = query.trim()
-    ? organizers.filter((o) =>
-        o.name.toLowerCase().includes(query.toLowerCase())
-      )
+    ? organizers.filter((o) => {
+        const q = query.trim().toLowerCase();
+        return o.name
+          .toLowerCase()
+          .split(/\s+/)
+          .some((word) => word.startsWith(q));
+      })
     : [];
 
   function select(o: Organizer) {
