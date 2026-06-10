@@ -271,7 +271,7 @@ function OrganizerSearch({
     ? organizers.filter((o) =>
         o.name.toLowerCase().includes(query.toLowerCase())
       )
-    : organizers;
+    : [];
 
   function select(o: Organizer) {
     setQuery(o.name);
@@ -297,10 +297,10 @@ function OrganizerSearch({
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
-            setOpen(true);
+            setOpen(e.target.value.trim().length > 0);
             if (!e.target.value) onSelect("");
           }}
-          onFocus={() => setOpen(true)}
+          onFocus={() => setOpen(query.trim().length > 0)}
           className="w-full bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange pr-7"
         />
         {query && (
