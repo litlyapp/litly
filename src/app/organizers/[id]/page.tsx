@@ -102,8 +102,9 @@ export default async function OrganizerProfilePage({
             </div>
           </div>
 
-          {/* Follow button — show to any logged-in user except on their own org profile */}
-          {user && user.id !== organizer.user_id && (
+          {/* Follow button — hidden only on your own org profile. Logged-out
+              visitors see it too; clicking it sends them to /login */}
+          {(!user || user.id !== organizer.user_id) && (
             <FollowButton
               organizerId={id}
               initialFollowing={isFollowing}
