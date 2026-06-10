@@ -40,9 +40,24 @@ function LoginForm() {
       return;
     }
 
+    // Accept any pending org invites (safety net — the signup-confirmation
+    // callback misses them when the link is opened on another device)
+    let joinedOrg = false;
+    try {
+      const res = await fetch("/api/org/accept-pending", { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        joinedOrg = (data.accepted ?? 0) > 0;
+      }
+    } catch {
+      // non-fatal — invites can still be accepted via the join link
+    }
+
     // Send organizers to dashboard, patrons to homepage (or the requested next page)
     let destination = next !== "/" ? next : "/";
-    if (destination === "/" && user) {
+    if (joinedOrg) {
+      destination = "/dashboard?joined=1";
+    } else if (destination === "/" && user) {
       const { data: userRow } = await supabase.from("users").select("role").eq("id", user.id).single();
       if (userRow?.role === "organizer") destination = "/dashboard";
     }

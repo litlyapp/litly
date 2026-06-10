@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import type { EmailOtpType, User } from "@supabase/supabase-js";
+import { acceptPendingInvites } from "@/lib/acceptInvites";
 
 async function maybeCreateOrganizerProfile(user: User) {
   const svc = createServiceClient(
@@ -59,35 +60,7 @@ async function maybeCreateOrganizerProfile(user: User) {
 }
 
 async function maybeAcceptPendingInvite(user: User) {
-  const svc = createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-  if (!user.email) return;
-  // A user may have pending invites from several orgs — accept all of them
-  const { data: invites } = await svc
-    .from("org_invites")
-    .select("id, org_id, expires_at")
-    .eq("email", user.email.toLowerCase())
-    .is("accepted_at", null)
-    .gt("expires_at", new Date().toISOString());
-
-  if (!invites || invites.length === 0) return;
-
-  for (const invite of invites) {
-    await svc.from("org_members").upsert(
-      { org_id: invite.org_id, user_id: user.id, role: "editor" },
-      { onConflict: "org_id,user_id", ignoreDuplicates: true }
-    );
-    await svc.from("org_invites").update({ accepted_at: new Date().toISOString() }).eq("id", invite.id);
-  }
-
-  // Ensure organizer role on the users table
-  const { data: userRow } = await svc.from("users").select("role").eq("id", user.id).single();
-  if (userRow?.role !== "organizer") {
-    await svc.from("users").update({ role: "organizer" }).eq("id", user.id);
-    await svc.auth.admin.updateUserById(user.id, { user_metadata: { role: "organizer" } });
-  }
+  await acceptPendingInvites(user);
 }
 
 export async function GET(request: Request) {
