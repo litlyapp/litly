@@ -7,6 +7,16 @@ export const dynamic = "force-dynamic";
 
 const ALERT_EMAIL = "knuth.cdgo@gmail.com";
 
+function distanceMiles(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const R = 3958.8;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 const REQUIRED_ENV_VARS = [
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
@@ -93,6 +103,47 @@ export async function GET(req: Request) {
         );
       }
     }
+  }
+
+  // 6. Geocode drift: recently created events whose stored pin is far from
+  // where their address actually resolves (full-context query). Limited to a
+  // 2-day window and 10 lookups so the daily run stays fast and inside
+  // Nominatim's 1 req/sec usage policy.
+  const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: recentPinned } = await supabase
+    .from("events")
+    .select("id, title, address, city, state, country, lat, lng")
+    .eq("is_cancelled", false)
+    .gte("created_at", twoDaysAgo)
+    .not("lat", "is", null)
+    .not("lng", "is", null)
+    .not("address", "is", null)
+    .limit(10);
+
+  for (const e of recentPinned ?? []) {
+    const query = [e.address, e.city, e.state, e.country]
+      .map((p: string | null) => (p ?? "").trim())
+      .filter(Boolean)
+      .join(", ");
+    if (!query) continue;
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`,
+        { headers: { "Accept-Language": "en", "User-Agent": "litly/1.0 (thelitlyapp.com)" } }
+      );
+      const data = await res.json();
+      if (data[0]) {
+        const milesOff = distanceMiles(e.lat, e.lng, parseFloat(data[0].lat), parseFloat(data[0].lon));
+        if (milesOff > 10) {
+          issues.push(
+            `Event "${e.title}" pin is ~${Math.round(milesOff)} miles from its address ("${query}") — run scripts/regeocode.js`
+          );
+        }
+      }
+    } catch {
+      // geocode check is best-effort; skip on network errors
+    }
+    await new Promise((r) => setTimeout(r, 1100));
   }
 
   if (issues.length > 0) {

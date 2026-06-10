@@ -196,18 +196,41 @@ interface Props {
 }
 
 // Geocode an address using Nominatim (free, no API key)
+interface GeocodeResult {
+  lat: number;
+  lng: number;
+  label?: string;
+}
+
 async function geocode(
-  address: string
-): Promise<{ lat: number; lng: number } | null> {
+  address: string,
+  expectedCity?: string
+): Promise<GeocodeResult | null> {
   try {
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(address)}`,
+      `https://nominatim.openstreetmap.org/search?format=json&limit=1&addressdetails=1&q=${encodeURIComponent(address)}`,
       { headers: { "Accept-Language": "en" } }
     );
     const data = await res.json();
-    if (data[0]) {
-      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    const hit = data[0];
+    if (!hit) return null;
+    const addr = hit.address ?? {};
+    const resolvedCity = addr.city ?? addr.town ?? addr.village ?? addr.municipality ?? "";
+    // Reject results that contradict the typed city — a missing pin is a
+    // visible problem, a wrong pin is a silent one
+    if (
+      expectedCity?.trim() &&
+      resolvedCity &&
+      resolvedCity.toLowerCase() !== expectedCity.trim().toLowerCase()
+    ) {
+      return null;
     }
+    const resolvedState = addr.state ?? addr.province ?? "";
+    return {
+      lat: parseFloat(hit.lat),
+      lng: parseFloat(hit.lon),
+      label: [resolvedCity, resolvedState].filter(Boolean).join(", ") || undefined,
+    };
   } catch {
     // geocoding is best-effort
   }
@@ -288,7 +311,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
   );
 
   const [geocoding, setGeocoding] = useState(false);
-  const [geocoded, setGeocoded] = useState<{ lat: number; lng: number } | null>(
+  const [geocoded, setGeocoded] = useState<GeocodeResult | null>(
     initialData?.lat != null && initialData?.lng != null
       ? { lat: initialData.lat, lng: initialData.lng }
       : null
@@ -318,15 +341,25 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
   // city (e.g. "124 E. Washington St." alone resolves to Milwaukee, not Ann Arbor).
   const handleAddressBlur = useCallback(async () => {
     if (!form.address.trim() || form.event_type !== "in_person") return;
+    // When editing, never re-geocode an unchanged address — a tab through the
+    // field must not be able to move an existing pin
+    const locationUnchanged =
+      isEditing &&
+      geocoded !== null &&
+      form.address.trim() === (initialData?.address ?? "") &&
+      form.city.trim() === (initialData?.city ?? "") &&
+      form.state.trim() === (initialData?.state ?? "") &&
+      form.country.trim() === (initialData?.country ?? "");
+    if (locationUnchanged) return;
     setGeocoding(true);
     const query = [form.address, form.city, form.state, form.country]
       .map((part) => part.trim())
       .filter(Boolean)
       .join(", ");
-    const result = await geocode(query);
+    const result = await geocode(query, form.city);
     setGeocoded(result);
     setGeocoding(false);
-  }, [form.address, form.city, form.state, form.country, form.event_type]);
+  }, [form.address, form.city, form.state, form.country, form.event_type, isEditing, geocoded, initialData]);
 
   // Featured readers helpers
   function addReader() {
@@ -413,7 +446,11 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
     // Attempt geocode on submit if not already done
     let coords = geocoded;
     if (form.event_type === "in_person" && !coords && form.address.trim()) {
-      coords = await geocode(form.address);
+      const query = [form.address, form.city, form.state, form.country]
+        .map((part) => part.trim())
+        .filter(Boolean)
+        .join(", ");
+      coords = await geocode(query, form.city);
     }
 
     const sharedFields = {
@@ -857,7 +894,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
               )}
               {geocoded && !geocoding && (
                 <span className="absolute right-3 top-3 text-orange text-xs">
-                  ✓ Located
+                  ✓ Located{geocoded.label ? `: ${geocoded.label}` : ""}
                 </span>
               )}
             </div>
