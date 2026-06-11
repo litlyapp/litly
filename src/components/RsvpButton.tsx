@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
+import { trackPixelCustom } from "@/lib/pixel";
 
 interface Props {
   eventId: string;
@@ -38,6 +39,7 @@ export default function RsvpButton({ eventId, initialRsvp, user }: Props) {
         return;
       }
 
+      if (next) trackPixelCustom("RSVP", { content_ids: [eventId] });
       startTransition(() => router.refresh());
     } catch {
       setRsvp(!next); // network error — roll back, don't leave the button stuck

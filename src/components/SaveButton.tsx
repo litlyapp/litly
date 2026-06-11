@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { trackPixelCustom } from "@/lib/pixel";
 
 interface Props {
   eventId: string;
@@ -40,6 +41,7 @@ export default function SaveButton({ eventId, initialSaved }: Props) {
       }
 
       if (error) { setSaved(!next); return; }
+      if (next) trackPixelCustom("SaveEvent", { content_ids: [eventId] });
       startTransition(() => router.refresh());
     } finally {
       setLoading(false);

@@ -4,6 +4,8 @@ import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import { Analytics } from "@vercel/analytics/next";
 import Script from "next/script";
+import { Suspense } from "react";
+import MetaPixelPageView from "@/components/MetaPixelPageView";
 
 export const metadata: Metadata = {
   title: "litly — literary event locator",
@@ -46,6 +48,9 @@ export default function RootLayout({
         <main className="flex-1">{children}</main>
         <Footer />
         <Analytics />
+        <Suspense fallback={null}>
+          <MetaPixelPageView />
+        </Suspense>
         <Script id="meta-pixel" strategy="afterInteractive">
           {`
             !function(f,b,e,v,n,t,s)

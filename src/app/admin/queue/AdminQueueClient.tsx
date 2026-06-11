@@ -190,6 +190,17 @@ export default function AdminQueueClient() {
                   <p className="text-cream-muted text-xs">
                     Subject: {item.source_subject}
                   </p>
+                  {typeof (item.parsed_data?.source_url) === "string" &&
+                    /^https?:\/\//.test(item.parsed_data.source_url as string) && (
+                    <a
+                      href={item.parsed_data.source_url as string}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-orange text-xs hover:underline"
+                    >
+                      View original event ↗
+                    </a>
+                  )}
                 </div>
                 <span className="text-cream-muted/50 text-xs shrink-0">
                   {new Date(item.created_at).toLocaleDateString()}
