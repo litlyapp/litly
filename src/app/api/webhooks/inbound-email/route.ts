@@ -65,6 +65,13 @@ export async function POST(request: Request) {
 
     const body = bodyPlain || bodyHtml;
 
+    // Ignore litly's own outbound mail (RSVP confirmations, digests, alerts)
+    // looping back in via the catch-all — e.g. when an admin@thelitlyapp.com
+    // account RSVPs to an event
+    if (/@thelitlyapp\.com/i.test(from)) {
+      return NextResponse.json({ ok: true, skipped: "self-sent email" });
+    }
+
     // Forward confirmation/verification emails to personal inbox
     if (CONFIRMATION_PATTERN.test(subject)) {
       await forwardToGmail(from, subject, bodyPlain, bodyHtml);
