@@ -14,7 +14,7 @@
       "schedule": "0 8 * * *"
     },
     {
-      "path": "/api/cron/crawl-pw",
+      "path": "/api/cron/crawl-calendars",
       "schedule": "0 3 * * *"
     }
   ]
