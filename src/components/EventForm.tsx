@@ -345,6 +345,10 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
 
   // Series settings (only relevant when editing the parent recurring event)
   const isParentEvent = !!(initialData?.recurrence_rule) && !initialData?.parent_event_id;
+  // A non-series event (e.g. an import) can be converted into a recurring
+  // series while editing — it becomes the series parent
+  const isStandaloneEdit =
+    isEditing && !initialData?.recurrence_rule && !initialData?.parent_event_id;
   const [seriesOngoing, setSeriesOngoing] = useState<boolean>(initialData?.is_ongoing ?? false);
   const [seriesEndDate, setSeriesEndDate] = useState<string>(initialData?.series_end_date ?? "");
 
@@ -524,6 +528,45 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         : {}),
     };
 
+    // Future occurrences for a recurring series (parent = first occurrence).
+    // Ongoing series seed 9 children (10 total incl. parent); fixed series
+    // generate every occurrence up front.
+    function buildChildOccurrences(parentId: string) {
+      if (!recurrenceRule || !form.date_time) return [];
+      // Parse in browser-local time for recurrence math (wall-clock values are correct)
+      const startDate = new Date(form.date_time);
+      const durationMs = form.end_time
+        ? new Date(form.end_time).getTime() - startDate.getTime()
+        : null;
+
+      const dates: Date[] = [];
+      if (newEventOngoing) {
+        let cursor = startDate;
+        for (let i = 0; i < 9; i++) {
+          const next = generateNextOccurrence(cursor, recurrenceRule);
+          if (!next) break;
+          dates.push(next);
+          cursor = next;
+        }
+      } else {
+        dates.push(...generateOccurrenceDates(startDate, recurrenceRule));
+      }
+
+      // Convert wall-clock dates → correct UTC using the event's timezone, not browser locale
+      return dates.map((d) => {
+        const utcMs = new Date(zonedToUtcIso(dateToWallClock(d), timezone)).getTime();
+        return {
+          organizer_id: organizerId,
+          parent_event_id: parentId,
+          ...sharedFields,
+          recurrence_rule: null,
+          is_ongoing: false,
+          date_time: new Date(utcMs).toISOString(),
+          end_time: durationMs !== null ? new Date(utcMs + durationMs).toISOString() : null,
+        };
+      });
+    }
+
     if (isEditing) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: updateError } = await (supabase as any)
@@ -598,6 +641,36 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         }
       }
 
+      // Convert a standalone event into a recurring series: this event becomes
+      // the parent, future occurrences are seeded as children
+      if (isStandaloneEdit && recurrenceRule && eventId) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: convertError } = await (supabase as any)
+          .from("events")
+          .update({
+            recurrence_rule: recurrenceRule,
+            is_ongoing: newEventOngoing,
+          })
+          .eq("id", eventId);
+
+        if (convertError) {
+          setError(`Event saved but couldn't start the series: ${convertError.message}`);
+          setLoading(false);
+          return;
+        }
+
+        const children = buildChildOccurrences(eventId);
+        if (children.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { error: childError } = await (supabase as any).from("events").insert(children);
+          if (childError) {
+            setError(`Series started but some occurrences failed: ${childError.message}`);
+            setLoading(false);
+            return;
+          }
+        }
+      }
+
       router.push(`/events/${eventId}`);
     } else {
       // Insert parent event (first occurrence)
@@ -619,79 +692,16 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         return;
       }
 
-      // For ongoing events: seed first 9 children immediately (parent = occurrence 1, total = 10)
-      if (recurrenceRule && form.date_time && newEventOngoing) {
-        // Parse in browser-local time for recurrence math (wall-clock values are correct)
-        const startDate = new Date(form.date_time);
-        const durationMs = form.end_time
-          ? new Date(form.end_time).getTime() - startDate.getTime()
-          : null;
-
-        const children = [];
-        let cursor = startDate;
-        for (let i = 0; i < 9; i++) {
-          const next = generateNextOccurrence(cursor, recurrenceRule);
-          if (!next) break;
-          // Convert wall-clock date → correct UTC using the event's timezone, not browser locale
-          const nextUtcMs = new Date(zonedToUtcIso(dateToWallClock(next), timezone)).getTime();
-          children.push({
-            organizer_id: organizerId,
-            parent_event_id: data.id,
-            ...sharedFields,
-            recurrence_rule: null,
-            is_ongoing: false,
-            date_time: new Date(nextUtcMs).toISOString(),
-            end_time: durationMs !== null ? new Date(nextUtcMs + durationMs).toISOString() : null,
-          });
-          cursor = next;
-        }
-
-        if (children.length > 0) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { error: ongoingChildError } = await (supabase as any).from("events").insert(children);
-          if (ongoingChildError) {
-            setError(`Event created but some occurrences failed: ${ongoingChildError.message}`);
-            setLoading(false);
-            router.push(`/events/${data.id}`);
-            return;
-          }
-        }
-      }
-
-      // Generate and insert child occurrences (skipped for ongoing — seeded above)
-      if (recurrenceRule && form.date_time && !newEventOngoing) {
-        // Parse in browser-local time for recurrence math (wall-clock values are correct)
-        const startDate = new Date(form.date_time);
-        const occurrenceDates = generateOccurrenceDates(startDate, recurrenceRule);
-
-        const durationMs =
-          form.end_time
-            ? new Date(form.end_time).getTime() - startDate.getTime()
-            : null;
-
-        // Convert each wall-clock occurrence date → correct UTC using the event's timezone
-        const children = occurrenceDates.map((d) => {
-          const utcMs = new Date(zonedToUtcIso(dateToWallClock(d), timezone)).getTime();
-          return {
-            organizer_id: organizerId,
-            parent_event_id: data.id,
-            ...sharedFields,
-            recurrence_rule: null,
-            is_ongoing: false,
-            date_time: new Date(utcMs).toISOString(),
-            end_time: durationMs !== null ? new Date(utcMs + durationMs).toISOString() : null,
-          };
-        });
-
-        if (children.length > 0) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { error: childError } = await (supabase as any).from("events").insert(children);
-          if (childError) {
-            setError(`Event created but some occurrences failed: ${childError.message}`);
-            setLoading(false);
-            router.push(`/events/${data.id}`);
-            return;
-          }
+      // Seed future occurrences as children of the new parent
+      const children = buildChildOccurrences(data.id);
+      if (children.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: childError } = await (supabase as any).from("events").insert(children);
+        if (childError) {
+          setError(`Event created but some occurrences failed: ${childError.message}`);
+          setLoading(false);
+          router.push(`/events/${data.id}`);
+          return;
         }
       }
 
@@ -825,10 +835,18 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         </div>
       </div>
 
-      {/* Recurrence — only for new events */}
-      {!isEditing && (
+      {/* Recurrence — new events, or converting a standalone event into a series */}
+      {(!isEditing || isStandaloneEdit) && (
         <div>
-          <label className={labelClass}>Recurrence</label>
+          <label className={labelClass}>
+            {isStandaloneEdit ? "Make recurring" : "Recurrence"}
+          </label>
+          {isStandaloneEdit && (
+            <p className="text-cream-muted/60 text-xs mb-2 -mt-1">
+              Pick a schedule to turn this event into a recurring series — this
+              date becomes the first occurrence.
+            </p>
+          )}
           <RecurrenceOptions
             startDateIso={form.date_time}
             value={recurrenceRule}
