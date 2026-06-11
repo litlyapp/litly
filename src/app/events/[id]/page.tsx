@@ -446,6 +446,36 @@ export default async function EventDetailPage({
         </div>
       )}
 
+      {/* Imported event: source attribution + claim link */}
+      {ev.is_imported && (
+        <div className="bg-navy-light border border-cream/10 rounded-2xl p-6 mb-6 text-sm">
+          {ev.source_name && (
+            <p className="text-cream-muted mb-2">
+              This event was curated from{" "}
+              {ev.source_url && /^https?:\/\//.test(ev.source_url) ? (
+                <a
+                  href={ev.source_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-cream hover:text-orange transition"
+                >
+                  {ev.source_name} ↗
+                </a>
+              ) : (
+                ev.source_name
+              )}
+              .
+            </p>
+          )}
+          <Link
+            href={`/claim?event=${event.id}`}
+            className="text-orange hover:underline"
+          >
+            Is this your event? Claim this page →
+          </Link>
+        </div>
+      )}
+
       {/* Organizer cancel control — only shown to members of this event's org */}
       {isOrganizer && !isPast && !ev.is_cancelled && (
         <div className="mb-6">
