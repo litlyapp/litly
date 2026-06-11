@@ -162,6 +162,7 @@ interface EventData {
   end_time: string | null;
   location_name: string | null;
   address: string | null;
+  address2?: string | null;
   city: string | null;
   zip_code?: string | null;
   state: string | null;
@@ -196,6 +197,14 @@ interface Props {
   seriesContext?: SeriesContext;
   /** Admin-only: expose "via [org]" source attribution fields */
   allowSourceAttribution?: boolean;
+}
+
+// Strip suite/apt/unit suffixes before geocoding — Nominatim returns nothing
+// for "123 Main St Suite 200". Covers addresses typed with the unit inline.
+function streetForGeocode(address: string): string {
+  return address
+    .replace(/[,\s]+(suite|ste|apt|apartment|unit|bldg|building|fl|floor|rm|room|#)\.?\s*[\w-]+\s*$/i, "")
+    .trim();
 }
 
 // Geocode an address using Nominatim (free, no API key)
@@ -297,6 +306,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       : "",
     location_name: initialData?.location_name ?? "",
     address: initialData?.address ?? "",
+    address2: initialData?.address2 ?? "",
     city: initialData?.city ?? "",
     zip_code: initialData?.zip_code ?? "",
     state: initialData?.state ?? "",
@@ -367,7 +377,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
     setGeocoding(true);
     // Postal code included — international addresses (e.g. AU "QLD 4819")
     // often don't resolve without it
-    const query = [form.address, form.city, form.state, form.zip_code, form.country]
+    const query = [streetForGeocode(form.address), form.city, form.state, form.zip_code, form.country]
       .map((part) => part.trim())
       .filter(Boolean)
       .join(", ");
@@ -465,7 +475,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
     // Attempt geocode on submit if not already done
     let coords = geocoded;
     if (form.event_type === "in_person" && !coords && form.address.trim()) {
-      const query = [form.address, form.city, form.state, form.zip_code, form.country]
+      const query = [streetForGeocode(form.address), form.city, form.state, form.zip_code, form.country]
         .map((part) => part.trim())
         .filter(Boolean)
         .join(", ");
@@ -486,6 +496,8 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
           : null,
       address:
         form.event_type === "in_person" ? form.address.trim() || null : null,
+      address2:
+        form.event_type === "in_person" ? form.address2.trim() || null : null,
       city: form.event_type === "in_person" ? form.city.trim() || null : null,
       zip_code: form.event_type === "in_person" ? form.zip_code.trim() || null : null,
       state: form.event_type === "in_person" ? form.state.trim() || null : null,
@@ -535,6 +547,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
           timezone: sharedFields.timezone,
           location_name: sharedFields.location_name,
           address: sharedFields.address,
+          address2: sharedFields.address2,
           city: sharedFields.city,
           zip_code: sharedFields.zip_code,
           state: sharedFields.state,
@@ -934,6 +947,17 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
                 will still be saved if it can't be found.
               </p>
             )}
+          </div>
+
+          <div>
+            <label className={labelClass}>Suite / Apt / Unit (optional)</label>
+            <input
+              type="text"
+              placeholder="e.g. Suite 200"
+              value={form.address2}
+              onChange={(e) => set("address2", e.target.value)}
+              className={inputClass}
+            />
           </div>
         </div>
       )}

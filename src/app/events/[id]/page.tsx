@@ -331,9 +331,11 @@ export default async function EventDetailPage({
           />
 
           {event.event_type === "in_person" && event.location_name && (() => {
+            const address2 = (event as typeof event & { address2?: string | null }).address2;
             const addressParts = [
               event.location_name,
               event.address,
+              address2,
               event.city,
               event.state,
               event.country,
@@ -350,7 +352,10 @@ export default async function EventDetailPage({
                 <div>
                   <div className="group-hover:underline">{event.location_name}</div>
                   {event.address && (
-                    <div className="text-cream-muted text-sm">{event.address}</div>
+                    <div className="text-cream-muted text-sm">
+                      {event.address}
+                      {address2 ? `, ${address2}` : ""}
+                    </div>
                   )}
                   {(event.city || event.state || event.country) && (
                     <div className="text-cream-muted text-sm">
