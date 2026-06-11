@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
   }
 
-  const { event, password, queueId } = await request.json();
+  const { event, password, queueId, organizerId } = await request.json();
 
   if (password !== process.env.ADMIN_PASSWORD) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -32,19 +32,35 @@ export async function POST(request: Request) {
 
   const supabase = await createClient();
 
-  // Find the organizer profile for the logged-in user
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  const { data: profile } = await supabase
-    .from("organizer_profiles")
-    .select("id")
-    .eq("user_id", user.id)
-    .single();
+  // Attribute the event to an explicit target org when given; otherwise fall
+  // back to the admin's own organizer profile
+  let profileId: string | null = null;
+  if (organizerId) {
+    const { data: target } = await supabase
+      .from("organizer_profiles")
+      .select("id")
+      .eq("id", organizerId)
+      .maybeSingle();
+    if (!target) {
+      return NextResponse.json({ error: "Target organizer not found." }, { status: 400 });
+    }
+    profileId = target.id;
+  } else {
+    const { data: profiles } = await supabase
+      .from("organizer_profiles")
+      .select("id")
+      .eq("user_id", user.id)
+      .order("id", { ascending: true })
+      .limit(1);
+    profileId = profiles?.[0]?.id ?? null;
+  }
 
-  if (!profile) {
+  if (!profileId) {
     return NextResponse.json(
       { error: "No organizer profile found. Make sure you are logged in as an organizer." },
       { status: 400 }
@@ -61,7 +77,7 @@ export async function POST(request: Request) {
   }
 
   const { error } = await supabase.from("events").insert({
-    organizer_id: profile.id,
+    organizer_id: profileId,
     title: event.title,
     description: event.description ?? null,
     genre: event.genre,

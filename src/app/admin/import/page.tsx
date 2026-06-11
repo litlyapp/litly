@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import type { Genre, EventType } from "@/types/database";
 import DateTimePicker from "@/components/DateTimePicker";
 import BannerUpload from "@/components/BannerUpload";
@@ -45,6 +46,19 @@ export default function AdminImportPage() {
   const [importing, setImporting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [orgs, setOrgs] = useState<{ id: string; name: string }[]>([]);
+  const [organizerId, setOrganizerId] = useState("");
+
+  // Load orgs for the attribution dropdown once past the password gate
+  useEffect(() => {
+    if (!authed) return;
+    const supabase = createClient();
+    supabase
+      .from("organizer_profiles")
+      .select("id, name")
+      .order("name")
+      .then(({ data }) => setOrgs(data ?? []));
+  }, [authed]);
 
   function checkPassword(e: React.FormEvent) {
     e.preventDefault();
@@ -95,7 +109,7 @@ export default function AdminImportPage() {
       const res = await fetch("/api/admin/import-event", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ event: parsed, password }),
+        body: JSON.stringify({ event: parsed, password, organizerId: organizerId || undefined }),
       });
 
       const data = await res.json();
@@ -209,6 +223,20 @@ export default function AdminImportPage() {
             <p className="text-cream-muted text-xs uppercase tracking-wider mb-4">Review before importing</p>
 
             <div className="space-y-4">
+              <div>
+                <label className="text-cream-muted text-xs mb-1 block">Attribute to organizer</label>
+                <select
+                  value={organizerId}
+                  onChange={(e) => setOrganizerId(e.target.value)}
+                  className={inputClass}
+                >
+                  <option value="">My org (default)</option>
+                  {orgs.map((o) => (
+                    <option key={o.id} value={o.id}>{o.name}</option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label className="text-cream-muted text-xs mb-1 block">Title</label>
                 <input
