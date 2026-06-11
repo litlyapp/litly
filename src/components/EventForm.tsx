@@ -212,6 +212,8 @@ interface GeocodeResult {
   lat: number;
   lng: number;
   label?: string;
+  /** Pin is a zip/city centroid, not the exact address (OSM lacks the street) */
+  approximate?: boolean;
 }
 
 async function geocode(
@@ -365,6 +367,37 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
   // Geocode when address, city, or state loses focus. Include the city/state/
   // country so a bare street address can't match the same street in another
   // city (e.g. "124 E. Washington St." alone resolves to Milwaukee, not Ann Arbor).
+  // Full address first; if OSM doesn't have the street, fall back to the zip
+  // centroid, then the city — an approximately-right pin beats no pin
+  async function geocodeBestEffort(): Promise<GeocodeResult | null> {
+    // Postal code included — international addresses (e.g. AU "QLD 4819")
+    // often don't resolve without it
+    const full = [streetForGeocode(form.address), form.city, form.state, form.zip_code, form.country]
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .join(", ");
+    const exact = await geocode(full, form.city);
+    if (exact) return exact;
+
+    if (form.zip_code.trim()) {
+      const byZip = await geocode(
+        [form.city, form.zip_code, form.country].map((p) => p.trim()).filter(Boolean).join(", "),
+        form.city
+      );
+      if (byZip) return { ...byZip, approximate: true };
+    }
+
+    if (form.city.trim()) {
+      const byCity = await geocode(
+        [form.city, form.state, form.country].map((p) => p.trim()).filter(Boolean).join(", "),
+        form.city
+      );
+      if (byCity) return { ...byCity, approximate: true };
+    }
+
+    return null;
+  }
+
   const handleAddressBlur = useCallback(async () => {
     if (!form.address.trim() || form.event_type !== "in_person") return;
     // When editing, never re-geocode an unchanged address — a tab through the
@@ -379,15 +412,10 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       form.country.trim() === (initialData?.country ?? "");
     if (locationUnchanged) return;
     setGeocoding(true);
-    // Postal code included — international addresses (e.g. AU "QLD 4819")
-    // often don't resolve without it
-    const query = [streetForGeocode(form.address), form.city, form.state, form.zip_code, form.country]
-      .map((part) => part.trim())
-      .filter(Boolean)
-      .join(", ");
-    const result = await geocode(query, form.city);
+    const result = await geocodeBestEffort();
     setGeocoded(result);
     setGeocoding(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.address, form.city, form.state, form.zip_code, form.country, form.event_type, isEditing, geocoded, initialData]);
 
   // Featured readers helpers
@@ -479,11 +507,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
     // Attempt geocode on submit if not already done
     let coords = geocoded;
     if (form.event_type === "in_person" && !coords && form.address.trim()) {
-      const query = [streetForGeocode(form.address), form.city, form.state, form.zip_code, form.country]
-        .map((part) => part.trim())
-        .filter(Boolean)
-        .join(", ");
-      coords = await geocode(query, form.city);
+      coords = await geocodeBestEffort();
     }
 
     const sharedFields = {
@@ -956,6 +980,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
               {geocoded && !geocoding && (
                 <span className="absolute right-3 top-3 text-orange text-xs">
                   ✓ Located{geocoded.label ? `: ${geocoded.label}` : ""}
+                  {geocoded.approximate ? " (approximate)" : ""}
                 </span>
               )}
             </div>
