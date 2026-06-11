@@ -87,7 +87,15 @@ async function fetchPage(url: string): Promise<string | null> {
 }
 
 function htmlToText(html: string): string {
-  return html
+  // Prefer the page's main-content region — sites like pw.org carry 10k+
+  // chars of nav boilerplate that would otherwise crowd out the event text
+  const main =
+    html.match(/<(?:main|article)[^>]*>([\s\S]*?)<\/(?:main|article)>/i)?.[1] ??
+    html.match(/<[^>]+id="(?:main-content|content)"[^>]*>([\s\S]*)/i)?.[1] ??
+    html;
+  // The <h1> often sits outside <main>/<article> — keep the page title in view
+  const pageTitle = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? "";
+  return (pageTitle + " | " + main)
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
     .replace(/<[^>]+>/g, " ")
@@ -151,7 +159,7 @@ export async function GET(req: Request) {
           await sleep(delayMs);
           continue;
         }
-        const text = htmlToText(html).slice(0, 8000);
+        const text = htmlToText(html).slice(0, 16000);
 
         const message = await anthropic.messages.create({
           model: "claude-haiku-4-5",
@@ -213,7 +221,11 @@ ${text}`,
               } else {
                 summary[source.name].queued++;
               }
+            } else {
+              console.warn(`[crawl-calendars] parser skipped ${url} (ignore=${event.ignore ?? "?"}, title=${JSON.stringify(event.title ?? null)})`);
             }
+          } else {
+            console.warn(`[crawl-calendars] no JSON in parser output for ${url}`);
           }
         }
 
