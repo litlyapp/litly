@@ -138,7 +138,7 @@ export default async function EventDetailPage({
     const delta = 0.45;
     let nearbyQuery = supabase
       .from("events")
-      .select("id, title, genre, event_type, date_time, timezone, location_name, city, state, country, virtual_url, open_mic, banner_url, ticket_url, description, is_imported, source_url, source_name, lat, lng, organizer:organizer_profiles(id, name)")
+      .select("id, title, genre, event_type, date_time, timezone, location_name, city, state, country, virtual_url, open_mic, banner_url, ticket_url, description, is_imported, source_url, source_name, lat, lng, parent_event_id, organizer:organizer_profiles(id, name)")
       .eq("event_type", "in_person")
       .eq("is_cancelled", false)
       .gte("date_time", new Date().toISOString())
@@ -153,18 +153,29 @@ export default async function EventDetailPage({
       nearbyQuery = nearbyQuery.neq("id", seriesParentId);
     }
 
+    // Over-fetch, then keep only the soonest upcoming occurrence per series
+    // (same one-pin-per-series rule as the map and events list)
     const { data: nearby } = await nearbyQuery
       .gte("lat", event.lat - delta)
       .lte("lat", event.lat + delta)
       .gte("lng", event.lng - delta)
       .lte("lng", event.lng + delta)
       .order("date_time", { ascending: true })
-      .limit(4);
+      .limit(24);
 
-    nearbyEvents = (nearby ?? []).map((e) => ({
-      ...e,
-      organizer: Array.isArray(e.organizer) ? e.organizer[0] : e.organizer,
-    }));
+    const seenSeries = new Set<string>();
+    nearbyEvents = (nearby ?? [])
+      .filter((e) => {
+        const seriesKey = (e as { parent_event_id: string | null }).parent_event_id ?? e.id;
+        if (seenSeries.has(seriesKey)) return false;
+        seenSeries.add(seriesKey);
+        return true;
+      })
+      .slice(0, 4)
+      .map((e) => ({
+        ...e,
+        organizer: Array.isArray(e.organizer) ? e.organizer[0] : e.organizer,
+      }));
   }
 
   const {

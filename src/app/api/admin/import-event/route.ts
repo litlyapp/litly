@@ -77,7 +77,14 @@ export async function POST(request: Request) {
     lng: coords?.lng ?? null,
     virtual_url: event.virtual_url ?? null,
     open_mic: event.open_mic ?? false,
-    featured_readers: event.featured_readers ?? null,
+    featured_readers: (() => {
+      const readers = (event.featured_readers ?? []).filter(
+        (r: { name?: string }) => r?.name?.trim()
+      );
+      return readers.length ? readers : null;
+    })(),
+    ticket_type: event.ticket_type ?? (event.ticket_url ? "paid" : null),
+    ticket_url: event.ticket_url ?? null,
     rsvp_enabled: false,
     is_imported: true,
     source_url: event.source_url ?? null,

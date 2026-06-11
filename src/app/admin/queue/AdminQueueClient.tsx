@@ -17,12 +17,30 @@ interface PendingImport {
   created_at: string;
 }
 
+// Show the literal wall-clock time written in the parsed ISO string — never
+// run it through Date(), which re-interprets it in the browser's timezone and
+// shifts edited times (e.g. 10 AM becomes 1 AM for an admin in GMT+9)
 function toDatetimeLocal(iso: string | null | undefined): string {
-  if (!iso) return "";
-  const d = new Date(String(iso));
-  const pad = (n: number) => String(n).padStart(2, "0");
-  // Use UTC methods so the value shown matches what's stored, regardless of browser timezone
-  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+  return String(iso ?? "").match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/)?.[0] ?? "";
+}
+
+// Preserve the source's timezone offset (e.g. "-04:00" or "Z") when the admin
+// edits the wall-clock time, so the stored instant stays correct
+function offsetOf(iso: string | null | undefined): string {
+  return String(iso ?? "").match(/(Z|[+-]\d{2}:?\d{2})$/)?.[1] ?? "";
+}
+
+// Format the event's own wall-clock time without timezone re-interpretation
+function formatWallClock(iso: string | null | undefined): string {
+  const m = toDatetimeLocal(iso);
+  if (!m) return "Date TBD";
+  const [datePart, timePart] = m.split("T");
+  const [y, mo, d] = datePart.split("-").map(Number);
+  const [h, min] = timePart.split(":").map(Number);
+  return new Date(y, mo - 1, d, h, min).toLocaleString("en-US", {
+    month: "short", day: "numeric", year: "numeric",
+    hour: "numeric", minute: "2-digit",
+  });
 }
 
 const inputClass =
@@ -281,16 +299,13 @@ export default function AdminQueueClient() {
                     <DateTimePicker
                       label="Date & time"
                       value={toDatetimeLocal(data.date_time as string)}
-                      onChange={(v) => setField("date_time", v || null)}
+                      onChange={(v) =>
+                        setField("date_time", v ? v + offsetOf(item.parsed_data?.date_time as string) : null)
+                      }
                     />
                   ) : (
                     <p className="text-cream-muted text-sm">
-                      {data.date_time
-                        ? new Date(String(data.date_time)).toLocaleString("en-US", {
-                            month: "short", day: "numeric", year: "numeric",
-                            hour: "numeric", minute: "2-digit",
-                          })
-                        : "Date TBD"}
+                      {formatWallClock(data.date_time as string)}
                     </p>
                   )}
 
@@ -342,12 +357,137 @@ export default function AdminQueueClient() {
                     </div>
                   )}
 
-                  {/* Banner image */}
+                  {/* Full field set so imports don't need a post-import edit pass */}
                   {isEditing && (
-                    <BannerUpload
-                      value={(data.banner_url as string | null) ?? null}
-                      onChange={(url) => setField("banner_url", url)}
-                    />
+                    <>
+                      <div>
+                        <label className="text-cream-muted text-xs uppercase tracking-wider mb-1 block">Description</label>
+                        <textarea
+                          value={String(data.description ?? "")}
+                          onChange={(e) => setField("description", e.target.value || null)}
+                          rows={4}
+                          className={inputClass}
+                        />
+                      </div>
+
+                      <DateTimePicker
+                        label="End time (optional)"
+                        value={toDatetimeLocal(data.end_time as string)}
+                        onChange={(v) =>
+                          setField("end_time", v ? v + offsetOf(item.parsed_data?.end_time as string) : null)
+                        }
+                      />
+
+                      {data.event_type !== "virtual" && (
+                        <>
+                          <div>
+                            <label className="text-cream-muted text-xs uppercase tracking-wider mb-1 block">Address</label>
+                            <input
+                              value={String(data.address ?? "")}
+                              onChange={(e) => setField("address", e.target.value || null)}
+                              className={inputClass}
+                            />
+                          </div>
+                          <div className="grid grid-cols-3 gap-3">
+                            {(["city", "state", "country"] as const).map((f) => (
+                              <div key={f}>
+                                <label className="text-cream-muted text-xs uppercase tracking-wider mb-1 block">{f}</label>
+                                <input
+                                  value={String(data[f] ?? "")}
+                                  onChange={(e) => setField(f, e.target.value || null)}
+                                  className={inputClass}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      )}
+
+                      <div className="grid grid-cols-[auto_1fr] gap-3 items-end">
+                        <div>
+                          <label className="text-cream-muted text-xs uppercase tracking-wider mb-1 block">Tickets</label>
+                          <select
+                            value={String(data.ticket_type ?? "")}
+                            onChange={(e) => {
+                              setField("ticket_type", e.target.value || null);
+                              if (!e.target.value) setField("ticket_url", null);
+                            }}
+                            className={inputClass}
+                          >
+                            <option value="">None</option>
+                            <option value="free">Free / RSVP</option>
+                            <option value="paid">Paid</option>
+                          </select>
+                        </div>
+                        {!!data.ticket_type && (
+                          <input
+                            type="url"
+                            placeholder="https://… ticket or registration link"
+                            value={String(data.ticket_url ?? "")}
+                            onChange={(e) => setField("ticket_url", e.target.value || null)}
+                            className={inputClass}
+                          />
+                        )}
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-cream-muted text-xs uppercase tracking-wider block">Featured readers</label>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setField("featured_readers", [
+                                ...((data.featured_readers as { name: string; url: string }[]) ?? []),
+                                { name: "", url: "" },
+                              ])
+                            }
+                            className="text-orange text-xs hover:text-orange/80 transition"
+                          >
+                            + Add reader
+                          </button>
+                        </div>
+                        {((data.featured_readers as { name: string; url: string }[]) ?? []).map((reader, ri) => (
+                          <div key={ri} className="grid grid-cols-[1fr_1fr_auto] gap-2 mb-2">
+                            <input
+                              placeholder="Name"
+                              value={reader.name}
+                              onChange={(e) => {
+                                const next = [...((data.featured_readers as { name: string; url: string }[]) ?? [])];
+                                next[ri] = { ...next[ri], name: e.target.value };
+                                setField("featured_readers", next);
+                              }}
+                              className={inputClass}
+                            />
+                            <input
+                              placeholder="Link (optional)"
+                              value={reader.url}
+                              onChange={(e) => {
+                                const next = [...((data.featured_readers as { name: string; url: string }[]) ?? [])];
+                                next[ri] = { ...next[ri], url: e.target.value };
+                                setField("featured_readers", next);
+                              }}
+                              className={inputClass}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const next = ((data.featured_readers as { name: string; url: string }[]) ?? []).filter((_, i) => i !== ri);
+                                setField("featured_readers", next.length ? next : null);
+                              }}
+                              className="text-cream-muted text-xs hover:text-orange transition px-2"
+                              aria-label="Remove reader"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      <BannerUpload
+                        value={(data.banner_url as string | null) ?? null}
+                        onChange={(url) => setField("banner_url", url)}
+                      />
+                    </>
                   )}
                 </div>
               ) : (
