@@ -20,6 +20,15 @@ function formatDate(iso: string, timeZone?: string | null) {
   });
 }
 
+function escapeHtml(str: string) {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function distanceMiles(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 3958.8;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -213,9 +222,9 @@ export default function LeafletMap({
             const organizer = Array.isArray(event.organizer) ? event.organizer[0] : event.organizer;
             return `
               ${i > 0 ? `<div style="border-top:1px solid rgba(242,232,213,0.1);margin:8px 0;"></div>` : ""}
-              <div style="font-weight:600;color:#F2E8D5;margin-bottom:3px;font-size:13px;line-height:1.3;">${event.title}</div>
+              <div style="font-weight:600;color:#F2E8D5;margin-bottom:3px;font-size:13px;line-height:1.3;">${escapeHtml(event.title)}</div>
               <div style="color:#D9D0C0;font-size:11px;margin-bottom:2px;">${formatDate(event.date_time, (event as typeof event & { timezone?: string | null }).timezone)}</div>
-              ${organizer ? `<div style="color:#D9D0C0;font-size:11px;margin-bottom:4px;">${organizer.name}</div>` : ""}
+              ${organizer ? `<div style="color:#D9D0C0;font-size:11px;margin-bottom:4px;">${escapeHtml(organizer.name)}</div>` : ""}
               <a href="/events/${event.id}" style="color:#E8622A;font-size:12px;text-decoration:none;font-weight:500;">View event →</a>
             `;
           }).join("")}
