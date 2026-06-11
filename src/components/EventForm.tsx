@@ -163,6 +163,7 @@ interface EventData {
   location_name: string | null;
   address: string | null;
   city: string | null;
+  zip_code?: string | null;
   state: string | null;
   country: string | null;
   lat: number | null;
@@ -217,15 +218,22 @@ async function geocode(
     const hit = data[0];
     if (!hit) return null;
     const addr = hit.address ?? {};
-    const resolvedCity = addr.city ?? addr.town ?? addr.village ?? addr.municipality ?? "";
+    const resolvedCity =
+      addr.city ?? addr.town ?? addr.village ?? addr.municipality ?? "";
     // Reject results that contradict the typed city — a missing pin is a
-    // visible problem, a wrong pin is a silent one
-    if (
-      expectedCity?.trim() &&
-      resolvedCity &&
-      resolvedCity.toLowerCase() !== expectedCity.trim().toLowerCase()
-    ) {
-      return null;
+    // visible problem, a wrong pin is a silent one. Containment check rather
+    // than strict equality: internationally Nominatim often returns the
+    // locality at a different granularity (e.g. AU suburbs vs. city), so
+    // also accept a match against suburb/county before rejecting.
+    const expected = expectedCity?.trim().toLowerCase() ?? "";
+    if (expected && resolvedCity) {
+      const candidates = [resolvedCity, addr.suburb, addr.county]
+        .filter(Boolean)
+        .map((c: string) => c.toLowerCase());
+      const matches = candidates.some(
+        (c: string) => c.includes(expected) || expected.includes(c)
+      );
+      if (!matches) return null;
     }
     const resolvedState = addr.state ?? addr.province ?? "";
     return {
@@ -290,7 +298,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
     location_name: initialData?.location_name ?? "",
     address: initialData?.address ?? "",
     city: initialData?.city ?? "",
-    zip_code: "",
+    zip_code: initialData?.zip_code ?? "",
     state: initialData?.state ?? "",
     country: initialData?.country ?? "",
     virtual_url: initialData?.virtual_url ?? "",
@@ -352,18 +360,21 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       geocoded !== null &&
       form.address.trim() === (initialData?.address ?? "") &&
       form.city.trim() === (initialData?.city ?? "") &&
+      form.zip_code.trim() === (initialData?.zip_code ?? "") &&
       form.state.trim() === (initialData?.state ?? "") &&
       form.country.trim() === (initialData?.country ?? "");
     if (locationUnchanged) return;
     setGeocoding(true);
-    const query = [form.address, form.city, form.state, form.country]
+    // Postal code included — international addresses (e.g. AU "QLD 4819")
+    // often don't resolve without it
+    const query = [form.address, form.city, form.state, form.zip_code, form.country]
       .map((part) => part.trim())
       .filter(Boolean)
       .join(", ");
     const result = await geocode(query, form.city);
     setGeocoded(result);
     setGeocoding(false);
-  }, [form.address, form.city, form.state, form.country, form.event_type, isEditing, geocoded, initialData]);
+  }, [form.address, form.city, form.state, form.zip_code, form.country, form.event_type, isEditing, geocoded, initialData]);
 
   // Featured readers helpers
   function addReader() {
@@ -454,7 +465,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
     // Attempt geocode on submit if not already done
     let coords = geocoded;
     if (form.event_type === "in_person" && !coords && form.address.trim()) {
-      const query = [form.address, form.city, form.state, form.country]
+      const query = [form.address, form.city, form.state, form.zip_code, form.country]
         .map((part) => part.trim())
         .filter(Boolean)
         .join(", ");
@@ -476,6 +487,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       address:
         form.event_type === "in_person" ? form.address.trim() || null : null,
       city: form.event_type === "in_person" ? form.city.trim() || null : null,
+      zip_code: form.event_type === "in_person" ? form.zip_code.trim() || null : null,
       state: form.event_type === "in_person" ? form.state.trim() || null : null,
       country: form.event_type === "in_person" ? form.country.trim() || null : null,
       lat: form.event_type === "in_person" ? coords?.lat ?? null : null,
@@ -524,6 +536,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
           location_name: sharedFields.location_name,
           address: sharedFields.address,
           city: sharedFields.city,
+          zip_code: sharedFields.zip_code,
           state: sharedFields.state,
           country: sharedFields.country,
           lat: sharedFields.lat,
