@@ -72,8 +72,10 @@ export default function AdminEventsClient() {
     router.refresh();
   }
 
-  const filtered = events.filter((e) =>
-    e.title.toLowerCase().includes(search.toLowerCase())
+  const filtered = events.filter(
+    (e) =>
+      e.title.toLowerCase().includes(search.toLowerCase()) ||
+      (e.source_name ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
   const inputClass = "bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange";

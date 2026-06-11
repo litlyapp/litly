@@ -49,7 +49,10 @@ export default async function EventsPage({
     .order("date_time", { ascending: true });
 
   if (params.q) {
-    query = query.ilike("title", `%${params.q}%`);
+    // Match imported events' source org too — orgs searching their own name
+    // should find their curated events (claim-your-page funnel)
+    const q = params.q.replace(/[,()]/g, " ");
+    query = query.or(`title.ilike.%${q}%,source_name.ilike.%${q}%`);
   }
 
   const genres = params.genre
