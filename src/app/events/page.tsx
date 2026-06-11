@@ -49,10 +49,22 @@ export default async function EventsPage({
     .order("date_time", { ascending: true });
 
   if (params.q) {
-    // Match imported events' source org too — orgs searching their own name
-    // should find their curated events (claim-your-page funnel)
+    // One search bar for everything a patron might type: event title, venue,
+    // host org name, or an imported event's source org (claim-your-page funnel)
     const q = params.q.replace(/[,()]/g, " ");
-    query = query.or(`title.ilike.%${q}%,source_name.ilike.%${q}%`);
+    const ql = q.trim().toLowerCase();
+    const matchingOrgIds = (organizers ?? [])
+      .filter((o) => o.name.toLowerCase().includes(ql))
+      .map((o) => o.id);
+    const clauses = [
+      `title.ilike.%${q}%`,
+      `source_name.ilike.%${q}%`,
+      `location_name.ilike.%${q}%`,
+    ];
+    if (matchingOrgIds.length) {
+      clauses.push(`organizer_id.in.(${matchingOrgIds.join(",")})`);
+    }
+    query = query.or(clauses.join(","));
   }
 
   const genres = params.genre
