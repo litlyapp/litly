@@ -14,7 +14,7 @@ create policy "Org admins can update org profiles"
   using (
     exists (
       select 1 from public.org_members
-      where org_id = id
+      where org_id = organizer_profiles.id
         and user_id = auth.uid()
         and role = 'admin'
     )

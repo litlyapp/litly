@@ -43,7 +43,7 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
     if (instagram) social_links.instagram = instagram;
     if (twitter) social_links.twitter = twitter;
 
-    const { error: updateError } = await supabase
+    const { data: updated, error: updateError } = await supabase
       .from("organizer_profiles")
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .update({
@@ -53,12 +53,15 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
         social_links: Object.keys(social_links).length ? social_links : null,
         avatar_url: avatarUrl,
       } as any)
-      .eq("id", profile.id);
+      .eq("id", profile.id)
+      .select("id");
 
     setSaving(false);
 
     if (updateError) {
       setError(updateError.message);
+    } else if (!updated || updated.length === 0) {
+      setError("Save failed: you don't have permission to edit this profile.");
     } else {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
