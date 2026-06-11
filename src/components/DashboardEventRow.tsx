@@ -67,7 +67,7 @@ export default function DashboardEventRow({ event, divider, isPast, rsvpCount, v
   }
 
   return (
-    <div className={`px-5 py-4 flex items-start gap-4 ${divider ? "border-b border-cream/10" : ""}`}>
+    <div className={`px-5 py-4 flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4 ${divider ? "border-b border-cream/10" : ""}`}>
       {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -104,7 +104,7 @@ export default function DashboardEventRow({ event, divider, isPast, rsvpCount, v
 
         <Link
           href={`/events/${event.id}`}
-          className="text-cream font-medium hover:text-orange transition line-clamp-1"
+          className="text-cream font-medium hover:text-orange transition line-clamp-2 sm:line-clamp-1"
         >
           {event.title}
         </Link>
@@ -123,7 +123,7 @@ export default function DashboardEventRow({ event, divider, isPast, rsvpCount, v
         </div>
       </div>
 
-      {/* Actions */}
+      {/* Actions — below the info on mobile, beside it on wider screens */}
       <div className="flex items-start gap-2 shrink-0">
         {confirming ? (
           <div className="flex flex-col items-end gap-2">
