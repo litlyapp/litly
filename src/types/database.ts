@@ -9,7 +9,8 @@ export type Genre =
   | "open_mic"
   | "workshop"
   | "in_conversation"
-  | "slam";
+  | "slam"
+  | "other";
 
 export type UserRole = "patron" | "organizer";
 export type EventType = "in_person" | "virtual";

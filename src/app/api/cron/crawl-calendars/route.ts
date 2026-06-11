@@ -175,7 +175,7 @@ Return a single JSON object:
 {
   "title": "Event title",
   "description": "1-3 sentence summary IN YOUR OWN WORDS — do not copy the page's description verbatim (string or null)",
-  "genre": ["array of applicable: poetry, fiction, nonfiction, essay, translation, ya, craft_talk, open_mic, workshop, in_conversation, slam"],
+  "genre": ["array of applicable: poetry, fiction, nonfiction, essay, translation, ya, craft_talk, open_mic, workshop, in_conversation, slam, other (use other only when clearly literary but nothing else fits)"],
   "event_type": "in_person or virtual",
   "date_time": "ISO 8601 with timezone offset or null",
   "end_time": "ISO 8601 or null",

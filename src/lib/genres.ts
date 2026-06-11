@@ -12,6 +12,7 @@ export const GENRES: { value: Genre; label: string }[] = [
   { value: "workshop", label: "Workshop" },
   { value: "in_conversation", label: "In Conversation" },
   { value: "slam", label: "Slam" },
+  { value: "other", label: "Other" },
 ];
 
 export const GENRE_LABELS: Record<Genre, string> = Object.fromEntries(
