@@ -52,9 +52,16 @@ export default function AdminEventsClient() {
 
   async function handleDelete(id: string) {
     setDeleting(id);
-    const { error } = await supabase.from("events").delete().eq("id", id);
-    if (error) {
-      alert("Failed to delete event: " + error.message);
+    const { data: deleted, error } = await supabase
+      .from("events")
+      .delete()
+      .eq("id", id)
+      .select("id");
+    if (error || !deleted || deleted.length === 0) {
+      alert(
+        "Failed to delete event: " +
+          (error ? error.message : "no permission to delete this event")
+      );
       setDeleting(null);
       setConfirming(null);
       return;
