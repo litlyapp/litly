@@ -193,6 +193,8 @@ interface Props {
   initialData?: EventData & { id?: string };
   eventId?: string;
   seriesContext?: SeriesContext;
+  /** Admin-only: expose "via [org]" source attribution fields */
+  allowSourceAttribution?: boolean;
 }
 
 // Geocode an address using Nominatim (free, no API key)
@@ -266,7 +268,7 @@ async function resolveZip(
   return null;
 }
 
-export default function EventForm({ organizerId, initialData, eventId, seriesContext }: Props) {
+export default function EventForm({ organizerId, initialData, eventId, seriesContext, allowSourceAttribution }: Props) {
   const router = useRouter();
   const supabase = createClient();
   const isEditing = !!eventId;
@@ -296,6 +298,8 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
     rsvp_enabled: initialData?.rsvp_enabled ?? false,
     ticket_url: initialData?.ticket_url ?? "",
     ticket_type: (initialData as { ticket_type?: string })?.ticket_type ?? "",
+    source_name: (initialData as { source_name?: string | null })?.source_name ?? "",
+    source_url: (initialData as { source_url?: string | null })?.source_url ?? "",
   });
 
   const [genres, setGenres] = useState<Genre[]>(
@@ -420,6 +424,10 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       return "A ticket URL is required when a ticket type is selected.";
     if (form.ticket_url.trim() && !/^https?:\/\//i.test(form.ticket_url.trim()))
       return "Ticket URL must start with http:// or https://";
+    if (form.source_url.trim() && !/^https?:\/\//i.test(form.source_url.trim()))
+      return "Source URL must start with http:// or https://";
+    if (form.source_url.trim() && !form.source_name.trim())
+      return "A source name is required when a source URL is set.";
     if (form.end_time && form.date_time && form.end_time <= form.date_time)
       return "End time must be after the start time.";
     // Convert using the selected timezone so this check is correct regardless of browser locale
@@ -481,6 +489,15 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       ticket_url: form.ticket_url.trim() || null,
       ticket_type: (form.ticket_type || null) as "paid" | "free" | null,
       banner_url: bannerUrl,
+      // Only the admin form includes these keys — regular org edits leave any
+      // existing attribution untouched
+      ...(allowSourceAttribution
+        ? {
+            source_name: form.source_name.trim() || null,
+            source_url: form.source_url.trim() || null,
+            is_imported: !!form.source_name.trim(),
+          }
+        : {}),
     };
 
     if (isEditing) {
@@ -987,6 +1004,34 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
           )}
         </div>
       </div>
+
+      {/* Source attribution — admin only */}
+      {allowSourceAttribution && (
+        <div className="border border-orange/30 rounded-2xl p-5 space-y-4">
+          <div>
+            <label className={labelClass}>Source attribution (admin)</label>
+            <p className="text-cream-muted/60 text-xs -mt-1 mb-3">
+              Credit the org that originally posted this event. Shows as
+              &ldquo;via [name]&rdquo; on cards and adds the claim link on the
+              event page. Leave blank for litly&apos;s own events.
+            </p>
+            <input
+              type="text"
+              placeholder="Original org or publication name"
+              value={form.source_name}
+              onChange={(e) => set("source_name", e.target.value)}
+              className={inputClass}
+            />
+          </div>
+          <input
+            type="url"
+            placeholder="https://… link to the original listing (optional)"
+            value={form.source_url}
+            onChange={(e) => set("source_url", e.target.value)}
+            className={inputClass}
+          />
+        </div>
+      )}
 
       {/* Featured readers */}
       <div>

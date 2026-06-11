@@ -69,7 +69,11 @@ export default async function NewEventPage({
             : `Posting as ${profile.name}`}
         </p>
       </div>
-      <EventForm organizerId={profile.id} initialData={initialData} />
+      <EventForm
+        organizerId={profile.id}
+        initialData={initialData}
+        allowSourceAttribution={user.email === "admin@thelitlyapp.com"}
+      />
     </div>
   );
 }

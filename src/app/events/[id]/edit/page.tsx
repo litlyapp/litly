@@ -72,6 +72,7 @@ export default async function EditEventPage({
         initialData={event}
         eventId={id}
         seriesContext={seriesContext}
+        allowSourceAttribution={user.email === "admin@thelitlyapp.com"}
       />
     </div>
   );
