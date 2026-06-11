@@ -13,6 +13,7 @@ import EventViewTracker from "@/components/EventViewTracker";
 import TicketLinkButton from "@/components/TicketLinkButton";
 import ShareButton from "@/components/ShareButton";
 import CancelEventButton from "@/components/CancelEventButton";
+import { CURATED_ORG_ID } from "@/lib/curatedOrg";
 
 export async function generateMetadata({
   params,
@@ -415,7 +416,9 @@ export default async function EventDetailPage({
       {/* Organizer */}
       {organizer && (
         <div className="bg-navy-light border border-cream/10 rounded-2xl p-8 mb-6">
-          <h2 className="font-serif text-xl text-cream mb-4">Organized by</h2>
+          <h2 className="font-serif text-xl text-cream mb-4">
+            {organizer.id === CURATED_ORG_ID ? "Posted by" : "Organized by"}
+          </h2>
           <Link
             href={`/organizers/${organizer.id}`}
             className="flex items-center gap-4 group"
