@@ -15,6 +15,8 @@ interface Props {
   onChange: (rule: RecurrenceRule | null) => void;
   ongoing: boolean;
   onOngoingChange: (v: boolean) => void;
+  /** Editing an existing series: hide the on/off toggle — the rule always exists */
+  alwaysOn?: boolean;
 }
 
 const UNTIL_PRESETS = [
@@ -29,7 +31,7 @@ function addMonths(date: Date, n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-export default function RecurrenceOptions({ startDateIso, value, onChange, ongoing, onOngoingChange }: Props) {
+export default function RecurrenceOptions({ startDateIso, value, onChange, ongoing, onOngoingChange, alwaysOn }: Props) {
   const startDate = startDateIso ? new Date(startDateIso) : null;
 
   const defaultUntil = startDate ? addMonths(startDate, 6) : "";
@@ -100,6 +102,7 @@ export default function RecurrenceOptions({ startDateIso, value, onChange, ongoi
   return (
     <div className="space-y-4">
       {/* Toggle */}
+      {!alwaysOn && (
       <label className="flex items-center gap-3 cursor-pointer">
         <button
           type="button"
@@ -124,6 +127,7 @@ export default function RecurrenceOptions({ startDateIso, value, onChange, ongoi
           )}
         </span>
       </label>
+      )}
 
       {value && startDate && (
         <div className="bg-navy border border-cream/10 rounded-2xl p-5 space-y-5">

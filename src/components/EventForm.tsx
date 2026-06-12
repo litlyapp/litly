@@ -341,7 +341,14 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       : null
   );
 
-  const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule | null>(null);
+  // Parent of an existing series: start from its saved rule so the schedule
+  // is visible and editable
+  const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule | null>(
+    initialData?.recurrence_rule && !initialData?.parent_event_id
+      ? (initialData.recurrence_rule as RecurrenceRule)
+      : null
+  );
+  const initialRuleJson = JSON.stringify(initialData?.recurrence_rule ?? null);
   const [newEventOngoing, setNewEventOngoing] = useState(false);
   const [editScope, setEditScope] = useState<EditScope>("this");
 
@@ -564,7 +571,8 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         : null;
 
       const dates: Date[] = [];
-      if (newEventOngoing) {
+      const ongoingFlag = isParentEvent ? seriesOngoing : newEventOngoing;
+      if (ongoingFlag) {
         let cursor = startDate;
         for (let i = 0; i < 9; i++) {
           const next = generateNextOccurrence(cursor, recurrenceRule);
@@ -656,12 +664,73 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
           .update({
             is_ongoing: seriesOngoing,
             series_end_date: seriesEndDate || null,
+            ...(recurrenceRule ? { recurrence_rule: recurrenceRule } : {}),
           })
           .eq("id", eventId);
         if (seriesSettingsError) {
           setError(`Event saved but series settings failed to update: ${seriesSettingsError.message}`);
           setLoading(false);
           return;
+        }
+
+        // Schedule changed: regenerate future occurrences under the new rule.
+        // Occurrences with RSVPs are kept (attendees were emailed confirmations);
+        // the organizer can cancel those individually, which notifies attendees.
+        const ruleChanged = recurrenceRule && JSON.stringify(recurrenceRule) !== initialRuleJson;
+        if (ruleChanged) {
+          const nowIso = new Date().toISOString();
+
+          const { data: futureChildren } = await supabase
+            .from("events")
+            .select("id, date_time, is_cancelled")
+            .eq("parent_event_id", eventId)
+            .gte("date_time", nowIso);
+
+          const childIds = (futureChildren ?? []).map((c) => c.id);
+          const keepIds = new Set<string>();
+          if (childIds.length > 0) {
+            const { data: rsvpRows } = await supabase
+              .from("rsvps")
+              .select("event_id")
+              .in("event_id", childIds);
+            (rsvpRows ?? []).forEach((r) => keepIds.add(r.event_id));
+          }
+          // Cancelled occurrences also stay — they document the cancellation
+          const deleteIds = (futureChildren ?? [])
+            .filter((c) => !keepIds.has(c.id) && !c.is_cancelled)
+            .map((c) => c.id);
+
+          if (deleteIds.length > 0) {
+            const { error: deleteError } = await supabase
+              .from("events")
+              .delete()
+              .in("id", deleteIds);
+            if (deleteError) {
+              setError(`Series settings saved but old occurrences couldn't be replaced: ${deleteError.message}`);
+              setLoading(false);
+              return;
+            }
+          }
+
+          // Re-seed under the new rule, skipping dates already covered by a
+          // kept (RSVP'd or cancelled) occurrence
+          const keptTimes = new Set(
+            (futureChildren ?? [])
+              .filter((c) => keepIds.has(c.id) || c.is_cancelled)
+              .map((c) => new Date(c.date_time).getTime())
+          );
+          const children = buildChildOccurrences(eventId).filter(
+            (c) => c.date_time > nowIso && !keptTimes.has(new Date(c.date_time).getTime())
+          );
+          if (children.length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { error: reseedError } = await (supabase as any).from("events").insert(children);
+            if (reseedError) {
+              setError(`Series schedule saved but new occurrences failed: ${reseedError.message}`);
+              setLoading(false);
+              return;
+            }
+          }
         }
       }
 
@@ -1170,13 +1239,19 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         <div className="bg-navy border border-cream/10 rounded-2xl p-5 space-y-4">
           <p className="text-cream-muted text-xs uppercase tracking-wider">Series settings</p>
 
-          <label className="flex items-center gap-4 cursor-pointer">
-            <Toggle value={seriesOngoing} onChange={setSeriesOngoing} />
-            <div>
-              <span className="text-cream text-sm font-medium">Ongoing series</span>
-              <p className="text-cream-muted text-xs">litly will keep generating upcoming occurrences automatically.</p>
-            </div>
-          </label>
+          <RecurrenceOptions
+            startDateIso={form.date_time}
+            value={recurrenceRule}
+            onChange={setRecurrenceRule}
+            ongoing={seriesOngoing}
+            onOngoingChange={setSeriesOngoing}
+            alwaysOn
+          />
+          <p className="text-cream-muted/60 text-xs">
+            Changing the schedule replaces upcoming occurrences with the new
+            dates. Occurrences that already have RSVPs (and cancelled ones)
+            are kept — cancel those individually to notify attendees.
+          </p>
 
           <div>
             <label className={labelClass}>Series end date (optional)</label>
