@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { rateLimit } from "@/lib/rateLimit";
+import { looksLikeUrl, fetchPageText, applyKnownVenue, TIME_RULES } from "@/lib/importParsing";
+
+// Page fetch + parse can exceed Vercel's default timeout
+export const maxDuration = 60;
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -23,6 +28,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No input provided" }, { status: 400 });
   }
 
+  // A bare URL carries no event data — fetch the page so Claude extracts from
+  // real content instead of guessing from the URL slug
+  let content = input;
+  let fetchedUrl: string | null = null;
+  if (looksLikeUrl(input)) {
+    const pageText = await fetchPageText(input.trim());
+    if (!pageText) {
+      return NextResponse.json(
+        { error: "Couldn't fetch that URL. Paste the event page text instead." },
+        { status: 400 }
+      );
+    }
+    fetchedUrl = input.trim();
+    content = pageText;
+  }
+
   const prompt = `You are a literary event data extractor for litly, a literary event locator platform.
 
 Extract structured event data from the following text or webpage content. Return ONLY a valid JSON object with these exact fields:
@@ -34,6 +55,7 @@ Extract structured event data from the following text or webpage content. Return
   "event_type": "in_person or virtual",
   "date_time": "ISO 8601 datetime string (e.g. 2026-07-15T19:00:00) or null if not found",
   "end_time": "ISO 8601 datetime string or null",
+  "time_confirmed": "true only if the source explicitly states a start time, false otherwise",
   "location_name": "Venue name (string or null)",
   "address": "Full street address (string or null)",
   "city": "City name parsed directly from the address/venue text — do not guess or infer one that isn't stated (string or null)",
@@ -49,32 +71,41 @@ Extract structured event data from the following text or webpage content. Return
 
 If the event is not related to books, poetry, fiction, writing, publishing, or literary arts, set "ignore": true.
 
-Current year is 2026. If a date mentions a month/day without a year, assume 2026.
+${TIME_RULES}
 
 Input:
-${input}
+${content}
 
 Return ONLY the JSON object, no other text.`;
 
   try {
     const message = await client.messages.create({
       model: "claude-haiku-4-5",
-      max_tokens: 1024,
+      max_tokens: 2048,
       messages: [{ role: "user", content: prompt }],
     });
 
-    const content = message.content[0];
-    if (content.type !== "text") {
+    const responseContent = message.content[0];
+    if (responseContent.type !== "text") {
       throw new Error("Unexpected response type");
     }
 
     // Extract JSON from the response
-    const jsonMatch = content.text.match(/\{[\s\S]*\}/);
+    const jsonMatch = responseContent.text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error("No JSON found in response");
     }
 
-    const parsed = JSON.parse(jsonMatch[0]);
+    let parsed = JSON.parse(jsonMatch[0]);
+    if (fetchedUrl && !parsed.source_url) parsed.source_url = fetchedUrl;
+
+    // Fill missing venue fields from this source's past approved events
+    const supabase = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    parsed = await applyKnownVenue(supabase, parsed, parsed.source_name);
+
     return NextResponse.json({ parsed });
   } catch (error) {
     console.error("Parse error:", error);

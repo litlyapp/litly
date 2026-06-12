@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 import { createHmac } from "crypto";
+import { stripHtml, applyKnownVenue, enrichFromLink, TIME_RULES } from "@/lib/importParsing";
+
+// Parsing + per-event link enrichment can exceed Vercel's default timeout
+export const maxDuration = 60;
 
 const CONFIRMATION_FORWARD_TO = "knuth.cdgo@gmail.com";
 const CONFIRMATION_PATTERN = /confirm|verify|activate|subscri|welcome|opt.?in/i;
@@ -63,7 +67,9 @@ export async function POST(request: Request) {
     const bodyPlain = formData.get("body-plain")?.toString() ?? "";
     const bodyHtml = formData.get("body-html")?.toString() ?? "";
 
-    const body = bodyPlain || bodyHtml;
+    // Strip markup before any length budgeting — raw HTML newsletters can
+    // burn the whole slice on tags before reaching event text
+    const body = bodyPlain || stripHtml(bodyHtml);
 
     // Ignore litly's own outbound mail (RSVP confirmations, digests, alerts)
     // looping back in via the catch-all — e.g. when an admin@thelitlyapp.com
@@ -87,7 +93,7 @@ export async function POST(request: Request) {
     // Parse with Claude Haiku
     const message = await anthropic.messages.create({
       model: "claude-haiku-4-5",
-      max_tokens: 2048,
+      max_tokens: 4096,
       messages: [
         {
           role: "user",
@@ -108,6 +114,7 @@ Return a JSON array of event objects. Each object:
   "event_type": "in_person or virtual (default to in_person if unclear)",
   "date_time": "ISO 8601 or null",
   "end_time": "ISO 8601 or null",
+  "time_confirmed": "true only if the email explicitly states a start time, false otherwise",
   "location_name": "string or null",
   "address": "string or null",
   "city": "string or null",
@@ -115,11 +122,12 @@ Return a JSON array of event objects. Each object:
   "country": "string or null",
   "virtual_url": "string or null",
   "ticket_url": "string or null",
+  "source_url": "link to the event's own webpage if the email contains one, or null",
   "source_name": "name of the sender org or newsletter",
   "ignore": false
 }
 
-Current year is 2026. If a date mentions only month/day, assume 2026.
+${TIME_RULES}
 If truly no literary event can be identified, return [].
 Return ONLY a valid JSON array, no other text.
 
@@ -127,7 +135,7 @@ Email subject: ${subject}
 Email from: ${from}
 
 Email body:
-${emailContent.slice(0, 8000)}`,
+${emailContent.slice(0, 12000)}`,
         },
       ],
     });
@@ -152,6 +160,22 @@ ${emailContent.slice(0, 8000)}`,
 
     const events = JSON.parse(jsonMatch[0]);
     const validEvents = events.filter((e: { ignore?: boolean }) => !e.ignore);
+
+    // Fill gaps so queue items arrive approve-ready: first from this source's
+    // past venues, then (capped, best-effort) from the event's own webpage
+    let enrichmentBudget = 3;
+    for (let i = 0; i < validEvents.length; i++) {
+      let event = await applyKnownVenue(supabase, validEvents[i], validEvents[i].source_name);
+      const sparse =
+        ((event.event_type ?? "in_person") === "in_person" && (!event.address || !event.city)) ||
+        !event.date_time ||
+        event.time_confirmed === false;
+      if (sparse && enrichmentBudget > 0) {
+        enrichmentBudget--;
+        event = await enrichFromLink(anthropic, event);
+      }
+      validEvents[i] = event;
+    }
 
     // Insert each parsed event as a separate pending import
     for (const event of validEvents) {

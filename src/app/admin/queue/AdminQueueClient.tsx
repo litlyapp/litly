@@ -43,6 +43,48 @@ function formatWallClock(iso: string | null | undefined): string {
   });
 }
 
+// At-a-glance readiness so complete items can be approved without opening the
+// editor, and gaps are visible before an event goes live
+function CompletenessBadges({ data }: { data: Record<string, unknown> }) {
+  const virtual = data.event_type === "virtual";
+  const checks: { label: string; ok: boolean; note?: string }[] = [
+    { label: "Date", ok: !!data.date_time },
+    {
+      label: "Time",
+      ok: !!data.date_time && data.time_confirmed !== false,
+      note: data.time_confirmed === false ? "not stated in source" : undefined,
+    },
+    ...(virtual
+      ? [{ label: "Link", ok: !!data.virtual_url }]
+      : [
+          { label: "Venue", ok: !!data.location_name },
+          {
+            label: "Address",
+            ok: !!data.address && !!data.city,
+            note: data.venue_filled_from ? "from past events" : undefined,
+          },
+        ]),
+    { label: "Description", ok: !!data.description },
+  ];
+  return (
+    <div className="flex flex-wrap gap-1.5 mb-4">
+      {checks.map((c) => (
+        <span
+          key={c.label}
+          className={`px-2 py-0.5 rounded-full text-xs border ${
+            c.ok
+              ? "border-cream/15 text-cream-muted"
+              : "border-orange/50 bg-orange/10 text-orange"
+          }`}
+        >
+          {c.ok ? "✓" : "✗"} {c.label}
+          {c.note ? ` (${c.note})` : ""}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 const inputClass =
   "w-full bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange";
 
@@ -239,6 +281,8 @@ export default function AdminQueueClient() {
 
               {data.title ? (
                 <div className="space-y-4">
+                  <CompletenessBadges data={data} />
+
                   {/* Title */}
                   <div>
                     <label className="text-cream-muted text-xs uppercase tracking-wider mb-1 block">Title</label>
@@ -304,8 +348,9 @@ export default function AdminQueueClient() {
                       }
                     />
                   ) : (
-                    <p className="text-cream-muted text-sm">
+                    <p className={`text-sm font-medium ${data.time_confirmed === false ? "text-orange" : "text-cream"}`}>
                       {formatWallClock(data.date_time as string)}
+                      {data.time_confirmed === false && " — ⚠ time not stated in source"}
                     </p>
                   )}
 

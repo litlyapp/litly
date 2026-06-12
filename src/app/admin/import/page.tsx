@@ -26,14 +26,14 @@ interface ParsedEvent {
   source_url?: string | null;
   banner_url?: string | null;
   ignore?: boolean;
+  time_confirmed?: boolean;
+  venue_filled_from?: string | null;
 }
 
+// Show the literal wall-clock time written in the parsed ISO string — never
+// run it through Date(), which re-interprets it in the browser's timezone
 function toDatetimeLocal(iso: string | null | undefined): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  // Use UTC methods so stored ISO timestamps display correctly regardless of browser timezone
-  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+  return String(iso ?? "").match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/)?.[0] ?? "";
 }
 
 export default function AdminImportPage() {
@@ -302,8 +302,14 @@ export default function AdminImportPage() {
                 <DateTimePicker
                   label="Start date & time"
                   value={toDatetimeLocal(parsed.date_time)}
-                  onChange={(v) => setParsed({ ...parsed, date_time: v || null })}
+                  onChange={(v) => setParsed({ ...parsed, date_time: v || null, time_confirmed: true })}
                 />
+                {parsed.time_confirmed === false && (
+                  <p className="text-orange text-xs">⚠ Start time not stated in source — verify before importing</p>
+                )}
+                {parsed.venue_filled_from && (
+                  <p className="text-cream-muted text-xs">Venue pre-filled from {parsed.venue_filled_from}</p>
+                )}
                 <DateTimePicker
                   label="End time (optional)"
                   value={toDatetimeLocal(parsed.end_time)}
