@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { rateLimit } from "@/lib/rateLimit";
+import { wallClockToUtc } from "@/lib/importParsing";
 
 // Best-effort server-side geocode so imported events get a map pin
 async function geocode(query: string): Promise<{ lat: number; lng: number } | null> {
@@ -82,8 +83,12 @@ export async function POST(request: Request) {
     description: event.description ?? null,
     genre: event.genre,
     event_type: event.event_type ?? "in_person",
-    date_time: event.date_time,
-    end_time: event.end_time ?? null,
+    // Parsed times are local wall-clock; convert to true UTC instants when a
+    // timezone is known so calendar exports and digests are correct. Without
+    // one, naive values still display right via formatDate's legacy fallback.
+    date_time: wallClockToUtc(event.date_time, event.timezone) ?? event.date_time,
+    timezone: event.timezone ?? null,
+    end_time: wallClockToUtc(event.end_time, event.timezone),
     location_name: event.location_name ?? null,
     address: event.address ?? null,
     city: event.city ?? null,

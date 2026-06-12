@@ -56,6 +56,7 @@ Extract structured event data from the following text or webpage content. Return
   "date_time": "ISO 8601 datetime string (e.g. 2026-07-15T19:00:00) or null if not found",
   "end_time": "ISO 8601 datetime string or null",
   "time_confirmed": "true only if the source explicitly states a start time, false otherwise",
+  "timezone": "IANA timezone implied by the event location (e.g. America/New_York) or null",
   "location_name": "Venue name (string or null)",
   "address": "Full street address (string or null)",
   "city": "City name parsed directly from the address/venue text — do not guess or infer one that isn't stated (string or null)",

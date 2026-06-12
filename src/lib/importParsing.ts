@@ -6,9 +6,56 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 // while offset strings get converted to UTC and shift the displayed time
 export const TIME_RULES = `Date/time rules:
 - Return date_time and end_time as the event's LOCAL wall-clock time in ISO 8601 format WITHOUT any timezone offset or Z suffix (e.g. "2026-07-15T19:00:00", never "2026-07-15T19:00:00-04:00").
+- Set "timezone" to the IANA timezone implied by the event's city/state/venue (e.g. "America/New_York", "America/Chicago", "America/Los_Angeles"), or null if the location is unknown or the event is virtual with no stated local time.
 - Set "time_confirmed": true only if the source explicitly states a start time. If only a date is given, use T00:00:00 and set "time_confirmed": false.
 - Never invent a time. end_time stays null unless explicitly stated, and must be on the same day or the day after date_time (it is when this occurrence ends, not the end of a multi-week series).
 - Current year is 2026. If a date mentions only month/day, assume 2026.`;
+
+// Difference between a UTC reading of `date`'s fields and the same wall-clock
+// fields in `timeZone` (same technique as EventForm's tzOffsetMs)
+function tzOffsetMs(date: Date, timeZone: string): number {
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const parts = dtf.formatToParts(date).reduce<Record<string, string>>((acc, p) => {
+    acc[p.type] = p.value;
+    return acc;
+  }, {});
+  const asUTC = Date.UTC(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+    Number(parts.hour),
+    Number(parts.minute),
+    Number(parts.second)
+  );
+  return asUTC - date.getTime();
+}
+
+// Convert a naive wall-clock ISO string in `timeZone` to a true UTC instant.
+// Returns the input unchanged if it already carries an offset, or if the
+// timezone is invalid/missing — naive values still display correctly via the
+// legacy wall-clock fallback in formatDate.ts.
+export function wallClockToUtc(naive: string | null | undefined, timeZone: string | null | undefined): string | null {
+  if (!naive) return null;
+  if (/Z|[+-]\d{2}:?\d{2}$/.test(naive)) return naive;
+  if (!timeZone) return naive;
+  try {
+    const base = new Date(`${naive.slice(0, 16)}:00Z`);
+    if (isNaN(base.getTime())) return naive;
+    const offset = tzOffsetMs(base, timeZone);
+    return new Date(base.getTime() - offset).toISOString();
+  } catch {
+    return naive;
+  }
+}
 
 export function looksLikeUrl(input: string): boolean {
   return /^https?:\/\/\S+$/i.test(input.trim());

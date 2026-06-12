@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
+import { TIME_RULES } from "@/lib/importParsing";
 
 export const dynamic = "force-dynamic";
 // Slow by design: polite crawl delays across several sites. Budgeted to stay
@@ -177,8 +178,10 @@ Return a single JSON object:
   "description": "1-3 sentence summary IN YOUR OWN WORDS — do not copy the page's description verbatim (string or null)",
   "genre": ["array of applicable: poetry, fiction, nonfiction, essay, translation, ya, craft_talk, open_mic, workshop, in_conversation, slam, other (use other only when clearly literary but nothing else fits)"],
   "event_type": "in_person or virtual",
-  "date_time": "ISO 8601 with timezone offset or null",
+  "date_time": "ISO 8601 or null",
   "end_time": "ISO 8601 or null",
+  "time_confirmed": "true only if the page explicitly states a start time, false otherwise",
+  "timezone": "IANA timezone implied by the event location (e.g. America/New_York) or null",
   "location_name": "venue name or null",
   "address": "street address or null",
   "city": "string or null",
@@ -190,7 +193,9 @@ Return a single JSON object:
 }
 
 Set "ignore": true if the page is not actually a single literary event (e.g. an error page, an index page, or a non-literary event like a science conference).
-Current year is 2026. If a date mentions only month/day, assume 2026.
+
+${TIME_RULES}
+
 Return ONLY a valid JSON object, no other text.
 
 Page text:

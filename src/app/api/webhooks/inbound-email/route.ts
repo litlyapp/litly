@@ -115,6 +115,7 @@ Return a JSON array of event objects. Each object:
   "date_time": "ISO 8601 or null",
   "end_time": "ISO 8601 or null",
   "time_confirmed": "true only if the email explicitly states a start time, false otherwise",
+  "timezone": "IANA timezone implied by the event location (e.g. America/New_York) or null",
   "location_name": "string or null",
   "address": "string or null",
   "city": "string or null",
