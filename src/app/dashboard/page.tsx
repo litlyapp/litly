@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import DashboardEventRow from "@/components/DashboardEventRow";
+import ExpandableList from "@/components/ExpandableList";
 import OrgSwitcher from "./OrgSwitcher";
 import { getActiveOrgId } from "@/lib/activeOrg";
 import type { Genre, EventType } from "@/types/database";
@@ -84,7 +85,7 @@ export default async function DashboardPage({
       .is("parent_event_id", null)
       .lt("date_time", now)
       .order("date_time", { ascending: false })
-      .limit(20),
+      .limit(55),
     supabase
       .from("events")
       .select("id", { count: "exact", head: true })
@@ -199,7 +200,11 @@ export default async function DashboardPage({
             </Link>
           </div>
         ) : (
-          <div className="bg-navy-light border border-cream/10 rounded-2xl overflow-hidden">
+          <ExpandableList
+            initial={10}
+            step={10}
+            className="bg-navy-light border border-cream/10 rounded-2xl overflow-hidden"
+          >
             {upcomingEvents.map((event, i) => (
               <DashboardEventRow
                 key={event.id}
@@ -212,7 +217,7 @@ export default async function DashboardPage({
                 upcomingInSeries={event.recurrence_rule ? (upcomingChildCounts[event.id] ?? 0) : undefined}
               />
             ))}
-          </div>
+          </ExpandableList>
         )}
       </section>
 
@@ -220,7 +225,11 @@ export default async function DashboardPage({
       {pastEvents.length > 0 && (
         <section>
           <h2 className="font-serif text-2xl text-cream mb-4">Past events</h2>
-          <div className="bg-navy-light border border-cream/10 rounded-2xl overflow-hidden opacity-70">
+          <ExpandableList
+            initial={5}
+            step={10}
+            className="bg-navy-light border border-cream/10 rounded-2xl overflow-hidden opacity-70"
+          >
             {pastEvents.map((event, i) => (
               <DashboardEventRow
                 key={event.id}
@@ -233,7 +242,7 @@ export default async function DashboardPage({
                 clickCount={clickCounts[event.id] ?? 0}
               />
             ))}
-          </div>
+          </ExpandableList>
         </section>
       )}
 
