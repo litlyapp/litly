@@ -41,6 +41,7 @@ export default function RecurrenceOptions({ startDateIso, value, onChange, ongoi
       frequency: "monthly_day",
       day_of_week: startDate.getDay(),
       week_of_month: wom,
+      weeks_of_month: [wom],
       until: defaultUntil,
     });
   }
@@ -57,7 +58,21 @@ export default function RecurrenceOptions({ startDateIso, value, onChange, ongoi
       frequency: freq,
       day_of_week: startDate.getDay(),
       week_of_month: freq === "monthly_day" ? wom : undefined,
+      weeks_of_month: freq === "monthly_day" ? [wom] : undefined,
     });
+  }
+
+  // Add/remove an ordinal week (e.g. 2nd and 4th Friday). The start date's
+  // own week is locked in — the parent event is that occurrence.
+  function toggleWeek(week: number) {
+    if (!value || !startDate) return;
+    const startWeek = getWeekOfMonth(startDate);
+    if (week === startWeek) return;
+    const current = value.weeks_of_month?.length ? value.weeks_of_month : [startWeek];
+    const next = current.includes(week)
+      ? current.filter((w) => w !== week)
+      : [...current, week];
+    onChange({ ...value, weeks_of_month: next });
   }
 
   function setUntilPreset(months: number) {
@@ -134,10 +149,40 @@ export default function RecurrenceOptions({ startDateIso, value, onChange, ongoi
                 </button>
               ))}
             </div>
-            {value.frequency === "monthly_day" && value.day_of_week !== undefined && value.week_of_month !== undefined && (
-              <p className="text-cream-muted text-xs mt-2">
-                {describeRule(startDate, value)} — based on your selected date
-              </p>
+            {value.frequency === "monthly_day" && value.day_of_week !== undefined && (
+              <div className="mt-3">
+                <label className={labelClass}>On which weeks of the month?</label>
+                <div className="flex flex-wrap gap-2">
+                  {(
+                    [
+                      { week: 1, label: "1st" },
+                      { week: 2, label: "2nd" },
+                      { week: 3, label: "3rd" },
+                      { week: 4, label: "4th" },
+                      { week: -1, label: "Last" },
+                    ] as const
+                  ).map(({ week, label }) => {
+                    const startWeek = getWeekOfMonth(startDate);
+                    const selected = (value.weeks_of_month?.length ? value.weeks_of_month : [startWeek]).includes(week);
+                    const locked = week === startWeek;
+                    return (
+                      <button
+                        key={week}
+                        type="button"
+                        onClick={() => toggleWeek(week)}
+                        disabled={locked}
+                        title={locked ? "Your selected date is on this week" : undefined}
+                        className={`${pillBase} ${selected ? pillActive : pillInactive} ${locked ? "opacity-80 cursor-default" : ""}`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-cream-muted text-xs mt-2">
+                  {describeRule(startDate, value)} — your selected date sets the first occurrence
+                </p>
+              </div>
             )}
           </div>
 

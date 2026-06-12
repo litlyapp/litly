@@ -4,6 +4,7 @@ export interface RecurrenceRule {
   frequency: RecurrenceFrequency;
   day_of_week?: number;   // 0=Sun … 6=Sat (for weekly/biweekly/monthly_day)
   week_of_month?: number; // 1-4 or -1 (last) — for monthly_day
+  weeks_of_month?: number[]; // multiple ordinals, e.g. [2, 4] = 2nd and 4th — supersedes week_of_month when present
   until: string;          // "YYYY-MM-DD"
 }
 
@@ -85,21 +86,30 @@ export function generateOccurrenceDates(startDate: Date, rule: RecurrenceRule): 
       if (month > 11) { month = 0; year++; }
     }
   } else if (rule.frequency === "monthly_day") {
-    if (rule.day_of_week === undefined || rule.week_of_month === undefined) return dates;
+    const weeks = rule.weeks_of_month?.length
+      ? rule.weeks_of_month
+      : rule.week_of_month !== undefined
+        ? [rule.week_of_month]
+        : [];
+    if (rule.day_of_week === undefined || weeks.length === 0) return dates;
+    // Start in the parent's own month: with multiple ordinals (e.g. 2nd and
+    // 4th Friday) a later occurrence can still fall in the start month
     let year = startDate.getFullYear();
-    // Same intentional 1-based overflow trick as monthly_date above.
-    let month = startDate.getMonth() + 1;
-    if (month > 11) { month = 0; year++; }
+    let month = startDate.getMonth();
     while (true) {
-      const d = getNthWeekdayInMonth(year, month, rule.day_of_week, rule.week_of_month);
-      if (d) {
-        d.setHours(h, m, 0, 0);
-        if (d > until) break;
-        dates.push(new Date(d));
+      const monthFirst = new Date(year, month, 1);
+      if (monthFirst > until) break;
+      for (const week of weeks) {
+        const d = getNthWeekdayInMonth(year, month, rule.day_of_week, week);
+        if (d) {
+          d.setHours(h, m, 0, 0);
+          if (d > startDate && d <= until) dates.push(d);
+        }
       }
       month++;
       if (month > 11) { month = 0; year++; }
     }
+    dates.sort((a, b) => a.getTime() - b.getTime());
   }
 
   return dates;
@@ -125,12 +135,21 @@ export function describeRule(startDate: Date, rule: RecurrenceRule): string {
       return `Monthly on the ${n}${ordinalSuffix(n)}`;
     }
     case "monthly_day": {
-      if (rule.day_of_week === undefined || rule.week_of_month === undefined) return "";
-      const ord =
-        rule.week_of_month === -1
-          ? "last"
-          : (ORDINALS[rule.week_of_month] ?? `${rule.week_of_month}th`);
-      return `Monthly on the ${ord} ${DAY_NAMES[rule.day_of_week]}`;
+      const weeks = rule.weeks_of_month?.length
+        ? rule.weeks_of_month
+        : rule.week_of_month !== undefined
+          ? [rule.week_of_month]
+          : [];
+      if (rule.day_of_week === undefined || weeks.length === 0) return "";
+      // "last" (-1) sorts after the numbered ordinals
+      const ordinals = [...weeks]
+        .sort((a, b) => (a === -1 ? 1 : b === -1 ? -1 : a - b))
+        .map((w) => (w === -1 ? "last" : (ORDINALS[w] ?? `${w}th`)));
+      const list =
+        ordinals.length === 1
+          ? ordinals[0]
+          : `${ordinals.slice(0, -1).join(", ")} and ${ordinals[ordinals.length - 1]}`;
+      return `Monthly on the ${list} ${DAY_NAMES[rule.day_of_week]}`;
     }
   }
 }
