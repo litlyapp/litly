@@ -152,7 +152,7 @@ export default function LeafletMap({
       const msg = L.popup({ closeButton: true, className: "litly-popup" })
         .setLatLng([userLoc.lat, userLoc.lng])
         .setContent(`
-          <div style="font-family:Inter,sans-serif;background:#1B2A3E;border-radius:12px;padding:12px;min-width:180px;text-align:center;">
+          <div style="font-family:Aileron,system-ui,sans-serif;background:#1B2A3E;border-radius:12px;padding:12px;min-width:180px;text-align:center;">
             <div style="color:#F2E8D5;font-size:13px;font-weight:600;margin-bottom:4px;">No events within ${radius} miles</div>
             <div style="color:#D9D0C0;font-size:11px;">Try a larger radius.</div>
           </div>
@@ -209,7 +209,7 @@ export default function LeafletMap({
         html: count > 1
           ? `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 26 26">
               <circle cx="13" cy="13" r="11" fill="${color}" stroke="#F2E8D5" stroke-width="2"/>
-              <text x="13" y="17" text-anchor="middle" font-size="10" font-weight="bold" fill="#F2E8D5" font-family="Inter,sans-serif">${count}</text>
+              <text x="13" y="17" text-anchor="middle" font-size="10" font-weight="bold" fill="#F2E8D5" font-family="Aileron,system-ui,sans-serif">${count}</text>
             </svg>`
           : `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
               <circle cx="9" cy="9" r="7" fill="${color}" stroke="#F2E8D5" stroke-width="2"/>
@@ -217,7 +217,7 @@ export default function LeafletMap({
       });
 
       const popupContent = `
-        <div style="font-family:Inter,sans-serif;background:#1B2A3E;border-radius:12px;padding:12px;min-width:200px;max-width:260px;">
+        <div style="font-family:Aileron,system-ui,sans-serif;background:#1B2A3E;border-radius:12px;padding:12px;min-width:200px;max-width:260px;">
           ${locationEvents.map((event, i) => {
             const organizer = Array.isArray(event.organizer) ? event.organizer[0] : event.organizer;
             return `
