@@ -1,6 +1,6 @@
 /* Classic fonts (Playfair Display + Inter) — kept loaded so the font toggle
    below can switch back instantly without re-downloading anything. */
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600&family=Libre+Franklin:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap");
 @import "tailwindcss";
 
 /* Aileron — self-hosted (not available on Google Fonts).
@@ -59,8 +59,9 @@
    FONT TOGGLE
    Flip the whole site between font sets by changing the single `data-font`
    value on <html> in src/app/layout.tsx:
-     data-font="aileron"  → new Aileron look (current)
+     data-font="aileron"  → Aileron everywhere
      data-font="classic"  → original Playfair Display + Inter
+     data-font="libre"    → Libre Franklin everywhere (current)
    Both stacks are defined here; the attribute just selects which wins.
    ─────────────────────────────────────────────────────────────────────────── */
 html[data-font="aileron"] {
@@ -70,6 +71,10 @@ html[data-font="aileron"] {
 html[data-font="classic"] {
   --font-serif: "Playfair Display", Georgia, serif;
   --font-sans: "Inter", system-ui, sans-serif;
+}
+html[data-font="libre"] {
+  --font-serif: "Libre Franklin", system-ui, sans-serif;
+  --font-sans: "Libre Franklin", system-ui, sans-serif;
 }
 
 * {
