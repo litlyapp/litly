@@ -21,6 +21,7 @@ interface RoundupEvent {
 }
 
 const VIRTUAL = "__virtual__";
+const STATE_PREFIX = "state:";
 
 function hostName(event: RoundupEvent): string | null {
   if (event.is_imported && event.source_name) return event.source_name;
@@ -28,7 +29,7 @@ function hostName(event: RoundupEvent): string | null {
   return org?.name ?? null;
 }
 
-function eventLine(event: RoundupEvent): string {
+function eventLine(event: RoundupEvent, showCity = false): string {
   const time = new Date(event.date_time).toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
@@ -42,11 +43,16 @@ function eventLine(event: RoundupEvent): string {
   const host = hostName(event);
   const parts = [`${time} — ${event.title}`];
   if (venue) parts.push(`@ ${venue}`);
+  if (showCity && event.city && event.city !== venue) parts.push(`in ${event.city}`);
   if (host && host !== venue) parts.push(`by ${host}`);
   return `• ${parts.join(" ")} (${genres})`;
 }
 
-function buildCaption(events: RoundupEvent[], cityLabel: string): string {
+function buildCaption(
+  events: RoundupEvent[],
+  cityLabel: string,
+  showCity = false
+): string {
   const byDay = new Map<string, RoundupEvent[]>();
   for (const event of events) {
     const day = new Date(event.date_time).toLocaleDateString("en-US", {
@@ -60,7 +66,9 @@ function buildCaption(events: RoundupEvent[], cityLabel: string): string {
 
   const sections = [...byDay.entries()].map(
     ([day, dayEvents]) =>
-      `${day.toUpperCase()}\n${dayEvents.map(eventLine).join("\n")}`
+      `${day.toUpperCase()}\n${dayEvents
+        .map((e) => eventLine(e, showCity))
+        .join("\n")}`
   );
 
   const cityTag = cityLabel.replace(/[^a-zA-Z0-9]/g, "");
@@ -112,6 +120,16 @@ export default function AdminRoundupClient() {
     return [...counts.entries()].sort((a, b) => b[1] - a[1]);
   }, [events]);
 
+  const states = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const event of events) {
+      if (event.event_type === "in_person" && event.state) {
+        counts.set(event.state, (counts.get(event.state) ?? 0) + 1);
+      }
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  }, [events]);
+
   const virtualCount = useMemo(
     () => events.filter((e) => e.event_type === "virtual").length,
     [events]
@@ -122,13 +140,24 @@ export default function AdminRoundupClient() {
     if (new Date(event.date_time).getTime() > cutoff) return false;
     if (selected === VIRTUAL) return event.event_type === "virtual";
     if (!selected) return false;
+    if (event.event_type !== "in_person") return false;
+    if (selected.startsWith(STATE_PREFIX)) {
+      return event.state === selected.slice(STATE_PREFIX.length);
+    }
     const key = event.state ? `${event.city}, ${event.state}` : event.city ?? "";
-    return event.event_type === "in_person" && key === selected;
+    return key === selected;
   });
 
   const cityLabel =
-    selected === VIRTUAL ? "the literary internet" : selected.split(",")[0] ?? "";
-  const caption = matching.length ? buildCaption(matching, cityLabel) : "";
+    selected === VIRTUAL
+      ? "the literary internet"
+      : selected.startsWith(STATE_PREFIX)
+        ? selected.slice(STATE_PREFIX.length)
+        : selected;
+  const isStateRoundup = selected.startsWith(STATE_PREFIX);
+  const caption = matching.length
+    ? buildCaption(matching, cityLabel, isStateRoundup)
+    : "";
 
   async function handleCopy() {
     await navigator.clipboard.writeText(caption);
@@ -177,12 +206,21 @@ export default function AdminRoundupClient() {
           onChange={(e) => setSelected(e.target.value)}
           className={inputClass}
         >
-          <option value="">Pick a city…</option>
-          {cities.map(([city, count]) => (
-            <option key={city} value={city}>
-              {city} ({count})
-            </option>
-          ))}
+          <option value="">Pick a city or state…</option>
+          <optgroup label="Cities">
+            {cities.map(([city, count]) => (
+              <option key={city} value={city}>
+                {city} ({count})
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label="States">
+            {states.map(([state, count]) => (
+              <option key={state} value={`${STATE_PREFIX}${state}`}>
+                {state} ({count})
+              </option>
+            ))}
+          </optgroup>
           <option value={VIRTUAL}>Online / virtual ({virtualCount})</option>
         </select>
         <select
