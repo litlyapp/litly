@@ -20,11 +20,11 @@ export function emailWrapper(body: string): string {
             <img src="${LOGO_URL}" alt="litly" width="80" height="80" style="display:block;border:0" />
           </td></tr>
           <!-- Body -->
-          <tr><td bgcolor="#F2E8D5" style="padding:32px;font-family:Georgia,serif;color:#1B2A3E">
+          <tr><td bgcolor="#F2E8D5" style="padding:32px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;color:#1B2A3E">
             ${body}
           </td></tr>
           <!-- Footer -->
-          <tr><td bgcolor="#1B2A3E" align="center" style="padding:16px 32px;font-family:Georgia,serif;font-size:12px">
+          <tr><td bgcolor="#1B2A3E" align="center" style="padding:16px 32px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;font-size:12px">
             <a href="https://thelitlyapp.com" style="color:#F2E8D5;opacity:0.7;text-decoration:none">thelitlyapp.com</a>
           </td></tr>
         </table>
