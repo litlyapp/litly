@@ -42,7 +42,6 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    {/* Font toggle: set data-font to "aileron" or "classic". See globals.css. */}
     <html lang="en" data-font="aileron" className="h-full antialiased">
       <body className="min-h-full flex flex-col bg-navy text-cream font-sans">
         <Nav />
