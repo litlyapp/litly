@@ -1,6 +1,7 @@
-/* Classic fonts (Playfair Display + Inter) — kept loaded so the font toggle
-   below can switch back instantly without re-downloading anything. */
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600&family=Libre+Franklin:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap");
+/* Classic fonts (Playfair Display + Inter) loaded from Google.
+   NOTE: Tailwind v4's bundler strips remote @import at build time, so any font
+   used in production must be self-hosted via @font-face below — not imported. */
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600&display=swap");
 @import "tailwindcss";
 
 /* Aileron — self-hosted (not available on Google Fonts).
@@ -39,6 +40,44 @@
   font-weight: 700;
   font-display: swap;
   src: url("/fonts/aileron/aileron-latin-700-italic.woff2") format("woff2");
+}
+
+/* Libre Franklin — self-hosted (remote @import gets stripped at build).
+   Files in /public/fonts/librefranklin, sourced from @fontsource/libre-franklin. */
+@font-face {
+  font-family: "Libre Franklin";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/librefranklin/libre-franklin-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Libre Franklin";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/librefranklin/libre-franklin-latin-400-italic.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Libre Franklin";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/librefranklin/libre-franklin-latin-500-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Libre Franklin";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/librefranklin/libre-franklin-latin-600-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Libre Franklin";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/librefranklin/libre-franklin-latin-700-normal.woff2") format("woff2");
 }
 
 @theme {
