@@ -48,9 +48,16 @@ function eventLine(event: RoundupEvent, showCity = false): string {
   return `• ${parts.join(" ")} (${genres})`;
 }
 
+function timeframeLabel(days: number): string {
+  if (days <= 7) return "This week";
+  if (days <= 14) return "The next two weeks";
+  return "This month";
+}
+
 function buildCaption(
   events: RoundupEvent[],
   cityLabel: string,
+  days: number,
   showCity = false
 ): string {
   const byDay = new Map<string, RoundupEvent[]>();
@@ -73,7 +80,7 @@ function buildCaption(
 
   const cityTag = cityLabel.replace(/[^a-zA-Z0-9]/g, "");
   return [
-    `📚 This week in ${cityLabel} — your literary events roundup`,
+    `📚 ${timeframeLabel(days)} in ${cityLabel} — your literary events roundup`,
     ...sections,
     `Details + RSVP at thelitlyapp.com (link in bio)`,
     `#litly #literaryevents #${cityTag} #readingseries #booklovers`,
@@ -156,7 +163,7 @@ export default function AdminRoundupClient() {
         : selected;
   const isStateRoundup = selected.startsWith(STATE_PREFIX);
   const caption = matching.length
-    ? buildCaption(matching, cityLabel, isStateRoundup)
+    ? buildCaption(matching, cityLabel, days, isStateRoundup)
     : "";
 
   async function handleCopy() {
