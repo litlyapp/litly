@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Genre, EventType } from "@/types/database";
-import { GENRE_LABELS } from "@/lib/genres";
 
 interface RoundupEvent {
   id: string;
@@ -29,36 +28,44 @@ function hostName(event: RoundupEvent): string | null {
   return org?.name ?? null;
 }
 
-function eventLine(event: RoundupEvent, showCity = false): string {
+function eventLine(event: RoundupEvent): string {
   const time = new Date(event.date_time).toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
     timeZone: event.timezone ?? undefined,
   });
-  const genres = (Array.isArray(event.genre) ? event.genre : [event.genre])
-    .map((g) => GENRE_LABELS[g])
-    .join(", ");
-  const venue =
-    event.event_type === "virtual" ? "Online" : event.location_name ?? event.city;
-  const host = hostName(event);
-  const parts = [`${time} — ${event.title}`];
-  if (venue) parts.push(`@ ${venue}`);
-  if (showCity && event.city && event.city !== venue) parts.push(`in ${event.city}`);
-  if (host && host !== venue) parts.push(`by ${host}`);
-  return `• ${parts.join(" ")} (${genres})`;
+
+  if (event.event_type === "virtual") {
+    // • 9:00 AM — Title via Host
+    const host = hostName(event);
+    return host
+      ? `• ${time} — ${event.title} via ${host}`
+      : `• ${time} — ${event.title}`;
+  }
+
+  // • 6:00 PM — Title - Venue in City
+  const venue = event.location_name;
+  let line = `• ${time} — ${event.title}`;
+  if (venue) line += ` - ${venue}`;
+  if (event.city) line += ` in ${event.city}`;
+  return line;
 }
 
-function timeframeLabel(days: number): string {
-  if (days <= 7) return "This week";
-  if (days <= 14) return "The next two weeks";
-  return "This month";
+function monthLabel(events: RoundupEvent[]): string {
+  const first = events[0];
+  return new Date(first.date_time).toLocaleDateString("en-US", {
+    month: "long",
+    timeZone: first.timezone ?? undefined,
+  });
+}
+
+function softCount(n: number): string {
+  return n < 10 ? String(n) : `${Math.floor(n / 10) * 10}+`;
 }
 
 function buildCaption(
   events: RoundupEvent[],
-  cityLabel: string,
-  days: number,
-  showCity = false
+  cityLabel: string
 ): string {
   const byDay = new Map<string, RoundupEvent[]>();
   for (const event of events) {
@@ -73,17 +80,19 @@ function buildCaption(
 
   const sections = [...byDay.entries()].map(
     ([day, dayEvents]) =>
-      `${day.toUpperCase()}\n${dayEvents
-        .map((e) => eventLine(e, showCity))
-        .join("\n")}`
+      `${day.toUpperCase()}\n${dayEvents.map((e) => eventLine(e)).join("\n")}`
   );
 
-  const cityTag = cityLabel.replace(/[^a-zA-Z0-9]/g, "");
+  const heading =
+    cityLabel === "the literary internet"
+      ? `upcoming online literary events`
+      : `upcoming literary events in ${cityLabel}`;
   return [
-    `📚 ${timeframeLabel(days)} in ${cityLabel} — your literary events roundup`,
+    `📚 ${monthLabel(events)} at a glance: ${heading}`,
+    `${softCount(events.length)} events posted — here are a few to note 👇`,
     ...sections,
-    `Details + RSVP at thelitlyapp.com (link in bio)`,
-    `#litly #literaryevents #${cityTag} #readingseries #booklovers`,
+    `See Details + RSVP at thelitlyapp.com (link in bio)`,
+    `#literaryevents #bookcommunity #readersofinstagram #indielit #readingseries`,
   ].join("\n\n");
 }
 
@@ -161,10 +170,7 @@ export default function AdminRoundupClient() {
       : selected.startsWith(STATE_PREFIX)
         ? selected.slice(STATE_PREFIX.length)
         : selected;
-  const isStateRoundup = selected.startsWith(STATE_PREFIX);
-  const caption = matching.length
-    ? buildCaption(matching, cityLabel, days, isStateRoundup)
-    : "";
+  const caption = matching.length ? buildCaption(matching, cityLabel) : "";
 
   async function handleCopy() {
     await navigator.clipboard.writeText(caption);
