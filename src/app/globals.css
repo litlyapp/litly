@@ -4,44 +4,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600&display=swap");
 @import "tailwindcss";
 
-/* Aileron — self-hosted (not available on Google Fonts).
-   Files in /public/fonts/aileron, sourced from @fontsource/aileron. */
-@font-face {
-  font-family: "Aileron";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("/fonts/aileron/aileron-latin-400-normal.woff2") format("woff2");
-}
-@font-face {
-  font-family: "Aileron";
-  font-style: italic;
-  font-weight: 400;
-  font-display: swap;
-  src: url("/fonts/aileron/aileron-latin-400-italic.woff2") format("woff2");
-}
-@font-face {
-  font-family: "Aileron";
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url("/fonts/aileron/aileron-latin-600-normal.woff2") format("woff2");
-}
-@font-face {
-  font-family: "Aileron";
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url("/fonts/aileron/aileron-latin-700-normal.woff2") format("woff2");
-}
-@font-face {
-  font-family: "Aileron";
-  font-style: italic;
-  font-weight: 700;
-  font-display: swap;
-  src: url("/fonts/aileron/aileron-latin-700-italic.woff2") format("woff2");
-}
-
 /* Libre Franklin — self-hosted (remote @import gets stripped at build).
    Files in /public/fonts/librefranklin, sourced from @fontsource/libre-franklin. */
 @font-face {
@@ -90,24 +52,19 @@
   /* Default font stacks. These are overridden at runtime by the [data-font]
      toggle on <html> (see below + layout.tsx), so the values here are just a
      fallback if no toggle is set. */
-  --font-serif: "Aileron", system-ui, sans-serif;
-  --font-sans: "Aileron", system-ui, sans-serif;
+  --font-serif: "Libre Franklin", system-ui, sans-serif;
+  --font-sans: "Libre Franklin", system-ui, sans-serif;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
    FONT TOGGLE
    Flip the whole site between font sets by changing the single `data-font`
    value on <html> in src/app/layout.tsx:
-     data-font="aileron"  → Aileron everywhere
      data-font="classic"  → original Playfair Display + Inter
      data-font="libre"    → Libre Franklin everywhere
      data-font="hybrid"   → Georgia headings + Libre Franklin body (current)
    Both stacks are defined here; the attribute just selects which wins.
    ─────────────────────────────────────────────────────────────────────────── */
-html[data-font="aileron"] {
-  --font-serif: "Aileron", system-ui, sans-serif;
-  --font-sans: "Aileron", system-ui, sans-serif;
-}
 html[data-font="classic"] {
   --font-serif: "Playfair Display", Georgia, serif;
   --font-sans: "Inter", system-ui, sans-serif;
