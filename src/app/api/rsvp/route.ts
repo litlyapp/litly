@@ -71,7 +71,7 @@ export async function POST(req: Request) {
         `— litly`,
       ].join("\n"),
       html: emailWrapper(`
-        <h1 style="font-size:24px;margin:0 0 8px;color:#1B2A3E">You're going to<br/><em>${escapeHtml(event.title)}</em></h1>
+        <h1 style="font-family:Georgia,'Times New Roman',Times,serif;font-size:24px;margin:0 0 8px;color:#1B2A3E">You're going to<br/><em>${escapeHtml(event.title)}</em></h1>
         <p style="color:#5a4a3a;margin:0 0 24px">Your RSVP is confirmed.</p>
         <table style="border-collapse:collapse;width:100%;margin-bottom:24px">
           <tr><td style="padding:8px 0;color:#7a6a5a;width:90px">Date</td><td style="padding:8px 0;color:#1B2A3E">${escapeHtml(date)}</td></tr>

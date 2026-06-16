@@ -84,7 +84,7 @@ export async function POST(
         `— litly`,
       ].join("\n"),
       html: emailWrapper(`
-        <h1 style="font-size:22px;margin:0 0 8px;color:#1B2A3E">Event cancelled</h1>
+        <h1 style="font-family:Georgia,'Times New Roman',Times,serif;font-size:22px;margin:0 0 8px;color:#1B2A3E">Event cancelled</h1>
         <p style="color:#5a4a3a;margin:0 0 20px">We're sorry — <strong>${escapeHtml(event.title)}</strong> has been cancelled.</p>
         <table style="border-collapse:collapse;width:100%;margin-bottom:24px">
           <tr><td style="padding:8px 0;color:#7a6a5a;width:110px">Original date</td><td style="padding:8px 0;color:#1B2A3E">${escapeHtml(date)}</td></tr>

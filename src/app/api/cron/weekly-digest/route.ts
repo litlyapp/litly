@@ -150,7 +150,7 @@ export async function GET(req: Request) {
           `— litly`,
         ].join("\n"),
         html: emailWrapper(`
-          <h1 style="font-size:22px;margin:0 0 8px;color:#1B2A3E">Your weekly digest</h1>
+          <h1 style="font-family:Georgia,'Times New Roman',Times,serif;font-size:22px;margin:0 0 8px;color:#1B2A3E">Your weekly digest</h1>
           <p style="color:#5a4a3a;margin:0 0 24px">Hi ${escapeHtml(org.organizerName)}, here's what happened this week.</p>
           <table style="width:100%;border-collapse:collapse">
             ${eventHtmlRows}

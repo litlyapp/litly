@@ -152,7 +152,7 @@ export async function GET(req: Request) {
       subject: `litly health check — ${issues.length} issue${issues.length === 1 ? "" : "s"} found`,
       text: `The litly daily health check found the following issue(s):\n\n${issues.map((i) => `- ${i}`).join("\n")}`,
       html: emailWrapper(`
-        <h1 style="font-size:22px;margin:0 0 16px;color:#1B2A3E">Health check found ${issues.length} issue${issues.length === 1 ? "" : "s"}</h1>
+        <h1 style="font-family:Georgia,'Times New Roman',Times,serif;font-size:22px;margin:0 0 16px;color:#1B2A3E">Health check found ${issues.length} issue${issues.length === 1 ? "" : "s"}</h1>
         <ul style="color:#5a4a3a;padding-left:20px">
           ${issues.map((i) => `<li style="margin-bottom:8px">${escapeHtml(i)}</li>`).join("")}
         </ul>
