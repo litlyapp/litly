@@ -42,7 +42,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-font="libre" className="h-full antialiased">
+    <html lang="en" data-font="hybrid" className="h-full antialiased">
       <body className="min-h-full flex flex-col bg-navy text-cream font-sans">
         <Nav />
         <main className="flex-1">{children}</main>

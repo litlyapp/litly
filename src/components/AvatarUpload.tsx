@@ -80,7 +80,7 @@ export default function AvatarUpload({ value, name, onChange }: Props) {
             className="rounded-full object-cover border-2 border-cream/20"
           />
         ) : (
-          <div className="w-20 h-20 rounded-full bg-orange/20 flex items-center justify-center text-orange font-serif text-3xl border-2 border-cream/20">
+          <div className="w-20 h-20 rounded-full bg-orange/20 flex items-center justify-center text-orange font-sans text-3xl border-2 border-cream/20">
             {name[0]}
           </div>
         )}

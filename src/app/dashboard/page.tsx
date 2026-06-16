@@ -262,7 +262,7 @@ export default async function DashboardPage({
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
     <div className="bg-navy-light border border-cream/10 rounded-2xl p-5">
-      <div className="font-serif text-3xl text-cream mb-1">{value}</div>
+      <div className="font-sans text-3xl text-cream mb-1">{value}</div>
       <div className="text-cream-muted text-sm">{label}</div>
     </div>
   );

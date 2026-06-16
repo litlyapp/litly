@@ -85,7 +85,7 @@ export default async function OrganizerProfilePage({
                   className="rounded-full object-cover"
                 />
               ) : (
-                <div className="w-16 h-16 rounded-full bg-orange/20 flex items-center justify-center text-orange font-serif text-3xl">
+                <div className="w-16 h-16 rounded-full bg-orange/20 flex items-center justify-center text-orange font-sans text-3xl">
                   {organizer.name[0]}
                 </div>
               )}

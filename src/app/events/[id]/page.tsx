@@ -448,7 +448,7 @@ export default async function EventDetailPage({
                   className="rounded-full object-cover"
                 />
               ) : (
-                <div className="w-12 h-12 rounded-full bg-orange/20 flex items-center justify-center text-orange font-serif text-xl">
+                <div className="w-12 h-12 rounded-full bg-orange/20 flex items-center justify-center text-orange font-sans text-xl">
                   {organizer.name[0]}
                 </div>
               )}

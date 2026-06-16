@@ -100,7 +100,8 @@
    value on <html> in src/app/layout.tsx:
      data-font="aileron"  → Aileron everywhere
      data-font="classic"  → original Playfair Display + Inter
-     data-font="libre"    → Libre Franklin everywhere (current)
+     data-font="libre"    → Libre Franklin everywhere
+     data-font="hybrid"   → Georgia headings + Libre Franklin body (current)
    Both stacks are defined here; the attribute just selects which wins.
    ─────────────────────────────────────────────────────────────────────────── */
 html[data-font="aileron"] {
@@ -113,6 +114,10 @@ html[data-font="classic"] {
 }
 html[data-font="libre"] {
   --font-serif: "Libre Franklin", system-ui, sans-serif;
+  --font-sans: "Libre Franklin", system-ui, sans-serif;
+}
+html[data-font="hybrid"] {
+  --font-serif: Georgia, "Times New Roman", serif;
   --font-sans: "Libre Franklin", system-ui, sans-serif;
 }
 

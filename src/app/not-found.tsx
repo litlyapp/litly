@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function NotFound() {
   return (
     <div className="max-w-lg mx-auto px-4 py-32 text-center">
-      <p className="font-serif text-8xl text-orange mb-4">404</p>
+      <p className="font-sans text-8xl text-orange mb-4">404</p>
       <h1 className="font-serif text-3xl text-cream mb-3">Page not found</h1>
       <p className="text-cream-muted mb-8">
         This page doesn&apos;t exist — or the event may have been removed.

@@ -78,7 +78,7 @@ export default async function FollowingPage() {
                 className="w-12 h-12 rounded-full object-cover shrink-0"
               />
             ) : (
-              <div className="w-12 h-12 rounded-full bg-orange/15 text-orange font-serif text-lg flex items-center justify-center shrink-0">
+              <div className="w-12 h-12 rounded-full bg-orange/15 text-orange font-sans text-lg flex items-center justify-center shrink-0">
                 {org.name.charAt(0).toUpperCase()}
               </div>
             )}
