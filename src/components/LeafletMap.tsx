@@ -29,6 +29,13 @@ function escapeHtml(str: string) {
     .replace(/'/g, "&#39;");
 }
 
+// Continental US bounding box — used as the default view when the user
+// hasn't shared their location (most events are US-based).
+const US_BOUNDS: [[number, number], [number, number]] = [
+  [24.4, -124.8], // SW (Southern CA / TX border)
+  [49.4, -66.9],  // NE (Maine / northern border)
+];
+
 function distanceMiles(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 3958.8;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -76,8 +83,8 @@ export default function LeafletMap({
       if (!containerRef.current) return;
 
       map = L.map(containerRef.current, {
-        center: initialUserLoc ? [initialUserLoc.lat, initialUserLoc.lng] : [40.7128, -74.006],
-        zoom: initialUserLoc ? 11 : 11,
+        center: initialUserLoc ? [initialUserLoc.lat, initialUserLoc.lng] : [39.5, -98.35],
+        zoom: 11,
         zoomControl: true,
       });
       mapRef.current = map;
@@ -94,11 +101,9 @@ export default function LeafletMap({
       if (initialUserLoc) {
         map.setView([initialUserLoc.lat, initialUserLoc.lng], 11);
       } else {
-        const valid = events.filter((e) => e.lat && e.lng);
-        if (valid.length > 0) {
-          const bounds = L.latLngBounds(valid.map((e) => [e.lat!, e.lng!]));
-          map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
-        }
+        // Default to the continental US rather than fitting every event,
+        // which would zoom out to a global view to include outliers (e.g. AU).
+        map.fitBounds(US_BOUNDS, { padding: [20, 20] });
       }
 
       // Re-cluster markers whenever the zoom level changes
@@ -249,12 +254,11 @@ export default function LeafletMap({
       }
     });
 
-    // Fit bounds to filtered events (only on initial load without radius —
-    // not on zoom-driven redraws, which would snap the view back)
-    if (!userLoc && filtered.length > 0 && !didFitRef.current) {
+    // Default to the continental US on initial load without a user location
+    // (only once — not on zoom-driven redraws, which would snap the view back).
+    if (!userLoc && !didFitRef.current) {
       didFitRef.current = true;
-      const bounds = L.latLngBounds(filtered.filter(e => e.lat && e.lng).map((e) => [e.lat!, e.lng!]));
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+      map.fitBounds(US_BOUNDS, { padding: [20, 20] });
     }
   }, [events, userLoc, radius, mapReady, zoom]);
 
