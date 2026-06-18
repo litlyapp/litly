@@ -83,14 +83,14 @@ export default function PrivacyPage() {
         <p>We share limited information with service providers who help us operate litly:</p>
         <Bullets
           items={[
-            <><strong className="text-cream">Supabase</strong> &mdash; authentication, database, and file or image storage.</>,
-            <><strong className="text-cream">Vercel</strong> &mdash; website hosting and privacy-friendly, cookieless usage analytics.</>,
-            <><strong className="text-cream">Stripe</strong> &mdash; donation processing (Stripe receives payment details; litly does not store cards).</>,
-            <><strong className="text-cream">Mailgun</strong> &mdash; sending email and receiving the newsletters litly subscribes to.</>,
-            <><strong className="text-cream">OpenStreetMap / Nominatim</strong> &mdash; map tiles and address geocoding.</>,
+            <><strong className="text-cream">Hosting and database providers</strong> &mdash; to run the website, store data, host images, and provide cookieless usage analytics.</>,
+            <><strong className="text-cream">Stripe</strong> &mdash; to process donations. Stripe receives payment details; litly does not store your card information.</>,
+            <><strong className="text-cream">An email delivery provider</strong> &mdash; to send email and receive the newsletters litly subscribes to.</>,
+            <><strong className="text-cream">OpenStreetMap / Nominatim</strong> &mdash; to display maps and convert addresses to coordinates.</>,
             <><strong className="text-cream">Law enforcement or authorities</strong> &mdash; if legally required.</>,
           ]}
         />
+        <p>A current list of our service providers is available on request at privacy@thelitlyapp.com.</p>
         <p>
           <strong className="text-cream">
             We do not sell your personal information, and we do not use third-party advertising or
@@ -106,8 +106,7 @@ export default function PrivacyPage() {
           or third-party tracking pixels.
         </p>
         <p>
-          Our usage analytics (Vercel Analytics) are cookieless and do not track you across other
-          websites.
+          Our usage analytics are cookieless and do not track you across other websites.
         </p>
       </Section>
 
