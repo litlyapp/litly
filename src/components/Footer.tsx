@@ -28,6 +28,8 @@ export default async function Footer() {
           <Link href="/events/map" className="hover:text-cream transition">Map</Link>
           <Link href={postEventHref} className="hover:text-cream transition">Post an event</Link>
           <Link href="/support" className="hover:text-cream transition">Support litly</Link>
+          <Link href="/terms" className="hover:text-cream transition">Terms</Link>
+          <Link href="/privacy" className="hover:text-cream transition">Privacy</Link>
           <InstallButton variant="footer" />
         </nav>
         <p className="text-cream-muted/50 text-xs">

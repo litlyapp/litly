@@ -208,6 +208,18 @@ export default function RegisterForm({ invite }: Props) {
               {loading ? "Creating account…" : "Create account"}
             </button>
 
+            <p className="text-cream-muted/70 text-xs text-center leading-relaxed">
+              By creating an account you agree to our{" "}
+              <Link href="/terms" className="text-cream-muted hover:text-orange underline">
+                Terms
+              </Link>{" "}
+              and{" "}
+              <Link href="/privacy" className="text-cream-muted hover:text-orange underline">
+                Privacy Policy
+              </Link>
+              .
+            </p>
+
             <p className="text-cream-muted text-sm text-center">
               Already have an account?{" "}
               <Link
