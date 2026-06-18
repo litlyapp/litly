@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import PasswordInput from "@/components/PasswordInput";
-import { trackPixel } from "@/lib/pixel";
 import type { UserRole, OrgType } from "@/types/database";
 
 interface Props {
@@ -61,8 +60,6 @@ export default function RegisterForm({ invite }: Props) {
       setLoading(false);
       return;
     }
-
-    trackPixel("CompleteRegistration", { content_name: role ?? "patron" });
 
     router.push("/login?registered=1");
   }
