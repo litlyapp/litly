@@ -29,6 +29,9 @@ export default function NavClient({ user, role, postEventHref }: Props) {
   }
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
+  // Exact-match variant for routes that are a prefix of sibling routes
+  // (e.g. /events must not light up on /events/map or /events/new).
+  const isExact = (href: string) => pathname === href;
 
   return (
     <>
@@ -127,7 +130,7 @@ export default function NavClient({ user, role, postEventHref }: Props) {
       {/* Mobile drawer */}
       {menuOpen && (
         <div className="md:hidden absolute top-16 left-0 right-0 bg-navy border-b border-cream/10 z-50 px-4 py-4 flex flex-col gap-1">
-          <MobileLink href="/events" onClick={close} active={isActive("/events")}>Events</MobileLink>
+          <MobileLink href="/events" onClick={close} active={isExact("/events")}>Events</MobileLink>
           <MobileLink href="/events/map" onClick={close} active={isActive("/events/map")}>Map</MobileLink>
           <MobileLink
             href={postEventHref}
