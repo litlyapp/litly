@@ -76,22 +76,14 @@ export default async function DashboardPage({
   // can't split upcoming/past on the parent's own date alone: a series parent's
   // date_time is frozen at the first occurrence, so a still-active series with
   // future child occurrences would otherwise be misfiled under "Past".
-  const [allParentsResult, totalUpcomingResult] = await Promise.all([
-    supabase
-      .from("events")
-      .select(eventSelect)
-      .eq("organizer_id", activeOrgId!)
-      .is("parent_event_id", null)
-      .order("date_time", { ascending: false }),
-    supabase
-      .from("events")
-      .select("id", { count: "exact", head: true })
-      .eq("organizer_id", activeOrgId!)
-      .gte("date_time", now),
-  ]);
+  const { data: allParentsData } = await supabase
+    .from("events")
+    .select(eventSelect)
+    .eq("organizer_id", activeOrgId!)
+    .is("parent_event_id", null)
+    .order("date_time", { ascending: false });
 
-  const allParents = (allParentsResult.data ?? []) as DashboardEvent[];
-  const totalUpcoming = totalUpcomingResult.count ?? 0;
+  const allParents = (allParentsData ?? []) as DashboardEvent[];
 
   // For each recurring series, find how many upcoming occurrences remain and
   // the date of the next one (the soonest future occurrence among the parent
@@ -144,6 +136,10 @@ export default async function DashboardPage({
   }
   upcomingEvents.sort((a, b) => new Date(a.date_time).getTime() - new Date(b.date_time).getTime());
   pastEvents.splice(55); // cap past list (query was ordered date desc)
+
+  // Count each series once (not every materialized occurrence), so an infinite
+  // series doesn't inflate the upcoming total with a year of pre-built dates.
+  const totalUpcoming = upcomingEvents.length;
 
   const rsvpCounts: Record<string, number> = {};
   const saveCounts: Record<string, number> = {};
