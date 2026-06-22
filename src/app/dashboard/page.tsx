@@ -67,25 +67,22 @@ export default async function DashboardPage({
   }));
 
   const now = new Date().toISOString();
+  const nowMs = Date.now();
+  const isFuture = (iso: string) => new Date(iso).getTime() >= nowMs;
 
   const eventSelect = "id, title, genre, event_type, date_time, timezone, location_name, virtual_url, rsvp_enabled, open_mic, parent_event_id, recurrence_rule, is_cancelled, view_count, ticket_click_count";
 
-  const [upcomingResult, pastResult, totalUpcomingResult] = await Promise.all([
+  // Fetch every top-level event (series parents + one-offs) for this org. We
+  // can't split upcoming/past on the parent's own date alone: a series parent's
+  // date_time is frozen at the first occurrence, so a still-active series with
+  // future child occurrences would otherwise be misfiled under "Past".
+  const [allParentsResult, totalUpcomingResult] = await Promise.all([
     supabase
       .from("events")
       .select(eventSelect)
       .eq("organizer_id", activeOrgId!)
       .is("parent_event_id", null)
-      .gte("date_time", now)
-      .order("date_time", { ascending: true }),
-    supabase
-      .from("events")
-      .select(eventSelect)
-      .eq("organizer_id", activeOrgId!)
-      .is("parent_event_id", null)
-      .lt("date_time", now)
-      .order("date_time", { ascending: false })
-      .limit(55),
+      .order("date_time", { ascending: false }),
     supabase
       .from("events")
       .select("id", { count: "exact", head: true })
@@ -93,21 +90,60 @@ export default async function DashboardPage({
       .gte("date_time", now),
   ]);
 
-  const upcomingEvents = (upcomingResult.data ?? []) as DashboardEvent[];
-  const pastEvents = (pastResult.data ?? []) as DashboardEvent[];
+  const allParents = (allParentsResult.data ?? []) as DashboardEvent[];
   const totalUpcoming = totalUpcomingResult.count ?? 0;
 
+  // For each recurring series, find how many upcoming occurrences remain and
+  // the date of the next one (the soonest future occurrence among the parent
+  // date and its child rows).
   const upcomingChildCounts: Record<string, number> = {};
-  for (const event of upcomingEvents) {
+  const seriesNextDate: Record<string, string> = {};
+  for (const event of allParents) {
     if (!event.recurrence_rule) continue;
-    const { count } = await supabase
-      .from("events")
-      .select("id", { count: "exact", head: true })
-      .eq("parent_event_id", event.id)
-      .eq("is_cancelled", false)
-      .gte("date_time", now);
+    const [{ count }, { data: nextChild }] = await Promise.all([
+      supabase
+        .from("events")
+        .select("id", { count: "exact", head: true })
+        .eq("parent_event_id", event.id)
+        .eq("is_cancelled", false)
+        .gte("date_time", now),
+      supabase
+        .from("events")
+        .select("date_time")
+        .eq("parent_event_id", event.id)
+        .eq("is_cancelled", false)
+        .gte("date_time", now)
+        .order("date_time", { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+    ]);
     upcomingChildCounts[event.id] = count ?? 0;
+    const candidates: string[] = [];
+    if (isFuture(event.date_time)) candidates.push(event.date_time);
+    if (nextChild?.date_time) candidates.push(nextChild.date_time);
+    if (candidates.length) {
+      candidates.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+      seriesNextDate[event.id] = candidates[0];
+    }
   }
+
+  // Partition into upcoming vs past. A recurring series is upcoming as long as
+  // it has any future occurrence, displayed at that next occurrence date.
+  const upcomingEvents: DashboardEvent[] = [];
+  const pastEvents: DashboardEvent[] = [];
+  for (const event of allParents) {
+    if (event.recurrence_rule) {
+      const next = seriesNextDate[event.id];
+      if (next) upcomingEvents.push({ ...event, date_time: next });
+      else pastEvents.push(event);
+    } else if (isFuture(event.date_time)) {
+      upcomingEvents.push(event);
+    } else {
+      pastEvents.push(event);
+    }
+  }
+  upcomingEvents.sort((a, b) => new Date(a.date_time).getTime() - new Date(b.date_time).getTime());
+  pastEvents.splice(55); // cap past list (query was ordered date desc)
 
   const rsvpCounts: Record<string, number> = {};
   const saveCounts: Record<string, number> = {};
