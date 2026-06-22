@@ -39,14 +39,6 @@ const SOURCES: CrawlSource[] = [
     delaySeconds: 2,
   },
   {
-    name: "LitWire",
-    sourceEmail: "crawler@litwire.org",
-    listingUrls: ["https://litwire.org/"],
-    linkPattern: /href="(https:\/\/litwire\.org\/event\/[a-z0-9-]+(?:\/\d{4}-\d{2}-\d{2})?\/?)"/g,
-    toUrl: (m) => m[1],
-    delaySeconds: 2,
-  },
-  {
     name: "Literary Arts",
     sourceEmail: "crawler@literary-arts.org",
     listingUrls: ["https://literary-arts.org/events/"],
