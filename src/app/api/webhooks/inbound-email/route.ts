@@ -45,7 +45,13 @@ async function forwardToGmail(
   // Show the address it actually arrived at as the From, so contact@ / support@
   // / privacy@ are distinguishable in the inbox at a glance.
   formData.append("from", `litly <${sentTo}>`);
-  formData.append("to", CONFIRMATION_FORWARD_TO);
+  // Put the routed address in the visible To and deliver the real copy via Bcc.
+  // Gmail's "reply from the same address the message was sent to" reads the To
+  // header, so this auto-selects the matching send-as identity (e.g. privacy@)
+  // on reply. The To copy loops back through the catch-all but is dropped by the
+  // self-sent guard above — no loop, no duplicate in the inbox.
+  formData.append("to", sentTo);
+  formData.append("bcc", CONFIRMATION_FORWARD_TO);
   // Reply goes straight back to whoever wrote in, not to litly's own address.
   if (from) formData.append("h:Reply-To", from);
   formData.append("subject", `[litly fwd] ${subject}`);
