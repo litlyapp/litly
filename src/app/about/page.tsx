@@ -27,9 +27,9 @@ export default function AboutPage() {
           <h2 className="font-serif text-2xl text-cream mb-3">Our mission</h2>
           <div className="space-y-3 text-cream-muted leading-relaxed">
             <p>
-              Literary events are everywhere — and almost impossible to find.
-              They scatter across bookstore calendars, library bulletins,
-              organization newsletters, and a dozen ticketing platforms. A
+              Literary events are everywhere. They&rsquo;re scattered across
+              bookstore calendars, library bulletins, organization newsletters,
+              city-centered events pages, and a dozen ticketing platforms. A
               brilliant reading three blocks away goes unnoticed simply because
               no one knew it was happening.
             </p>
