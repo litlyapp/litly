@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export const metadata = {
   title: "About — litly",
@@ -10,6 +11,14 @@ export default function AboutPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-16">
       <header className="mb-12">
+        <Image
+          src="/logo.png"
+          alt="litly"
+          width={88}
+          height={88}
+          priority
+          className="rounded-2xl mx-auto mb-6"
+        />
         <h1 className="font-serif text-4xl sm:text-5xl text-cream mb-4">
           About litly
         </h1>
