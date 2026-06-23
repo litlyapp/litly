@@ -3,11 +3,12 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 import { createHmac } from "crypto";
 import { stripHtml, applyKnownVenue, enrichFromLink, TIME_RULES } from "@/lib/importParsing";
+import { LITLY_INBOX } from "@/lib/email";
 
 // Parsing + per-event link enrichment can exceed Vercel's default timeout
 export const maxDuration = 60;
 
-const CONFIRMATION_FORWARD_TO = "knuth.cdgo@gmail.com";
+const CONFIRMATION_FORWARD_TO = LITLY_INBOX;
 const CONFIRMATION_PATTERN = /confirm|verify|activate|subscri|welcome|opt.?in/i;
 
 // Human-facing inboxes: real correspondence, not newsletters to crawl. Mail to

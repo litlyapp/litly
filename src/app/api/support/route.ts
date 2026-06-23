@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { rateLimit } from "@/lib/rateLimit";
+import { LITLY_INBOX } from "@/lib/email";
 
 export async function POST(req: Request) {
   const supabase = await createClient();
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
 
   const formData = new FormData();
   formData.append("from", `litly Support <support@thelitlyapp.com>`);
-  formData.append("to", "knuth.cdgo@gmail.com");
+  formData.append("to", LITLY_INBOX);
   formData.append("reply-to", user.email ?? "");
   formData.append("subject", `[litly Support] ${subject}`);
   formData.append(

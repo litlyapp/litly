@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { rateLimit } from "@/lib/rateLimit";
+import { LITLY_INBOX } from "@/lib/email";
 
 function domain(value: string | null | undefined): string | null {
   if (!value) return null;
@@ -118,7 +119,7 @@ then reassign the event(s) to their new org:
 
   const formData = new FormData();
   formData.append("from", "litly Claims <support@thelitlyapp.com>");
-  formData.append("to", "knuth.cdgo@gmail.com");
+  formData.append("to", LITLY_INBOX);
   formData.append("reply-to", email.trim());
   formData.append("subject", `[litly Claim] ${orgName.trim()} → ${event.title}`);
   formData.append("text", text);
