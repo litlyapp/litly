@@ -41,7 +41,7 @@ export default function AboutPage() {
             <p>
               Literary events are everywhere. They&rsquo;re scattered across
               bookstore calendars, library bulletins, organization newsletters,
-              city-centered events pages, and a dozen ticketing platforms. A
+              location-based events pages, and a dozen ticketing platforms. A
               brilliant reading three blocks away can go unnoticed simply
               because no one knew it was happening.
             </p>
