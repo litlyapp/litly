@@ -34,12 +34,22 @@ function verifyMailgunSignature(timestamp: string, token: string, signature: str
   return expected === signature;
 }
 
-async function forwardToGmail(from: string, subject: string, bodyPlain: string, bodyHtml: string) {
+async function forwardToGmail(
+  from: string,
+  subject: string,
+  bodyPlain: string,
+  bodyHtml: string,
+  sentTo = "newsletters@thelitlyapp.com"
+) {
   const formData = new FormData();
-  formData.append("from", "litly inbound <newsletters@thelitlyapp.com>");
+  // Show the address it actually arrived at as the From, so contact@ / support@
+  // / privacy@ are distinguishable in the inbox at a glance.
+  formData.append("from", `litly <${sentTo}>`);
   formData.append("to", CONFIRMATION_FORWARD_TO);
+  // Reply goes straight back to whoever wrote in, not to litly's own address.
+  if (from) formData.append("h:Reply-To", from);
   formData.append("subject", `[litly fwd] ${subject}`);
-  formData.append("text", `Originally from: ${from}\n\n${bodyPlain}`);
+  formData.append("text", `Originally from: ${from}\nSent to: ${sentTo}\n\n${bodyPlain}`);
   if (bodyHtml) formData.append("html", bodyHtml);
 
   const credentials = Buffer.from(`api:${process.env.MAILGUN_API_KEY}`).toString("base64");
@@ -89,11 +99,12 @@ export async function POST(request: Request) {
     }
 
     // Human-addressed mail (contact/support/privacy) is correspondence, not a
-    // newsletter to crawl — forward to the personal inbox and skip parsing.
+    // newsletter to crawl — forward to the litly inbox and skip parsing.
     const recipient = (formData.get("recipient")?.toString() ?? "").toLowerCase();
-    if (HUMAN_INBOXES.some((addr) => recipient.includes(addr))) {
-      await forwardToGmail(from, subject, bodyPlain, bodyHtml);
-      return NextResponse.json({ ok: true, forwarded: "human inbox" });
+    const humanInbox = HUMAN_INBOXES.find((addr) => recipient.includes(addr));
+    if (humanInbox) {
+      await forwardToGmail(from, subject, bodyPlain, bodyHtml, humanInbox);
+      return NextResponse.json({ ok: true, forwarded: humanInbox });
     }
 
     // Forward confirmation/verification emails to personal inbox
