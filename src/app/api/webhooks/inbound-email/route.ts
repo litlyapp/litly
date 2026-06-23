@@ -10,6 +10,15 @@ export const maxDuration = 60;
 const CONFIRMATION_FORWARD_TO = "knuth.cdgo@gmail.com";
 const CONFIRMATION_PATTERN = /confirm|verify|activate|subscri|welcome|opt.?in/i;
 
+// Human-facing inboxes: real correspondence, not newsletters to crawl. Mail to
+// these is forwarded straight to the personal inbox and never run through the
+// event parser. The catch-all route still feeds everything else to the crawler.
+const HUMAN_INBOXES = [
+  "contact@thelitlyapp.com",
+  "support@thelitlyapp.com",
+  "privacy@thelitlyapp.com",
+];
+
 function verifyMailgunSignature(timestamp: string, token: string, signature: string): boolean {
   const signingKey = process.env.MAILGUN_WEBHOOK_SIGNING_KEY;
   if (!signingKey) return false; // reject all requests if key is not configured
@@ -76,6 +85,14 @@ export async function POST(request: Request) {
     // account RSVPs to an event
     if (/@thelitlyapp\.com/i.test(from)) {
       return NextResponse.json({ ok: true, skipped: "self-sent email" });
+    }
+
+    // Human-addressed mail (contact/support/privacy) is correspondence, not a
+    // newsletter to crawl — forward to the personal inbox and skip parsing.
+    const recipient = (formData.get("recipient")?.toString() ?? "").toLowerCase();
+    if (HUMAN_INBOXES.some((addr) => recipient.includes(addr))) {
+      await forwardToGmail(from, subject, bodyPlain, bodyHtml);
+      return NextResponse.json({ ok: true, forwarded: "human inbox" });
     }
 
     // Forward confirmation/verification emails to personal inbox
