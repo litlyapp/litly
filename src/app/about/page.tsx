@@ -46,11 +46,11 @@ export default function AboutPage() {
           <h2 className="font-serif text-2xl text-cream mb-3">What we do</h2>
           <div className="space-y-3 text-cream-muted leading-relaxed">
             <p>
-              litly is an independent discovery platform — not an event
-              organizer. We gather literary events from publicly announced
-              sources, and organizers can post their own events directly. Every
-              listing links back to the organizer or venue, where you can RSVP
-              or buy tickets.
+              litly is an independent discovery platform&mdash;not an event
+              organizer. We allow the space for organizers to post their own
+              events directly, and gather literary events from publicly
+              announced sources. Every listing links back to the organizer or
+              venue, where you can RSVP or buy tickets directly from the source.
             </p>
             <ul className="list-disc pl-5 space-y-2 marker:text-orange">
               <li>
