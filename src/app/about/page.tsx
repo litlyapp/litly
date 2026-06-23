@@ -18,7 +18,7 @@ export default function AboutPage() {
           mics, workshops, craft talks, book launches, and other literary
           gatherings into one place&mdash;searchable by genre, date, and
           location. Our goal is simple: to allow readers to find their next
-          literary moment, anywhere and any time.
+          literary moment, anywhere and anytime.
         </p>
       </header>
 
