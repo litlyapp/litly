@@ -146,10 +146,6 @@ export default function AboutPage() {
               >
                 privacy@thelitlyapp.com
               </a>
-              , or visit our{" "}
-              <Link href="/support" className="text-cream hover:text-orange transition">
-                support page
-              </Link>
               .
             </p>
           </div>
