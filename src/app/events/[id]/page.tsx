@@ -397,6 +397,15 @@ export default async function EventDetailPage({
             )}
           </div>
         )}
+
+        {/* Confirm-with-organizer reminder — shown right where patrons click out,
+            since details can change and litly is not the organizer */}
+        {!isPast && (
+          <p className="text-cream-muted/60 text-xs leading-relaxed">
+            Details can change. Please confirm the date, time, location, and
+            ticketing directly with the organizer before attending.
+          </p>
+        )}
       </div>
 
       {/* Description */}
