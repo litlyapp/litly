@@ -26,8 +26,11 @@ export default function AboutPage() {
           litly is a digital home for literary events. We bring readings, open
           mics, workshops, craft talks, book launches, and other literary
           gatherings into one place&mdash;searchable by genre, date, and
-          location. Our goal is simple: to allow readers to find their next
-          literary moment, anywhere and anytime.
+          location.
+        </p>
+        <p className="text-cream-muted text-lg leading-relaxed mt-4">
+          Our goal is simple: to allow readers to find their next literary
+          moment, anywhere and anytime.
         </p>
       </header>
 
