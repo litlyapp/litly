@@ -42,8 +42,8 @@ export default function AboutPage() {
               Literary events are everywhere. They&rsquo;re scattered across
               bookstore calendars, library bulletins, organization newsletters,
               city-centered events pages, and a dozen ticketing platforms. A
-              brilliant reading three blocks away goes unnoticed simply because
-              no one knew it was happening.
+              brilliant reading three blocks away can go unnoticed simply
+              because no one knew it was happening.
             </p>
             <p>
               litly exists to fix that: to make literary events discoverable,
