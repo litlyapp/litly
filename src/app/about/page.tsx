@@ -60,7 +60,7 @@ export default function AboutPage() {
             <p>
               litly is an independent discovery platform&mdash;not an event
               organizer. We allow the space for organizers to post their own
-              events directly, and gather literary events from publicly
+              events directly while gathering literary events from publicly
               announced sources. Every listing links back to the organizer or
               venue, where you can RSVP or buy tickets directly from the source.
             </p>
