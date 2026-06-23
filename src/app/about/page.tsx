@@ -14,10 +14,11 @@ export default function AboutPage() {
           About litly
         </h1>
         <p className="text-cream-muted text-lg leading-relaxed">
-          litly is a home for literary events. We bring readings, open mics,
-          workshops, craft talks, book launches, and other book-ish gatherings
-          into one place — searchable by genre, date, and map — so readers can
-          find their next literary moment and organizers can fill the room.
+          litly is a digital home for literary events. We bring readings, open
+          mics, workshops, craft talks, book launches, and other literary
+          gatherings into one place&mdash;searchable by genre, date, and
+          location. Our goal is simple: to allow readers to find their next
+          literary moment, anywhere and any time.
         </p>
       </header>
 
