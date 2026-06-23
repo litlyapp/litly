@@ -93,8 +93,8 @@ export default function AboutPage() {
                 className="text-cream hover:text-orange transition"
               >
                 email us
-              </a>{" "}
-              — we act on reasonable requests promptly.
+              </a>
+              &mdash;we act on all reasonable requests promptly.
             </p>
           </div>
         </section>
