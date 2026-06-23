@@ -141,10 +141,10 @@ export default function AboutPage() {
             <p>
               Questions, suggestions, or just want to say hello? Reach us at{" "}
               <a
-                href="mailto:privacy@thelitlyapp.com"
+                href="mailto:contact@thelitlyapp.com"
                 className="text-cream hover:text-orange transition"
               >
-                privacy@thelitlyapp.com
+                contact@thelitlyapp.com
               </a>
               .
             </p>
