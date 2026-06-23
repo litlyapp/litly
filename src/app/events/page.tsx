@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import EventCard from "@/components/EventCard";
 import EventFilters from "@/components/EventFilters";
 import { GENRES } from "@/lib/genres";
-import type { Genre, EventType } from "@/types/database";
+import { applyEventFilters } from "@/lib/events/filterQuery";
+import ViewToggle from "@/components/ViewToggle";
 
 interface SearchParams {
   q?: string;
@@ -48,57 +49,7 @@ export default async function EventsPage({
     .gte("date_time", new Date().toISOString())
     .order("date_time", { ascending: true });
 
-  if (params.q) {
-    // One search bar for everything a patron might type: event title, venue,
-    // host org name, or an imported event's source org (claim-your-page funnel)
-    const q = params.q.replace(/[,()]/g, " ");
-    const ql = q.trim().toLowerCase();
-    const matchingOrgIds = (organizers ?? [])
-      .filter((o) => o.name.toLowerCase().includes(ql))
-      .map((o) => o.id);
-    const clauses = [
-      `title.ilike.%${q}%`,
-      `source_name.ilike.%${q}%`,
-      `location_name.ilike.%${q}%`,
-    ];
-    if (matchingOrgIds.length) {
-      clauses.push(`organizer_id.in.(${matchingOrgIds.join(",")})`);
-    }
-    query = query.or(clauses.join(","));
-  }
-
-  const genres = params.genre
-    ? Array.isArray(params.genre)
-      ? params.genre
-      : [params.genre]
-    : [];
-  if (genres.length > 0) {
-    // Use overlap operator: events whose genre array contains any of the selected genres
-    query = query.overlaps("genre", genres as Genre[]);
-  }
-
-  if (params.type && params.type !== "all") {
-    query = query.eq("event_type", params.type as EventType);
-  }
-
-  if (params.from) {
-    query = query.gte("date_time", new Date(params.from).toISOString());
-  }
-
-  if (params.to) {
-    const toDate = new Date(params.to);
-    toDate.setHours(23, 59, 59, 999);
-    query = query.lte("date_time", toDate.toISOString());
-  }
-
-  if (params.organizer) {
-    query = query.eq("organizer_id", params.organizer);
-  }
-
-  if (params.location) {
-    const loc = params.location.split(",")[0].trim(); // use city portion
-    query = query.or(`city.ilike.%${loc}%,address.ilike.%${loc}%`);
-  }
+  query = applyEventFilters(query, params, organizers ?? []);
 
   const { data: rawEvents } = await query;
 
@@ -130,10 +81,13 @@ export default async function EventsPage({
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="font-serif text-4xl text-cream mb-1">Events</h1>
-          <p className="text-cream-muted">
+          <p className="text-cream-muted mb-3">
             {events?.length ?? 0} upcoming{" "}
             {events?.length === 1 ? "event" : "events"}
           </p>
+          <Suspense fallback={null}>
+            <ViewToggle active="list" />
+          </Suspense>
         </div>
         {isOrganizer ? (
           <Link

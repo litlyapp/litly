@@ -12,8 +12,10 @@ interface Organizer {
 
 export default function EventFilters({
   organizers,
+  hideType = false,
 }: {
   organizers: Organizer[];
+  hideType?: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -138,7 +140,8 @@ export default function EventFilters({
         </div>
       </div>
 
-      {/* Event type */}
+      {/* Event type — hidden on the map view, where only in-person events show */}
+      {!hideType && (
       <div>
         <label className="text-cream-muted text-xs uppercase tracking-wider mb-2 block">
           Type
@@ -159,6 +162,7 @@ export default function EventFilters({
           ))}
         </div>
       </div>
+      )}
 
       {/* Genre */}
       <div>
@@ -249,10 +253,14 @@ function OrganizerSearch({
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Sync if external clear happens
-  useEffect(() => {
+  // Sync the input to the active organizer when it changes externally (e.g. a
+  // "clear all filters" elsewhere). Adjusting state during render with a
+  // previous-value tracker is React's recommended pattern over a setState effect.
+  const [prevActiveName, setPrevActiveName] = useState(activeName);
+  if (activeName !== prevActiveName) {
+    setPrevActiveName(activeName);
     setQuery(activeName);
-  }, [activeName]);
+  }
 
   // Close on outside click
   useEffect(() => {
