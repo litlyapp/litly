@@ -47,9 +47,9 @@ export default function AboutPage() {
             </p>
             <p>
               litly exists to fix that: to make literary events discoverable,
-              and in doing so, to send more readers through the doors of the
-              bookstores, libraries, and independent organizers who keep book
-              culture alive.
+              and in doing so, to bring more readers to the bookstores,
+              libraries, and independent organizers who keep book culture
+              alive.
             </p>
           </div>
         </section>
