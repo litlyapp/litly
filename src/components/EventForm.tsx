@@ -192,7 +192,7 @@ interface SeriesContext {
 
 interface Props {
   organizerId: string;
-  initialData?: EventData & { id?: string };
+  initialData?: EventData & { id?: string; is_published?: boolean };
   eventId?: string;
   seriesContext?: SeriesContext;
   /** Admin-only: expose "via [org]" source attribution fields */
@@ -363,6 +363,9 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
 
   const [cancelConfirm, setCancelConfirm] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+
+  const isDraft = isEditing && initialData?.is_published === false;
+  const [publishIntent, setPublishIntent] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -603,7 +606,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: updateError } = await (supabase as any)
         .from("events")
-        .update(sharedFields)
+        .update({ ...sharedFields, ...(isDraft ? { is_published: publishIntent } : {}) })
         .eq("id", eventId);
 
       if (updateError) {
@@ -1347,19 +1350,40 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
 
       {/* Submit */}
       <div className="flex gap-3 pt-2">
-        <button
-          type="submit"
-          disabled={loading}
-          className="flex-1 bg-orange text-cream font-semibold rounded-full py-3 hover:bg-orange/90 transition disabled:opacity-60"
-        >
-          {loading
-            ? isEditing
-              ? "Saving…"
-              : "Publishing…"
-            : isEditing
-            ? "Save changes"
-            : "Publish event"}
-        </button>
+        {isDraft ? (
+          <>
+            <button
+              type="submit"
+              disabled={loading}
+              onClick={() => setPublishIntent(true)}
+              className="flex-1 bg-orange text-cream font-semibold rounded-full py-3 hover:bg-orange/90 transition disabled:opacity-60"
+            >
+              {loading && publishIntent ? "Publishing…" : "Publish event"}
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              onClick={() => setPublishIntent(false)}
+              className="px-6 py-3 rounded-full border border-cream/20 text-cream-muted hover:text-cream hover:border-cream/40 transition"
+            >
+              {loading && !publishIntent ? "Saving…" : "Save draft"}
+            </button>
+          </>
+        ) : (
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex-1 bg-orange text-cream font-semibold rounded-full py-3 hover:bg-orange/90 transition disabled:opacity-60"
+          >
+            {loading
+              ? isEditing
+                ? "Saving…"
+                : "Publishing…"
+              : isEditing
+              ? "Save changes"
+              : "Publish event"}
+          </button>
+        )}
         <button
           type="button"
           onClick={() => router.back()}

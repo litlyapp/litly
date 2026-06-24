@@ -34,6 +34,7 @@ export default async function EditEventPage({
   const ev = event as typeof event & {
     recurrence_rule: object | null;
     parent_event_id: string | null;
+    is_published: boolean;
   };
 
   // Build series context if this event is part of a recurring series
@@ -61,8 +62,15 @@ export default async function EditEventPage({
   return (
     <div className="max-w-2xl mx-auto px-4 py-10">
       <div className="mb-8">
-        <h1 className="font-serif text-4xl text-cream mb-1">Edit event</h1>
+        <h1 className="font-serif text-4xl text-cream mb-1">
+          {ev.is_published === false ? "Review imported event" : "Edit event"}
+        </h1>
         <p className="text-cream-muted line-clamp-1">{event.title}</p>
+        {ev.is_published === false && (
+          <p className="text-orange text-sm mt-1">
+            This event is a draft — review the details below and hit &quot;Publish event&quot; when ready.
+          </p>
+        )}
         {isRecurring && (
           <p className="text-orange text-sm mt-1">Part of a recurring series</p>
         )}

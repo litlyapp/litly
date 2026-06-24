@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getActiveOrgId } from "@/lib/activeOrg";
 import EventForm from "@/components/EventForm";
+import ImportFromUrl from "@/components/ImportFromUrl";
 
 export default async function NewEventPage({
   searchParams,
@@ -69,6 +70,16 @@ export default async function NewEventPage({
             : `Posting as ${profile.name}`}
         </p>
       </div>
+      {!initialData && (
+        <>
+          <ImportFromUrl organizerId={profile.id} />
+          <div className="flex items-center gap-3 mb-8">
+            <div className="flex-1 h-px bg-cream/10" />
+            <span className="text-cream-muted text-xs uppercase tracking-wider">or enter manually</span>
+            <div className="flex-1 h-px bg-cream/10" />
+          </div>
+        </>
+      )}
       <EventForm
         organizerId={profile.id}
         initialData={initialData}
