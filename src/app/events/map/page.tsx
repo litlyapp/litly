@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import EventMap from "@/components/EventMap";
-import EventFilters from "@/components/EventFilters";
+import FiltersSidebar from "@/components/FiltersSidebar";
 import ViewToggle from "@/components/ViewToggle";
 import { applyEventFilters, type EventFilterParams } from "@/lib/events/filterQuery";
 
@@ -86,11 +86,9 @@ export default async function EventMapPage({
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Sidebar filters — same component as the list view, URL-driven so
             filters carry over between List and Map */}
-        <aside className="lg:w-64 shrink-0">
-          <Suspense fallback={<div className="text-cream-muted text-sm">Loading filters…</div>}>
-            <EventFilters organizers={organizers ?? []} hideType />
-          </Suspense>
-        </aside>
+        <Suspense fallback={<div className="lg:w-64 lg:shrink-0 text-cream-muted text-sm">Loading filters…</div>}>
+          <FiltersSidebar organizers={organizers ?? []} hideType />
+        </Suspense>
 
         <div className="flex-1">
           <EventMap events={mappableEvents} initialUserLoc={initialUserLoc} />

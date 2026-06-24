@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
-import EventFilters from "@/components/EventFilters";
+import FiltersSidebar from "@/components/FiltersSidebar";
 import ViewToggle from "@/components/ViewToggle";
 import CalendarGrid, { type CalendarCell } from "@/components/CalendarGrid";
 import { applyEventFilters, type EventFilterParams } from "@/lib/events/filterQuery";
@@ -168,11 +168,9 @@ export default async function CalendarPage({
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
-        <aside className="lg:w-64 shrink-0">
-          <Suspense fallback={<div className="text-cream-muted text-sm">Loading filters…</div>}>
-            <EventFilters organizers={organizers ?? []} hideDateRange />
-          </Suspense>
-        </aside>
+        <Suspense fallback={<div className="lg:w-64 lg:shrink-0 text-cream-muted text-sm">Loading filters…</div>}>
+          <FiltersSidebar organizers={organizers ?? []} hideDateRange />
+        </Suspense>
 
         <div className="flex-1">
           <CalendarGrid

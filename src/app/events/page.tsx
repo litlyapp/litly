@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import EventCard from "@/components/EventCard";
-import EventFilters from "@/components/EventFilters";
+import FiltersSidebar from "@/components/FiltersSidebar";
 import { GENRES } from "@/lib/genres";
 import { applyEventFilters } from "@/lib/events/filterQuery";
 import ViewToggle from "@/components/ViewToggle";
@@ -133,14 +133,12 @@ export default async function EventsPage({
 
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Sidebar filters */}
-        <aside className="lg:w-64 shrink-0">
-          <Suspense fallback={<div className="text-cream-muted text-sm">Loading filters…</div>}>
-            <EventFilters
-              organizers={organizers ?? []}
-              clearHref={fromCalendar ? clearHref : undefined}
-            />
-          </Suspense>
-        </aside>
+        <Suspense fallback={<div className="lg:w-64 lg:shrink-0 text-cream-muted text-sm">Loading filters…</div>}>
+          <FiltersSidebar
+            organizers={organizers ?? []}
+            clearHref={fromCalendar ? clearHref : undefined}
+          />
+        </Suspense>
 
         {/* Event grid */}
         <div className="flex-1">
