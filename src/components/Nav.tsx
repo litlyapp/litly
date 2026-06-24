@@ -45,14 +45,14 @@ export default async function Nav() {
         {/* Desktop links */}
         <div className="hidden md:flex items-center gap-1">
           <NavLink href="/events">Events</NavLink>
+          <NavLink href="/events/map">Map</NavLink>
+          <NavLink href="/events/calendar">Calendar</NavLink>
           <Link
-            href="/events/map"
+            href={postEventHref}
             className="bg-orange text-cream text-sm font-semibold px-4 py-1.5 rounded-full hover:bg-orange/90 transition"
           >
-            Map
+            List your event
           </Link>
-          <NavLink href="/events/calendar">Calendar</NavLink>
-          <NavLink href={postEventHref}>List your event</NavLink>
           <NavLink href="/support">Support litly</NavLink>
         </div>
 
