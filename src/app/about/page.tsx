@@ -36,7 +36,7 @@ export default function AboutPage() {
 
       <div className="space-y-10">
         <section>
-          <h2 className="font-serif text-2xl text-cream mb-3">Our Mission</h2>
+          <h2 className="font-serif text-2xl text-cream mb-3">Our mission</h2>
           <div className="space-y-3 text-cream-muted leading-relaxed">
             <p>
               Literary events are everywhere. They&rsquo;re scattered across
@@ -55,7 +55,7 @@ export default function AboutPage() {
         </section>
 
         <section>
-          <h2 className="font-serif text-2xl text-cream mb-3">What We Do</h2>
+          <h2 className="font-serif text-2xl text-cream mb-3">What we do</h2>
           <div className="space-y-3 text-cream-muted leading-relaxed">
             <p>
               litly is an independent discovery platform&mdash;not an event
@@ -87,7 +87,7 @@ export default function AboutPage() {
 
         <section>
           <h2 className="font-serif text-2xl text-cream mb-3">
-            Compiled with Care
+            Compiled with care
           </h2>
           <div className="space-y-3 text-cream-muted leading-relaxed">
             <p>
@@ -112,7 +112,7 @@ export default function AboutPage() {
         </section>
 
         <section>
-          <h2 className="font-serif text-2xl text-cream mb-3">Get Started</h2>
+          <h2 className="font-serif text-2xl text-cream mb-3">Get started</h2>
           <div className="space-y-4 text-cream-muted leading-relaxed">
             <p>
               Ready to find your next literary moment? Browse what&rsquo;s
@@ -136,7 +136,7 @@ export default function AboutPage() {
         </section>
 
         <section>
-          <h2 className="font-serif text-2xl text-cream mb-3">Get in Touch</h2>
+          <h2 className="font-serif text-2xl text-cream mb-3">Get in touch</h2>
           <div className="space-y-3 text-cream-muted leading-relaxed">
             <p>
               Questions, suggestions, or just want to say hello? Reach us at{" "}
