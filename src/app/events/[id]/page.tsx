@@ -485,7 +485,7 @@ export default async function EventDetailPage({
                   href={ev.source_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-orange hover:text-orange/80 transition"
+                  className="text-orange hover:text-orange/80 hover:underline transition"
                 >
                   {ev.source_name} ↗
                 </a>

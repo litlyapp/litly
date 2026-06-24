@@ -22,7 +22,7 @@ export function LegalShell({
         <p className="text-cream-muted/60 text-sm mt-4">Effective date: {effectiveDate}</p>
         <p className="text-cream-muted/60 text-sm">
           Operated by Chad Knuth, doing business as litly. Contact:{" "}
-          <a href="mailto:privacy@thelitlyapp.com" className="text-orange hover:text-orange/80 transition">
+          <a href="mailto:privacy@thelitlyapp.com" className="text-orange hover:text-orange/80 hover:underline transition">
             privacy@thelitlyapp.com
           </a>
         </p>
