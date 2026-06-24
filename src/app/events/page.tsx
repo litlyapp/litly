@@ -16,6 +16,7 @@ interface SearchParams {
   to?: string;
   organizer?: string;
   location?: string;
+  ref?: string;
 }
 
 export const dynamic = "force-dynamic";

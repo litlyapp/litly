@@ -75,6 +75,12 @@ export default function CalendarGrid({
 function CalendarDay({ cell, maxCount }: { cell: CalendarCell; maxCount: number }) {
   const { day, inMonth, count, isToday, isPast, href } = cell;
 
+  // Days from adjacent months render as empty placeholders to keep the weekday
+  // columns aligned without showing other-month dates.
+  if (!inMonth) {
+    return <div className="min-h-[68px] sm:min-h-[88px]" aria-hidden />;
+  }
+
   // Heat-map intensity: scaled to the busiest day in view so small counts still
   // show contrast at current data volumes.
   const intensity = count > 0 ? 0.14 + 0.5 * (count / maxCount) : 0;

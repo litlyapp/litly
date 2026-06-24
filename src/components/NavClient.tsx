@@ -132,6 +132,7 @@ export default function NavClient({ user, role, postEventHref }: Props) {
         <div className="md:hidden absolute top-16 left-0 right-0 bg-navy border-b border-cream/10 z-50 px-4 py-4 flex flex-col gap-1">
           <MobileLink href="/events" onClick={close} active={isExact("/events")}>Events</MobileLink>
           <MobileLink href="/events/map" onClick={close} active={isActive("/events/map")}>Map</MobileLink>
+          <MobileLink href="/events/calendar" onClick={close} active={isActive("/events/calendar")}>Calendar</MobileLink>
           <MobileLink
             href={postEventHref}
             onClick={close}

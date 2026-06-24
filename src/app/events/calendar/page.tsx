@@ -50,8 +50,12 @@ export default async function CalendarPage({
   const gridStart = new Date(first);
   gridStart.setUTCDate(first.getUTCDate() - mondayOffset);
 
+  // Only render the weeks this month actually spans (no fixed 6-week grid), so
+  // trailing/leading days from adjacent months aren't shown.
+  const daysInMonth = new Date(Date.UTC(year, month0 + 1, 0)).getUTCDate();
+  const totalCells = Math.ceil((mondayOffset + daysInMonth) / 7) * 7;
   const baseCells: { key: string; day: number; inMonth: boolean }[] = [];
-  for (let i = 0; i < 42; i++) {
+  for (let i = 0; i < totalCells; i++) {
     const d = new Date(gridStart);
     d.setUTCDate(gridStart.getUTCDate() + i);
     baseCells.push({
@@ -66,7 +70,7 @@ export default async function CalendarPage({
   const rangeStart = new Date(gridStart);
   rangeStart.setUTCDate(gridStart.getUTCDate() - 1);
   const rangeEnd = new Date(gridStart);
-  rangeEnd.setUTCDate(gridStart.getUTCDate() + 43);
+  rangeEnd.setUTCDate(gridStart.getUTCDate() + totalCells + 1);
   const lowerBound =
     rangeStart.toISOString() > nowIso ? rangeStart.toISOString() : nowIso;
 
@@ -112,12 +116,17 @@ export default async function CalendarPage({
   if (params.organizer) carry.set("organizer", params.organizer);
 
   const cells: CalendarCell[] = baseCells.map((c) => {
+    // Adjacent-month cells render blank — keep grid alignment, show nothing.
+    if (!c.inMonth) {
+      return { ...c, count: 0, isToday: false, isPast: false, href: null };
+    }
     const isPast = c.key < todayKey;
     let href: string | null = null;
     if (!isPast) {
       const p = new URLSearchParams(carry.toString());
       p.set("from", c.key);
       p.set("to", c.key);
+      p.set("ref", "calendar"); // so the list's "clear filters" returns here
       href = `/events?${p.toString()}`;
     }
     return {

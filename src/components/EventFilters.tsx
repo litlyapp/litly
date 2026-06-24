@@ -14,10 +14,12 @@ export default function EventFilters({
   organizers,
   hideType = false,
   hideDateRange = false,
+  clearHref,
 }: {
   organizers: Organizer[];
   hideType?: boolean;
   hideDateRange?: boolean;
+  clearHref?: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -68,7 +70,7 @@ export default function EventFilters({
   }
 
   function clearAll() {
-    router.push(pathname);
+    router.push(clearHref ?? pathname);
   }
 
   async function handleNearMe() {
