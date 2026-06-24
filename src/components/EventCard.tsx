@@ -4,6 +4,7 @@ import type { Genre, EventType } from "@/types/database";
 import { GENRE_LABELS } from "@/lib/genres";
 import { formatEventDate, formatEventTime } from "@/lib/formatDate";
 import SaveButton from "./SaveButton";
+import ShareButton from "./ShareButton";
 
 interface EventCardProps {
   event: {
@@ -63,13 +64,14 @@ export default function EventCard({
       )}
 
       <div className="relative p-5 flex flex-col gap-3 flex-1">
-      {/* Save button */}
-      <div className="absolute top-0 right-4">
+      {/* Share + save buttons */}
+      <div className="absolute top-0 right-2 flex items-center gap-1">
+        <ShareButton title={event.title} url={`https://thelitlyapp.com/events/${event.id}`} />
         <SaveButton eventId={event.id} initialSaved={isSaved} />
       </div>
 
       {/* Genre + type pills */}
-      <div className="flex gap-2 flex-wrap pr-8">
+      <div className="flex gap-2 flex-wrap pr-16">
         {(Array.isArray(event.genre) ? event.genre : [event.genre]).map((g) => (
           <span key={g} className="px-2.5 py-0.5 rounded-full bg-orange/15 text-orange text-xs font-medium">
             {GENRE_LABELS[g]}
