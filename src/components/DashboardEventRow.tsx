@@ -31,13 +31,14 @@ interface Props {
   saveCount?: number;
   clickCount?: number;
   upcomingInSeries?: number;
+  needsDetails?: boolean;
 }
 
 function formatDate(iso: string, timeZone?: string | null) {
   return `${formatEventDate(iso, timeZone)} · ${formatEventTime(iso, timeZone)}`;
 }
 
-export default function DashboardEventRow({ event, divider, isPast, rsvpCount, viewCount, saveCount, clickCount, upcomingInSeries }: Props) {
+export default function DashboardEventRow({ event, divider, isPast, rsvpCount, viewCount, saveCount, clickCount, upcomingInSeries, needsDetails }: Props) {
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -90,6 +91,14 @@ export default function DashboardEventRow({ event, divider, isPast, rsvpCount, v
           {event.is_cancelled && (
             <span className="px-2 py-0.5 rounded-full bg-orange/20 text-orange text-xs font-medium">
               Cancelled
+            </span>
+          )}
+          {!isPast && needsDetails && (
+            <span
+              title="Missing a banner image or ticket/join link"
+              className="px-2 py-0.5 rounded-full border border-orange/40 text-orange text-xs font-medium"
+            >
+              Needs details
             </span>
           )}
           {event.rsvp_enabled && rsvpCount !== undefined && rsvpCount > 0 && (

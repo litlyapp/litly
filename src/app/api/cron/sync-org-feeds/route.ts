@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { parseFeed, mapToEventRow } from "@/lib/icalFeed";
+import { sendEmail, emailWrapper, escapeHtml } from "@/lib/sendEmail";
 import type { Genre } from "@/types/database";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +22,96 @@ async function geocode(query: string): Promise<{ lat: number; lng: number } | nu
   return null;
 }
 
+// Resolve the org's owner email the same way weekly-digest does: prefer the
+// organizer_profiles.user_id, fall back to an org_members admin for shared orgs.
+async function resolveOrgEmail(
+  supabase: SupabaseClient,
+  org: { id: string; user_id: string | null }
+): Promise<string | undefined> {
+  if (org.user_id) {
+    const { data } = await supabase.auth.admin.getUserById(org.user_id);
+    return data?.user?.email;
+  }
+  const { data: adminMember } = await supabase
+    .from("org_members")
+    .select("user_id")
+    .eq("org_id", org.id)
+    .eq("role", "admin")
+    .limit(1)
+    .maybeSingle();
+  if (!adminMember?.user_id) return undefined;
+  const { data } = await supabase.auth.admin.getUserById(adminMember.user_id);
+  return data?.user?.email;
+}
+
+async function notifyOrgOfSync(
+  supabase: SupabaseClient,
+  org: { id: string; name: string; user_id: string | null },
+  newCount: number,
+  incompleteCount: number,
+  incompleteTitles: string[]
+) {
+  try {
+    const email = await resolveOrgEmail(supabase, org);
+    if (!email) return;
+
+    const incompleteLines = incompleteTitles
+      .slice(0, 10)
+      .map((t) => `• ${t}`)
+      .join("\n");
+    const incompleteHtmlItems = incompleteTitles
+      .slice(0, 10)
+      .map((t) => `<li style="margin-bottom:6px">${escapeHtml(t)}</li>`)
+      .join("");
+
+    const subject =
+      incompleteCount > 0
+        ? `${newCount} new event${newCount !== 1 ? "s" : ""} synced — ${incompleteCount} need${incompleteCount === 1 ? "s" : ""} a banner or ticket link`
+        : `${newCount} new event${newCount !== 1 ? "s" : ""} synced from your calendar feed`;
+
+    await sendEmail({
+      to: email,
+      subject,
+      text: [
+        `Hi ${org.name},`,
+        ``,
+        `${newCount} new event${newCount !== 1 ? "s" : ""} just synced from your calendar feed to litly.`,
+        ``,
+        ...(incompleteCount > 0
+          ? [
+              `Your calendar doesn't carry banner images or ticket links, so ${incompleteCount} of them are missing those details:`,
+              ``,
+              incompleteLines,
+              ``,
+              `Add a banner and ticket link from your dashboard so patrons get the full picture:`,
+            ]
+          : [`Review them on your dashboard:`]),
+        `https://thelitlyapp.com/dashboard`,
+        ``,
+        `— litly`,
+      ].join("\n"),
+      html: emailWrapper(`
+        <h1 style="font-family:Georgia,'Times New Roman',Times,serif;font-size:22px;margin:0 0 8px;color:#1B2A3E">${newCount} new event${newCount !== 1 ? "s" : ""} synced</h1>
+        <p style="color:#5a4a3a;margin:0 0 20px">Hi ${escapeHtml(org.name)}, these just came in from your calendar feed.</p>
+        ${
+          incompleteCount > 0
+            ? `
+          <p style="color:#5a4a3a;margin:0 0 12px">Your calendar doesn't carry banner images or ticket links, so <strong>${incompleteCount}</strong> of them are missing those details:</p>
+          <ul style="color:#1B2A3E;padding-left:18px;margin:0 0 24px">${incompleteHtmlItems}</ul>
+        `
+            : ""
+        }
+        <div style="margin-top:8px">
+          <a href="https://thelitlyapp.com/dashboard" style="background:#E8622A;color:#fff;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:14px;font-weight:600">View dashboard</a>
+        </div>
+        <p style="margin-top:32px;font-size:12px;color:#7a6a5a">Sent automatically after each calendar feed sync.</p>
+      `),
+    });
+  } catch (emailErr) {
+    console.error(`sync-org-feeds: failed to notify org ${org.id}:`, emailErr);
+  }
+}
+
 export async function GET(req: Request) {
   const auth = req.headers.get("authorization");
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -34,7 +125,7 @@ export async function GET(req: Request) {
 
   const { data: orgs, error: orgsError } = await supabase
     .from("organizer_profiles")
-    .select("id, name, calendar_feed_url, calendar_feed_default_genre")
+    .select("id, name, user_id, calendar_feed_url, calendar_feed_default_genre")
     .not("calendar_feed_url", "is", null);
 
   if (orgsError) {
@@ -66,6 +157,10 @@ export async function GET(req: Request) {
 
       const defaultGenre = (org.calendar_feed_default_genre as Genre[] | null) ?? [];
       let synced = 0;
+      const existingUids = new Set((existing ?? []).map((e) => e.external_uid).filter(Boolean));
+      let newCount = 0;
+      let newIncompleteCount = 0;
+      const newIncompleteTitles: string[] = [];
 
       for (const item of parsed) {
         let coords: { lat: number; lng: number } | null = null;
@@ -84,6 +179,22 @@ export async function GET(req: Request) {
           continue;
         }
         synced++;
+
+        // iCal carries no banner image and no dedicated ticket-link field —
+        // only a generic URL we guess at — so newly-synced events routinely
+        // come in missing the details patrons actually need. Flag these so
+        // the org can fill them in, instead of silently leaving thin listings.
+        if (!existingUids.has(item.uid)) {
+          newCount++;
+          // iCal has no banner-image field at all, so every synced event is
+          // missing one by definition — that alone marks it incomplete.
+          const missingLink = row.event_type === "in_person" ? !row.ticket_url : !row.virtual_url;
+          const missingBanner = true;
+          if (missingBanner || missingLink) {
+            newIncompleteCount++;
+            newIncompleteTitles.push(item.title);
+          }
+        }
       }
 
       // Cancel sweep: previously-synced events no longer present in the feed
@@ -104,6 +215,10 @@ export async function GET(req: Request) {
           calendar_feed_last_error: null,
         })
         .eq("id", org.id);
+
+      if (newCount > 0) {
+        await notifyOrgOfSync(supabase, org, newCount, newIncompleteCount, newIncompleteTitles);
+      }
 
       summary[org.name] = { synced, cancelled: toCancel.length };
     } catch (e) {
