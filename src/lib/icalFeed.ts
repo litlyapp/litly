@@ -117,8 +117,13 @@ export function mapToEventRow(parsed: ParsedFeedEvent, opts: MapToEventRowOption
     end_time: parsed.end_time,
     timezone: parsed.timezone,
     location_name: event_type === "in_person" ? parsed.location_name : null,
-    virtual_url: event_type === "virtual" ? parsed.url : null,
-    ticket_url: event_type === "in_person" ? parsed.url : null,
+    // Only include these keys when the feed actually has a URL — omitting
+    // the key (vs. setting it to null) means the upsert's ON CONFLICT DO
+    // UPDATE never touches the column, so a ticket/join link the org added
+    // manually on Litly survives the next day's resync instead of getting
+    // reset to null.
+    ...(event_type === "virtual" && parsed.url ? { virtual_url: parsed.url } : {}),
+    ...(event_type === "in_person" && parsed.url ? { ticket_url: parsed.url } : {}),
     lat: opts.coords?.lat ?? null,
     lng: opts.coords?.lng ?? null,
     is_imported: true,

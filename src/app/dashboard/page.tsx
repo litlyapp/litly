@@ -19,7 +19,6 @@ interface DashboardEvent {
   location_name: string | null;
   virtual_url: string | null;
   ticket_url?: string | null;
-  banner_url?: string | null;
   rsvp_enabled: boolean;
   open_mic: boolean;
   parent_event_id?: string | null;
@@ -27,12 +26,13 @@ interface DashboardEvent {
   is_cancelled?: boolean;
 }
 
-// Missing a banner or the relevant link (ticket for in-person, join link for
-// virtual) — most commonly true for calendar-feed-synced events, since iCal
-// has no field for either.
+// Missing the relevant link (ticket for in-person, join link for virtual) —
+// most commonly true for calendar-feed-synced events, since iCal has no
+// dedicated ticket-link field. Banners are intentionally not checked here —
+// plenty of legitimate events have none, so flagging every banner-less event
+// would just be permanent noise orgs learn to ignore.
 function isIncomplete(event: DashboardEvent): boolean {
-  const missingLink = event.event_type === "in_person" ? !event.ticket_url : !event.virtual_url;
-  return !event.banner_url || missingLink;
+  return event.event_type === "in_person" ? !event.ticket_url : !event.virtual_url;
 }
 
 export default async function DashboardPage({
@@ -80,7 +80,7 @@ export default async function DashboardPage({
   const nowMs = Date.now();
   const isFuture = (iso: string) => new Date(iso).getTime() >= nowMs;
 
-  const eventSelect = "id, title, genre, event_type, date_time, timezone, location_name, virtual_url, ticket_url, banner_url, rsvp_enabled, open_mic, parent_event_id, recurrence_rule, is_cancelled, view_count, ticket_click_count";
+  const eventSelect = "id, title, genre, event_type, date_time, timezone, location_name, virtual_url, ticket_url, rsvp_enabled, open_mic, parent_event_id, recurrence_rule, is_cancelled, view_count, ticket_click_count";
 
   // Fetch every top-level event (series parents + one-offs) for this org. We
   // can't split upcoming/past on the parent's own date alone: a series parent's
@@ -231,7 +231,7 @@ export default async function DashboardPage({
       {incompleteCount > 0 && (
         <div className="bg-orange/10 border border-orange/30 rounded-2xl px-5 py-4 mb-6 text-cream text-sm">
           {incompleteCount} upcoming event{incompleteCount !== 1 ? "s" : ""} {incompleteCount !== 1 ? "are" : "is"} missing a
-          banner image or ticket/join link — look for the &quot;Needs details&quot; tag below.
+          ticket/join link — look for the &quot;Needs details&quot; tag below.
         </div>
       )}
 

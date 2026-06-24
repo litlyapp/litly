@@ -95,7 +95,7 @@ export default function DashboardEventRow({ event, divider, isPast, rsvpCount, v
           )}
           {!isPast && needsDetails && (
             <span
-              title="Missing a banner image or ticket/join link"
+              title="Missing a ticket/join link"
               className="px-2 py-0.5 rounded-full border border-orange/40 text-orange text-xs font-medium"
             >
               Needs details

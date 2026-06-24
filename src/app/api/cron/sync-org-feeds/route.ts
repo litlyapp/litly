@@ -206,14 +206,13 @@ export async function GET(req: Request) {
         // each time, not just what's new today.
         const { data: liveEvents } = await supabase
           .from("events")
-          .select("title, event_type, banner_url, ticket_url, virtual_url")
+          .select("title, event_type, ticket_url, virtual_url")
           .eq("feed_source_organizer_id", org.id)
           .eq("is_cancelled", false);
 
-        const incomplete = (liveEvents ?? []).filter((e) => {
-          const missingLink = e.event_type === "in_person" ? !e.ticket_url : !e.virtual_url;
-          return !e.banner_url || missingLink;
-        });
+        const incomplete = (liveEvents ?? []).filter((e) =>
+          e.event_type === "in_person" ? !e.ticket_url : !e.virtual_url
+        );
 
         await notifyOrgOfSync(supabase, org, newCount, incomplete.length, incomplete.map((e) => e.title));
       }

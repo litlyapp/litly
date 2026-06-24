@@ -237,6 +237,10 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
               )}
             </p>
           )}
+          <p className="text-cream-muted text-xs mt-2">
+            Heads up: Calendar feeds don&apos;t carry banner images. Images must be manually added
+            to all synced events from the edit page.
+          </p>
         </div>
 
         {calendarFeedUrl.trim() && (
