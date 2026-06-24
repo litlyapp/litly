@@ -33,6 +33,10 @@ export default function EventFilters({
   const activeLocation = searchParams.get("location") ?? "";
   const activeFrom = searchParams.get("from") ?? "";
   const activeTo = searchParams.get("to") ?? "";
+  // Show today's date by default so the field doesn't look blank/broken —
+  // purely a display default, doesn't set the "from" filter until touched.
+  const todayStr = new Date().toLocaleDateString("en-CA");
+  const displayFrom = activeFrom || todayStr;
   const [locating, setLocating] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -203,7 +207,7 @@ export default function EventFilters({
         <div className="space-y-2">
           <input
             type="date"
-            value={activeFrom}
+            value={displayFrom}
             onChange={(e) => setParam("from", e.target.value)}
             className="w-full bg-navy border border-cream/30 text-cream rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange transition-colors [color-scheme:dark]"
           />

@@ -97,8 +97,9 @@ function CalendarDay({ cell, maxCount }: { cell: CalendarCell; maxCount: number 
         {day}
       </span>
       {count > 0 && (
-        <span className="mt-auto text-xs text-cream/90 font-medium">
-          {count > 99 ? "99+" : count} {count === 1 ? "event" : "events"}
+        <span className="mt-auto text-[11px] sm:text-xs text-cream/90 font-medium leading-tight">
+          {count > 99 ? "99+" : count}
+          <span className="hidden sm:inline"> {count === 1 ? "event" : "events"}</span>
         </span>
       )}
     </>
