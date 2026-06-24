@@ -14,10 +14,20 @@ export interface ParsedFeedEvent {
   url: string | null;
 }
 
+const DEFAULT_FEED_TZ = "America/New_York";
+
 // node-ical's VEVENT.start carries a `tz` property (IANA name) when the
-// source used a floating/local DTSTART with a TZID; UTC/Z-suffixed values
-// have no tz and convert cleanly via toISOString().
-function startToFields(start: ical.DateWithTimeZone): { date_time: string; timezone: string | null } {
+// source used a floating/local DTSTART with a TZID. UTC/Z-suffixed values
+// have no tz — those are true UTC instants, so the app's display layer
+// (formatDate.ts) needs a real `timezone` value to convert them correctly;
+// leaving timezone null makes it treat the UTC clock digits as literal local
+// time, which is wrong by the UTC offset (e.g. 10pm UTC shown as "10pm").
+// `calendarTz` (the feed's X-WR-TIMEZONE, falling back to DEFAULT_FEED_TZ) is
+// the display zone for any event lacking its own TZID.
+function startToFields(
+  start: ical.DateWithTimeZone,
+  calendarTz: string
+): { date_time: string; timezone: string | null } {
   const tz = start.tz;
   if (tz) {
     // start is already a JS Date representing the correct instant; for a
@@ -43,7 +53,7 @@ function startToFields(start: ical.DateWithTimeZone): { date_time: string; timez
       timezone: tz,
     };
   }
-  return { date_time: start.toISOString(), timezone: null };
+  return { date_time: start.toISOString(), timezone: calendarTz };
 }
 
 export async function parseFeed(url: string): Promise<ParsedFeedEvent[]> {
@@ -57,6 +67,11 @@ export async function parseFeed(url: string): Promise<ParsedFeedEvent[]> {
   const { sync } = await import("node-ical");
   const data = sync.parseICS(body);
 
+  const vcalendar = Object.values(data).find((v) => v?.type === "VCALENDAR") as
+    | { "WR-TIMEZONE"?: string }
+    | undefined;
+  const calendarTz = vcalendar?.["WR-TIMEZONE"] || DEFAULT_FEED_TZ;
+
   const events: ParsedFeedEvent[] = [];
   for (const raw of Object.values(data)) {
     if (!raw || raw.type !== "VEVENT") continue;
@@ -64,8 +79,8 @@ export async function parseFeed(url: string): Promise<ParsedFeedEvent[]> {
     if (!item.uid || !item.summary || !item.start) continue;
     if (item.status === "CANCELLED") continue;
 
-    const { date_time, timezone } = startToFields(item.start);
-    const end_time = item.end ? startToFields(item.end).date_time : null;
+    const { date_time, timezone } = startToFields(item.start, calendarTz);
+    const end_time = item.end ? startToFields(item.end, calendarTz).date_time : null;
 
     events.push({
       uid: String(item.uid),
