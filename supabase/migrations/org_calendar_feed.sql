@@ -12,6 +12,17 @@ alter table public.organizer_profiles
   add column if not exists calendar_feed_last_status text check (calendar_feed_last_status in ('success', 'error')),
   add column if not exists calendar_feed_last_error text;
 
+-- WARNING: feed_source_organizer_id is a SECOND foreign key from events to
+-- organizer_profiles (alongside organizer_id). This makes Supabase/PostgREST's
+-- auto-join syntax `organizer:organizer_profiles(...)` ambiguous everywhere it's
+-- used in the app, causing those queries to silently fail with "more than one
+-- relationship was found" (this took the homepage, /events, /events/map, and
+-- the calendar down on 2026-06-24). Every such embed had to be qualified with
+-- `organizer:organizer_profiles!events_organizer_id_fkey(...)`.
+-- If you ever add a THIRD foreign key from events to organizer_profiles,
+-- grep the codebase for `organizer:organizer_profiles(` (unqualified, no `!fkey`
+-- hint) BEFORE running the migration, and confirm every match still resolves
+-- to the right relationship.
 alter table public.events
   add column if not exists external_uid text,
   add column if not exists feed_source_organizer_id uuid references public.organizer_profiles(id) on delete set null;
