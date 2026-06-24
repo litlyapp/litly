@@ -73,6 +73,11 @@ export type Database = {
           website: string | null;
           social_links: SocialLinks | null;
           avatar_url: string | null;
+          calendar_feed_url: string | null;
+          calendar_feed_default_genre: Genre[] | null;
+          calendar_feed_last_synced_at: string | null;
+          calendar_feed_last_status: "success" | "error" | null;
+          calendar_feed_last_error: string | null;
         };
         Insert: {
           id?: string;
@@ -83,6 +88,11 @@ export type Database = {
           website?: string | null;
           social_links?: SocialLinks | null;
           avatar_url?: string | null;
+          calendar_feed_url?: string | null;
+          calendar_feed_default_genre?: Genre[] | null;
+          calendar_feed_last_synced_at?: string | null;
+          calendar_feed_last_status?: "success" | "error" | null;
+          calendar_feed_last_error?: string | null;
         };
         Update: {
           org_type?: OrgType;
@@ -91,6 +101,11 @@ export type Database = {
           website?: string | null;
           social_links?: SocialLinks | null;
           avatar_url?: string | null;
+          calendar_feed_url?: string | null;
+          calendar_feed_default_genre?: Genre[] | null;
+          calendar_feed_last_synced_at?: string | null;
+          calendar_feed_last_status?: "success" | "error" | null;
+          calendar_feed_last_error?: string | null;
         };
         Relationships: [
           {
@@ -138,6 +153,8 @@ export type Database = {
           series_end_date: string | null;
           is_ongoing: boolean;
           created_at: string;
+          external_uid: string | null;
+          feed_source_organizer_id: string | null;
         };
         Insert: {
           id?: string;
@@ -174,6 +191,8 @@ export type Database = {
           series_end_date?: string | null;
           is_ongoing?: boolean;
           created_at?: string;
+          external_uid?: string | null;
+          feed_source_organizer_id?: string | null;
         };
         Update: {
           title?: string;
@@ -204,6 +223,8 @@ export type Database = {
           is_cancelled?: boolean;
           series_end_date?: string | null;
           is_ongoing?: boolean;
+          external_uid?: string | null;
+          feed_source_organizer_id?: string | null;
         };
         Relationships: [
           {

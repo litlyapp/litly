@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import AvatarUpload from "@/components/AvatarUpload";
+import { GENRES } from "@/lib/genres";
+import type { Genre } from "@/types/database";
 
 interface Profile {
   id: string;
@@ -14,6 +16,22 @@ interface Profile {
   website: string | null;
   social_links: Record<string, string | undefined> | null;
   avatar_url: string | null;
+  calendar_feed_url: string | null;
+  calendar_feed_default_genre: Genre[] | null;
+  calendar_feed_last_synced_at: string | null;
+  calendar_feed_last_status: "success" | "error" | null;
+  calendar_feed_last_error: string | null;
+}
+
+function timeAgo(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  const mins = Math.round(ms / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} minute${mins === 1 ? "" : "s"} ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.round(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
 export default function ProfileEditForm({ profile }: { profile: Profile }) {
@@ -26,9 +44,17 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
   const [instagram, setInstagram] = useState(profile.social_links?.instagram ?? "");
   const [twitter, setTwitter] = useState(profile.social_links?.twitter ?? "");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(profile.avatar_url);
+  const [calendarFeedUrl, setCalendarFeedUrl] = useState(profile.calendar_feed_url ?? "");
+  const [feedGenres, setFeedGenres] = useState<Genre[]>(profile.calendar_feed_default_genre ?? []);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function toggleFeedGenre(genre: Genre) {
+    setFeedGenres((prev) =>
+      prev.includes(genre) ? prev.filter((g) => g !== genre) : [...prev, genre]
+    );
+  }
 
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -36,6 +62,13 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    const trimmedFeedUrl = calendarFeedUrl.trim();
+    if (trimmedFeedUrl && feedGenres.length === 0) {
+      setError("Select at least one genre for events synced from your calendar feed.");
+      return;
+    }
+
     setSaving(true);
     setError(null);
 
@@ -45,14 +78,15 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
 
     const { data: updated, error: updateError } = await supabase
       .from("organizer_profiles")
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .update({
         name: name.trim(),
         bio: bio.trim() || null,
         website: website.trim() || null,
         social_links: Object.keys(social_links).length ? social_links : null,
         avatar_url: avatarUrl,
-      } as any)
+        calendar_feed_url: trimmedFeedUrl || null,
+        calendar_feed_default_genre: trimmedFeedUrl ? feedGenres : null,
+      })
       .eq("id", profile.id)
       .select("id");
 
@@ -172,6 +206,73 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
             className="w-full bg-navy border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange"
           />
         </div>
+      </div>
+
+      {/* Calendar feed sync */}
+      <div className="bg-navy-light border border-cream/10 rounded-2xl p-6 space-y-4">
+        <div>
+          <label className="text-cream-muted text-xs uppercase tracking-wider mb-1.5 block">
+            Calendar feed URL (optional)
+          </label>
+          <p className="text-cream-muted text-xs mb-2">
+            Paste your calendar&apos;s subscribe / iCal link and your events will sync here
+            automatically — no need to post manually. Look for a calendar &quot;subscribe&quot; or
+            &quot;export&quot; link on Google Calendar, Squarespace, Wix, WordPress events
+            plugins, or Eventbrite.
+          </p>
+          <input
+            type="url"
+            value={calendarFeedUrl}
+            onChange={(e) => setCalendarFeedUrl(e.target.value)}
+            placeholder="https://calendar.google.com/calendar/ical/…"
+            className="w-full bg-navy border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange"
+          />
+          {profile.calendar_feed_url && (
+            <p className="text-cream-muted text-xs mt-2">
+              {profile.calendar_feed_last_status === "error" ? (
+                <span className="text-orange">
+                  Couldn&apos;t reach your calendar feed
+                  {profile.calendar_feed_last_error ? `: ${profile.calendar_feed_last_error}` : "."}
+                </span>
+              ) : profile.calendar_feed_last_synced_at ? (
+                `Last synced ${timeAgo(profile.calendar_feed_last_synced_at)}`
+              ) : (
+                "Not synced yet — runs once daily."
+              )}
+            </p>
+          )}
+        </div>
+
+        {calendarFeedUrl.trim() && (
+          <div>
+            <label className="text-cream-muted text-xs uppercase tracking-wider mb-1.5 block">
+              Genre for synced events
+            </label>
+            <p className="text-cream-muted text-xs mb-2">
+              Your calendar feed doesn&apos;t carry genre info, so pick what applies to all of
+              your events.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {GENRES.map((g) => {
+                const active = feedGenres.includes(g.value);
+                return (
+                  <button
+                    key={g.value}
+                    type="button"
+                    onClick={() => toggleFeedGenre(g.value)}
+                    className={`px-3 py-1.5 rounded-full text-xs border transition ${
+                      active
+                        ? "bg-orange text-cream border-orange"
+                        : "border-cream/20 text-cream-muted hover:border-cream/40"
+                    }`}
+                  >
+                    {g.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {error && <p className="text-orange text-sm">{error}</p>}

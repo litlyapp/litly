@@ -16,6 +16,10 @@
     {
       "path": "/api/cron/crawl-calendars",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/sync-org-feeds",
+      "schedule": "0 4 * * *"
     }
   ]
 }
