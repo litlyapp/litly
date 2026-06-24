@@ -398,10 +398,10 @@ export default async function EventDetailPage({
           </div>
         )}
 
-        {/* Confirm-with-organizer reminder — shown right where patrons click out,
-            since details can change and litly is not the organizer */}
-        {!isPast && (
-          <p className="text-cream-muted/60 text-xs leading-relaxed">
+        {/* Confirm-with-organizer reminder — only needed for curated listings,
+            since organizer-posted events are confirmed directly by the organizer */}
+        {!isPast && organizer?.id === CURATED_ORG_ID && (
+          <p className="text-cream-muted/60 text-xs leading-relaxed mt-3">
             Details can change. Please confirm the date, time, location, and
             ticketing directly with the organizer before attending.
           </p>
