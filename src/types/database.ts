@@ -2,7 +2,6 @@ export type Genre =
   | "poetry"
   | "fiction"
   | "nonfiction"
-  | "essay"
   | "translation"
   | "ya"
   | "craft_talk"
