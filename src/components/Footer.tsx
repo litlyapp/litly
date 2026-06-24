@@ -26,6 +26,7 @@ export default async function Footer() {
         <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2">
           <Link href="/events" className="hover:text-cream transition">Events</Link>
           <Link href="/events/map" className="hover:text-cream transition">Map</Link>
+          <Link href="/events/calendar" className="hover:text-cream transition">Calendar</Link>
           <Link href={postEventHref} className="hover:text-cream transition">Post an event</Link>
           <Link href="/support" className="hover:text-cream transition">Support litly</Link>
           <Link href="/about" className="hover:text-cream transition">About</Link>

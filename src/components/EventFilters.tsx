@@ -13,9 +13,11 @@ interface Organizer {
 export default function EventFilters({
   organizers,
   hideType = false,
+  hideDateRange = false,
 }: {
   organizers: Organizer[];
   hideType?: boolean;
+  hideDateRange?: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -189,7 +191,9 @@ export default function EventFilters({
         </div>
       </div>
 
-      {/* Date range */}
+      {/* Date range — hidden on the calendar view, where the month grid is the
+          date selector */}
+      {!hideDateRange && (
       <div>
         <label className="text-cream-muted text-xs uppercase tracking-wider mb-2 block">
           Date range
@@ -209,6 +213,7 @@ export default function EventFilters({
           />
         </div>
       </div>
+      )}
 
       {/* Organizer typeahead */}
       <OrganizerSearch
