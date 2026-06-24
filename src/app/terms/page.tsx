@@ -179,7 +179,12 @@ export default function TermsPage() {
       </Section>
 
       <Section n={16} title="Contact">
-        <p>Questions about these Terms: privacy@thelitlyapp.com</p>
+        <p>
+          Questions about these Terms:{" "}
+          <a href="mailto:privacy@thelitlyapp.com" className="text-orange hover:text-orange/80 hover:underline transition">
+            privacy@thelitlyapp.com
+          </a>
+        </p>
       </Section>
     </LegalShell>
   );

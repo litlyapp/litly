@@ -160,7 +160,12 @@ export default function PrivacyPage() {
       </Section>
 
       <Section n={12} title="Contact">
-        <p>For questions or privacy requests: privacy@thelitlyapp.com</p>
+        <p>
+          For questions or privacy requests:{" "}
+          <a href="mailto:privacy@thelitlyapp.com" className="text-orange hover:text-orange/80 hover:underline transition">
+            privacy@thelitlyapp.com
+          </a>
+        </p>
       </Section>
     </LegalShell>
   );
