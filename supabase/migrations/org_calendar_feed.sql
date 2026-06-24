@@ -27,9 +27,16 @@ alter table public.events
   add column if not exists external_uid text,
   add column if not exists feed_source_organizer_id uuid references public.organizer_profiles(id) on delete set null;
 
+-- NOT partial: a partial unique index (e.g. "where external_uid is not null")
+-- is invisible to Supabase's .upsert({onConflict: "organizer_id,external_uid"}),
+-- which emits a plain `ON CONFLICT (organizer_id, external_uid)` with no WHERE
+-- clause — Postgres only matches that against a full index, so every upsert
+-- failed with "no unique or exclusion constraint matching the ON CONFLICT
+-- specification" until this was made non-partial. Manually-created events
+-- (external_uid IS NULL) are unaffected: Postgres unique indexes never treat
+-- NULL = NULL as a duplicate.
 create unique index if not exists events_org_external_uid_idx
-  on public.events (organizer_id, external_uid)
-  where external_uid is not null;
+  on public.events (organizer_id, external_uid);
 
 -- Verify:
 -- select column_name from information_schema.columns where table_name = 'organizer_profiles' and column_name like 'calendar_feed%';
