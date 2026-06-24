@@ -137,7 +137,7 @@ export default function NavClient({ user, role, postEventHref }: Props) {
             onClick={close}
             active={isActive(postEventHref)}
           >
-            Post an event
+            List your event
           </MobileLink>
           <MobileLink href="/support" onClick={close} active={isActive("/support")}>Support litly</MobileLink>
 

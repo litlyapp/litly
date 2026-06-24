@@ -51,7 +51,7 @@ export default async function Nav() {
           >
             Map
           </Link>
-          <NavLink href={postEventHref}>Post an event</NavLink>
+          <NavLink href={postEventHref}>List your event</NavLink>
           <NavLink href="/support">Support litly</NavLink>
         </div>
 
