@@ -102,7 +102,7 @@ export default function AboutPage() {
               corrected or removed, just{" "}
               <a
                 href="mailto:privacy@thelitlyapp.com"
-                className="text-cream hover:text-orange transition"
+                className="text-orange hover:text-orange/80 transition"
               >
                 email us
               </a>
@@ -142,7 +142,7 @@ export default function AboutPage() {
               Questions, suggestions, or just want to say hello? Reach us at{" "}
               <a
                 href="mailto:contact@thelitlyapp.com"
-                className="text-cream hover:text-orange transition"
+                className="text-orange hover:text-orange/80 transition"
               >
                 contact@thelitlyapp.com
               </a>
