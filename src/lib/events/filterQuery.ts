@@ -67,8 +67,11 @@ export function applyEventFilters<Q extends FilterableQuery<Q>>(
 
   const genres = parseGenres(params.genre);
   if (genres.length > 0) {
-    // Overlap operator: events whose genre array contains any selected genre
-    query = query.overlaps("genre", genres as Genre[]);
+    // Match events whose genre array overlaps the selection, OR events with
+    // no genre tagged at all (e.g. org-calendar-feed imports covering many
+    // genres) — those are wildcards and should never be filtered out.
+    const genreList = (genres as Genre[]).join(",");
+    query = query.or(`genre.ov.{${genreList}},genre.eq.{}`);
   }
 
   if (params.type && params.type !== "all") {

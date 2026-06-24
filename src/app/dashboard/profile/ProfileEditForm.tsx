@@ -64,10 +64,6 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
     e.preventDefault();
 
     const trimmedFeedUrl = calendarFeedUrl.trim();
-    if (trimmedFeedUrl && feedGenres.length === 0) {
-      setError("Select at least one genre for events synced from your calendar feed.");
-      return;
-    }
 
     setSaving(true);
     setError(null);
@@ -246,11 +242,13 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
         {calendarFeedUrl.trim() && (
           <div>
             <label className="text-cream-muted text-xs uppercase tracking-wider mb-1.5 block">
-              Genre for synced events
+              Genre for synced events (optional)
             </label>
             <p className="text-cream-muted text-xs mb-2">
-              Your calendar feed doesn&apos;t carry genre info, so pick what applies to all of
-              your events.
+              Your calendar feed doesn&apos;t carry genre info. If most of your events fall under
+              one or two genres, tag them here so patrons can filter for you. If your events span
+              all kinds of genres, leave this blank — your events will still show up no matter
+              which genre filter someone uses.
             </p>
             <div className="flex flex-wrap gap-2">
               {GENRES.map((g) => {
