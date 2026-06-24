@@ -29,6 +29,14 @@ export default async function EventsPage({
   const params = await searchParams;
   const supabase = await createClient();
 
+  // When the patron arrived from a calendar day, "clear filters" should send
+  // them back to the calendar (at that month) rather than the main list.
+  const fromCalendar = params.ref === "calendar";
+  const calMonth = params.from?.slice(0, 7); // YYYY-MM from the clicked day
+  const clearHref = fromCalendar
+    ? `/events/calendar${calMonth ? `?month=${calMonth}` : ""}`
+    : "/events";
+
   // Fetch all organizer profiles for the dropdown
   const { data: organizers } = await supabase
     .from("organizer_profiles")
@@ -127,7 +135,10 @@ export default async function EventsPage({
         {/* Sidebar filters */}
         <aside className="lg:w-64 shrink-0">
           <Suspense fallback={<div className="text-cream-muted text-sm">Loading filters…</div>}>
-            <EventFilters organizers={organizers ?? []} />
+            <EventFilters
+              organizers={organizers ?? []}
+              clearHref={fromCalendar ? clearHref : undefined}
+            />
           </Suspense>
         </aside>
 
@@ -173,10 +184,10 @@ export default async function EventsPage({
               </p>
 
               <Link
-                href="/events"
+                href={clearHref}
                 className="inline-block mb-8 px-5 py-2 rounded-full bg-orange text-cream text-sm font-medium hover:bg-orange/90 transition"
               >
-                Clear all filters
+                {fromCalendar ? "Back to calendar" : "Clear all filters"}
               </Link>
 
               <div>
