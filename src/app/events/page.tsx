@@ -43,6 +43,14 @@ export default async function EventsPage({
     .select("id, name, avatar_url")
     .order("name");
 
+  // A single-day view (calendar day-click) needs to match the calendar grid's
+  // own per-event-timezone day bucketing, not a UTC day boundary — an evening
+  // Eastern Time event can fall on the next UTC day. So for this case, widen
+  // the query window by a day on each side and do the exact day match in JS
+  // using the same logic the calendar grid uses to bucket counts.
+  const isSingleDayView = !!params.from && params.from === params.to;
+  const queryParams = isSingleDayView ? { ...params, from: undefined, to: undefined } : params;
+
   // Build events query
   let query = supabase
     .from("events")
@@ -58,9 +66,29 @@ export default async function EventsPage({
     .gte("date_time", new Date().toISOString())
     .order("date_time", { ascending: true });
 
-  query = applyEventFilters(query, params, organizers ?? []);
+  if (isSingleDayView && params.from) {
+    const dayStart = new Date(params.from);
+    dayStart.setUTCDate(dayStart.getUTCDate() - 1);
+    const dayEnd = new Date(params.from);
+    dayEnd.setUTCDate(dayEnd.getUTCDate() + 2);
+    query = query.gte("date_time", dayStart.toISOString()).lt("date_time", dayEnd.toISOString());
+  }
+
+  query = applyEventFilters(query, queryParams, organizers ?? []);
 
   const { data: rawEvents } = await query;
+
+  // For a single-day view, narrow down to events whose own-timezone day
+  // actually matches the clicked day (same dayKey logic as the calendar grid).
+  const dayFilteredEvents =
+    isSingleDayView && params.from
+      ? (rawEvents ?? []).filter(
+          (e) =>
+            new Date(e.date_time).toLocaleDateString("en-CA", {
+              timeZone: e.timezone || "America/New_York",
+            }) === params.from
+        )
+      : rawEvents;
 
   // Fetch the logged-in user's saved event IDs and organizer status
   const { data: { user } } = await supabase.auth.getUser();
@@ -80,11 +108,10 @@ export default async function EventsPage({
   // Skip this when viewing a single specific day (e.g. a calendar day-click) —
   // every occurrence that actually falls on that day is relevant, not just the
   // series' next-upcoming instance.
-  const isSingleDayView = !!params.from && params.from === params.to;
   const seen = new Set<string>();
   const events = isSingleDayView
-    ? rawEvents ?? []
-    : (rawEvents ?? []).filter((event) => {
+    ? dayFilteredEvents ?? []
+    : (dayFilteredEvents ?? []).filter((event) => {
         const seriesKey = (event as typeof event & { parent_event_id?: string | null }).parent_event_id ?? event.id;
         if (seen.has(seriesKey)) return false;
         seen.add(seriesKey);
