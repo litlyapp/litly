@@ -77,13 +77,19 @@ export default async function EventsPage({
 
   // Deduplicate recurring series: keep only the next upcoming occurrence per series.
   // Events are sorted by date_time asc, so the first seen per series key is already correct.
+  // Skip this when viewing a single specific day (e.g. a calendar day-click) —
+  // every occurrence that actually falls on that day is relevant, not just the
+  // series' next-upcoming instance.
+  const isSingleDayView = !!params.from && params.from === params.to;
   const seen = new Set<string>();
-  const events = (rawEvents ?? []).filter((event) => {
-    const seriesKey = (event as typeof event & { parent_event_id?: string | null }).parent_event_id ?? event.id;
-    if (seen.has(seriesKey)) return false;
-    seen.add(seriesKey);
-    return true;
-  });
+  const events = isSingleDayView
+    ? rawEvents ?? []
+    : (rawEvents ?? []).filter((event) => {
+        const seriesKey = (event as typeof event & { parent_event_id?: string | null }).parent_event_id ?? event.id;
+        if (seen.has(seriesKey)) return false;
+        seen.add(seriesKey);
+        return true;
+      });
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-10">
