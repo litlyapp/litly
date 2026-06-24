@@ -43,7 +43,7 @@ export default function AdminEventsClient() {
     const { data } = await supabase
       .from("events")
       .select(`id, title, genre, event_type, date_time, is_imported, source_name, banner_url,
-               organizer:organizer_profiles(id, name)`)
+               organizer:organizer_profiles!events_organizer_id_fkey(id, name)`)
       .order("date_time", { ascending: false });
     setEvents(data ?? []);
     setLoadingData(false);

@@ -19,22 +19,18 @@ export default async function HomePage() {
   const supabase = await createClient();
 
   // Grab the next 6 upcoming events as "featured"
-  const { data: featuredEvents, error: featuredEventsError } = await supabase
+  const { data: featuredEvents } = await supabase
     .from("events")
     .select(
       `id, title, description, genre, event_type, date_time, timezone, end_time,
        location_name, address, city, state, country, lat, lng, virtual_url, open_mic, rsvp_enabled, created_at,
-       organizer:organizer_profiles(id, name, org_type)`
+       organizer:organizer_profiles!events_organizer_id_fkey(id, name, org_type)`
     )
     .eq("is_cancelled", false)
     .is("parent_event_id", null)
     .gte("date_time", new Date().toISOString())
     .order("date_time", { ascending: true })
     .limit(6);
-
-  console.log(
-    `[homepage] featuredEvents count=${featuredEvents?.length ?? "null"} error=${featuredEventsError?.message ?? "none"}`
-  );
 
   const { data: { user } } = await supabase.auth.getUser();
   let savedEventIds = new Set<string>();

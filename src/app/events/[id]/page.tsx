@@ -74,7 +74,7 @@ export default async function EventDetailPage({
     .select(
       `
       *,
-      organizer:organizer_profiles(id, name, org_type, bio, website, social_links, avatar_url)
+      organizer:organizer_profiles!events_organizer_id_fkey(id, name, org_type, bio, website, social_links, avatar_url)
     `
     )
     .eq("id", id)
@@ -138,7 +138,7 @@ export default async function EventDetailPage({
     const delta = 0.45;
     let nearbyQuery = supabase
       .from("events")
-      .select("id, title, genre, event_type, date_time, timezone, location_name, city, state, country, virtual_url, open_mic, banner_url, ticket_url, description, is_imported, source_url, source_name, lat, lng, parent_event_id, organizer:organizer_profiles(id, name)")
+      .select("id, title, genre, event_type, date_time, timezone, location_name, city, state, country, virtual_url, open_mic, banner_url, ticket_url, description, is_imported, source_url, source_name, lat, lng, parent_event_id, organizer:organizer_profiles!events_organizer_id_fkey(id, name)")
       .eq("event_type", "in_person")
       .eq("is_cancelled", false)
       .gte("date_time", new Date().toISOString())

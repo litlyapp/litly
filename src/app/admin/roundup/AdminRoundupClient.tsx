@@ -115,7 +115,7 @@ export default function AdminRoundupClient() {
       .from("events")
       .select(`id, title, genre, event_type, date_time, timezone, location_name,
                city, state, is_imported, source_name,
-               organizer:organizer_profiles(name)`)
+               organizer:organizer_profiles!events_organizer_id_fkey(name)`)
       .eq("is_cancelled", false)
       .gte("date_time", new Date().toISOString())
       .lte("date_time", new Date(Date.now() + 30 * 86400_000).toISOString())

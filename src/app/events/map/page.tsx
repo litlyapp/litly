@@ -31,7 +31,7 @@ export default async function EventMapPage({
   let query = supabase
     .from("events")
     .select(
-      "id, title, genre, event_type, date_time, timezone, lat, lng, location_name, parent_event_id, organizer:organizer_profiles(id, name)"
+      "id, title, genre, event_type, date_time, timezone, lat, lng, location_name, parent_event_id, organizer:organizer_profiles!events_organizer_id_fkey(id, name)"
     )
     .eq("is_cancelled", false)
     .gte("date_time", new Date().toISOString())

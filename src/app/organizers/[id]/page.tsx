@@ -28,7 +28,7 @@ export default async function OrganizerProfilePage({
     supabase
       .from("events")
       .select(
-        "id, title, description, genre, event_type, date_time, timezone, end_time, location_name, city, state, country, virtual_url, open_mic, rsvp_enabled, created_at, organizer:organizer_profiles(id, name, org_type)"
+        "id, title, description, genre, event_type, date_time, timezone, end_time, location_name, city, state, country, virtual_url, open_mic, rsvp_enabled, created_at, organizer:organizer_profiles!events_organizer_id_fkey(id, name, org_type)"
       )
       .eq("organizer_id", id)
       .eq("is_cancelled", false)
@@ -38,7 +38,7 @@ export default async function OrganizerProfilePage({
     supabase
       .from("events")
       .select(
-        "id, title, description, genre, event_type, date_time, timezone, end_time, location_name, city, state, country, virtual_url, open_mic, rsvp_enabled, created_at, organizer:organizer_profiles(id, name, org_type)"
+        "id, title, description, genre, event_type, date_time, timezone, end_time, location_name, city, state, country, virtual_url, open_mic, rsvp_enabled, created_at, organizer:organizer_profiles!events_organizer_id_fkey(id, name, org_type)"
       )
       .eq("organizer_id", id)
       .eq("is_cancelled", false)

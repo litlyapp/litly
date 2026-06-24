@@ -26,7 +26,7 @@ export async function GET(req: Request) {
     .select(`
       created_at,
       event:events(id, title, date_time, timezone, location_name, city, state, event_type,
-        organizer:organizer_profiles(id, name, user_id)
+        organizer:organizer_profiles!events_organizer_id_fkey(id, name, user_id)
       )
     `)
     .gte("created_at", since.toISOString());
