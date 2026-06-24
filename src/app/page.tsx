@@ -19,7 +19,7 @@ export default async function HomePage() {
   const supabase = await createClient();
 
   // Grab the next 6 upcoming events as "featured"
-  const { data: featuredEvents } = await supabase
+  const { data: featuredEvents, error: featuredEventsError } = await supabase
     .from("events")
     .select(
       `id, title, description, genre, event_type, date_time, timezone, end_time,
@@ -31,6 +31,10 @@ export default async function HomePage() {
     .gte("date_time", new Date().toISOString())
     .order("date_time", { ascending: true })
     .limit(6);
+
+  console.log(
+    `[homepage] featuredEvents count=${featuredEvents?.length ?? "null"} error=${featuredEventsError?.message ?? "none"}`
+  );
 
   const { data: { user } } = await supabase.auth.getUser();
   let savedEventIds = new Set<string>();
