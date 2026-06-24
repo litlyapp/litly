@@ -66,7 +66,7 @@ async function notifyOrgOfSync(
 
     const subject =
       incompleteCount > 0
-        ? `${newCount} new event${newCount !== 1 ? "s" : ""} synced — ${incompleteCount} need${incompleteCount === 1 ? "s" : ""} a banner or ticket link`
+        ? `${newCount} new event${newCount !== 1 ? "s" : ""} synced — ${incompleteCount} of your synced events need a banner or ticket link`
         : `${newCount} new event${newCount !== 1 ? "s" : ""} synced from your calendar feed`;
 
     await sendEmail({
@@ -79,7 +79,7 @@ async function notifyOrgOfSync(
         ``,
         ...(incompleteCount > 0
           ? [
-              `Your calendar doesn't carry banner images or ticket links, so ${incompleteCount} of them are missing those details:`,
+              `Your calendar doesn't carry banner images or ticket links, so ${incompleteCount} of your synced events (old and new) are missing those details:`,
               ``,
               incompleteLines,
               ``,
@@ -96,7 +96,7 @@ async function notifyOrgOfSync(
         ${
           incompleteCount > 0
             ? `
-          <p style="color:#5a4a3a;margin:0 0 12px">Your calendar doesn't carry banner images or ticket links, so <strong>${incompleteCount}</strong> of them are missing those details:</p>
+          <p style="color:#5a4a3a;margin:0 0 12px">Your calendar doesn't carry banner images or ticket links, so <strong>${incompleteCount}</strong> of your synced events (old and new) are missing those details:</p>
           <ul style="color:#1B2A3E;padding-left:18px;margin:0 0 24px">${incompleteHtmlItems}</ul>
         `
             : ""
@@ -159,8 +159,6 @@ export async function GET(req: Request) {
       let synced = 0;
       const existingUids = new Set((existing ?? []).map((e) => e.external_uid).filter(Boolean));
       let newCount = 0;
-      let newIncompleteCount = 0;
-      const newIncompleteTitles: string[] = [];
 
       for (const item of parsed) {
         let coords: { lat: number; lng: number } | null = null;
@@ -180,21 +178,7 @@ export async function GET(req: Request) {
         }
         synced++;
 
-        // iCal carries no banner image and no dedicated ticket-link field —
-        // only a generic URL we guess at — so newly-synced events routinely
-        // come in missing the details patrons actually need. Flag these so
-        // the org can fill them in, instead of silently leaving thin listings.
-        if (!existingUids.has(item.uid)) {
-          newCount++;
-          // iCal has no banner-image field at all, so every synced event is
-          // missing one by definition — that alone marks it incomplete.
-          const missingLink = row.event_type === "in_person" ? !row.ticket_url : !row.virtual_url;
-          const missingBanner = true;
-          if (missingBanner || missingLink) {
-            newIncompleteCount++;
-            newIncompleteTitles.push(item.title);
-          }
-        }
+        if (!existingUids.has(item.uid)) newCount++;
       }
 
       // Cancel sweep: previously-synced events no longer present in the feed
@@ -217,7 +201,21 @@ export async function GET(req: Request) {
         .eq("id", org.id);
 
       if (newCount > 0) {
-        await notifyOrgOfSync(supabase, org, newCount, newIncompleteCount, newIncompleteTitles);
+        // Email lists every currently-incomplete feed-synced event, not just
+        // the ones added in this batch — an org should see the full backlog
+        // each time, not just what's new today.
+        const { data: liveEvents } = await supabase
+          .from("events")
+          .select("title, event_type, banner_url, ticket_url, virtual_url")
+          .eq("feed_source_organizer_id", org.id)
+          .eq("is_cancelled", false);
+
+        const incomplete = (liveEvents ?? []).filter((e) => {
+          const missingLink = e.event_type === "in_person" ? !e.ticket_url : !e.virtual_url;
+          return !e.banner_url || missingLink;
+        });
+
+        await notifyOrgOfSync(supabase, org, newCount, incomplete.length, incomplete.map((e) => e.title));
       }
 
       summary[org.name] = { synced, cancelled: toCancel.length };
