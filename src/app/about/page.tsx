@@ -41,9 +41,9 @@ export default function AboutPage() {
             <p>
               Literary events are everywhere. They&rsquo;re scattered across
               bookstore calendars, library bulletins, organization newsletters,
-              location-based events pages, and a dozen ticketing platforms. A
-              brilliant reading three blocks away can go unnoticed simply
-              because no one knew it was happening.
+              and a dozen ticketing platforms. The result? Great literary
+              events go under-attended every day simply because people never
+              hear about them.
             </p>
             <p>
               litly exists to fix that: to make literary events discoverable,

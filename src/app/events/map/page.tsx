@@ -70,11 +70,10 @@ export default async function EventMapPage({
       <div className="mb-6">
         <h1 className="font-serif text-4xl text-cream mb-1">Event map</h1>
         <p className="text-cream-muted mb-3">
-          {mappedCount} mapped {mappedCount === 1 ? "event" : "events"}
+          {mappedCount} mapped {mappedCount === 1 ? "event" : "events"} shown
           {hiddenCount > 0 && (
             <span className="text-cream-muted/70">
-              {" "}· {totalMatching} matching total; online and location-less
-              events are hidden from the map.
+              {" "}· {hiddenCount} virtual {hiddenCount === 1 ? "event" : "events"} hidden
             </span>
           )}
         </p>

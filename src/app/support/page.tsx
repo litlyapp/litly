@@ -13,9 +13,9 @@ export default function SupportPage() {
       <div className="text-center mb-10">
         <h1 className="font-serif text-4xl text-cream mb-4">Support litly</h1>
         <p className="text-cream-muted leading-relaxed">
-          litly is a free, independent tool built to make literary events easier
-          to find. No algorithms, no ads, no VC funding — just a place where
-          readers and writers can find each other.
+          litly is a free, independent tool built to make literary events
+          easier to find—no algorithms, no ads, just a place where readers
+          and writers can find each other.
         </p>
         <p className="text-cream-muted leading-relaxed mt-4">
           If litly has helped you discover a reading, follow a series, or share
