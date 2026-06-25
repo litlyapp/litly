@@ -19,6 +19,23 @@ const DEFAULT_FEED_TZ = "America/New_York";
 const URL_REGEX = /https?:\/\/[^\s<>"')\]]+/gi;
 const SELF_HOSTS = ["thelitlyapp.com", "litly.app"];
 
+// Meeting/join links — only valid for virtual events, never for in-person ticket links
+const MEETING_LINK_PATTERNS = [
+  /zoom\.us\/j\//i,
+  /meet\.google\.com\//i,
+  /teams\.microsoft\.com\//i,
+  /whereby\.com\//i,
+  /webex\.com\//i,
+  /streamyard\.com\//i,
+  /youtube\.com\/live\//i,
+  /youtu\.be\//i,
+  /youtube\.com\/watch/i,
+];
+
+export function isMeetingLink(url: string): boolean {
+  return MEETING_LINK_PATTERNS.some((p) => p.test(url));
+}
+
 // Higher score = more likely to be the event/ticket/join link
 const URL_PRIORITY: { pattern: RegExp; score: number }[] = [
   // Virtual meeting links
@@ -218,7 +235,7 @@ export function mapToEventRow(parsed: ParsedFeedEvent, opts: MapToEventRowOption
     // manually on Litly survives the next day's resync instead of getting
     // reset to null.
     ...(event_type === "virtual" && parsed.url ? { virtual_url: parsed.url } : {}),
-    ...(event_type === "in_person" && parsed.url ? { ticket_url: parsed.url } : {}),
+    ...(event_type === "in_person" && parsed.url && !isMeetingLink(parsed.url) ? { ticket_url: parsed.url } : {}),
     lat: opts.coords?.lat ?? null,
     lng: opts.coords?.lng ?? null,
     is_imported: true,
