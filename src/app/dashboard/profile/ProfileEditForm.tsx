@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import AvatarUpload from "@/components/AvatarUpload";
+import BannerUpload from "@/components/BannerUpload";
 import { GENRES } from "@/lib/genres";
 import type { Genre } from "@/types/database";
 
@@ -21,6 +22,7 @@ interface Profile {
   calendar_feed_last_synced_at: string | null;
   calendar_feed_last_status: "success" | "error" | null;
   calendar_feed_last_error: string | null;
+  default_banner_url: string | null;
 }
 
 function timeAgo(iso: string): string {
@@ -46,6 +48,7 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(profile.avatar_url);
   const [calendarFeedUrl, setCalendarFeedUrl] = useState(profile.calendar_feed_url ?? "");
   const [feedGenres, setFeedGenres] = useState<Genre[]>(profile.calendar_feed_default_genre ?? []);
+  const [defaultBannerUrl, setDefaultBannerUrl] = useState<string | null>(profile.default_banner_url);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +75,9 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
     if (instagram) social_links.instagram = instagram;
     if (twitter) social_links.twitter = twitter;
 
-    const { data: updated, error: updateError } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+    const { data: updated, error: updateError } = await db
       .from("organizer_profiles")
       .update({
         name: name.trim(),
@@ -82,6 +87,7 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
         avatar_url: avatarUrl,
         calendar_feed_url: trimmedFeedUrl || null,
         calendar_feed_default_genre: trimmedFeedUrl ? feedGenres : null,
+        default_banner_url: defaultBannerUrl || null,
       })
       .eq("id", profile.id)
       .select("id");
@@ -93,6 +99,14 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
     } else if (!updated || updated.length === 0) {
       setError("Save failed: you don't have permission to edit this profile.");
     } else {
+      // Retroactively apply default banner to existing synced events missing one
+      if (defaultBannerUrl) {
+        await fetch("/api/org/apply-defaults", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orgId: profile.id }),
+        });
+      }
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
       router.refresh();
@@ -280,6 +294,20 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Default event banner */}
+      <div className="bg-navy-light border border-cream/10 rounded-2xl p-6 space-y-3">
+        <div>
+          <label className="text-cream-muted text-xs uppercase tracking-wider mb-1.5 block">
+            Default event banner (optional)
+          </label>
+          <p className="text-cream-muted text-xs mb-4">
+            This banner will be applied automatically to any synced events that don&apos;t have their own banner image.
+            Individual events can still have their own banner set from the edit page.
+          </p>
+        </div>
+        <BannerUpload value={defaultBannerUrl} onChange={setDefaultBannerUrl} />
       </div>
 
       {error && <p className="text-orange text-sm">{error}</p>}

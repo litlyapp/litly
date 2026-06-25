@@ -34,7 +34,7 @@ export default async function ProfilePage() {
 
   if (!profileRaw) redirect("/dashboard");
 
-  const profile = profileRaw as typeof profileRaw & { avatar_url: string | null };
+  const profile = profileRaw as typeof profileRaw & { avatar_url: string | null; default_banner_url: string | null };
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-10">

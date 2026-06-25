@@ -1,9 +1,8 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import DashboardEventRow from "@/components/DashboardEventRow";
-import ExpandableList from "@/components/ExpandableList";
 import OrgSwitcher from "./OrgSwitcher";
+import DashboardEventsClient from "./DashboardEventsClient";
 import { getActiveOrgId } from "@/lib/activeOrg";
 import type { Genre, EventType } from "@/types/database";
 
@@ -228,73 +227,18 @@ export default async function DashboardPage({
         <StatCard label="Total posted" value={upcomingEvents.length + pastEvents.length} />
       </div>
 
-      {incompleteCount > 0 && (
-        <div className="bg-orange/10 border border-orange/30 rounded-2xl px-5 py-4 mb-6 text-cream text-sm">
-          {`${incompleteCount} upcoming event${incompleteCount !== 1 ? "s" : ""} ${incompleteCount !== 1 ? "are" : "is"} missing a ticket/join link — look for the "Needs details" tag below.`}
-        </div>
-      )}
-
-      {/* Upcoming events */}
-      <section className="mb-10">
-        <h2 className="font-serif text-2xl text-cream mb-4">Upcoming events</h2>
-
-        {upcomingEvents.length === 0 ? (
-          <div className="bg-navy-light border border-cream/10 rounded-2xl p-10 text-center">
-            <p className="text-cream-muted mb-4">No upcoming events.</p>
-            <Link
-              href="/events/new"
-              className="inline-block bg-orange text-cream text-sm font-semibold px-6 py-2.5 rounded-full hover:bg-orange/90 transition"
-            >
-              Post your first event
-            </Link>
-          </div>
-        ) : (
-          <ExpandableList
-            initial={10}
-            step={10}
-            className="bg-navy-light border border-cream/10 rounded-2xl overflow-hidden"
-          >
-            {upcomingEvents.map((event, i) => (
-              <DashboardEventRow
-                key={event.id}
-                event={event}
-                divider={i < upcomingEvents.length - 1}
-                rsvpCount={rsvpCounts[event.id] ?? 0}
-                saveCount={saveCounts[event.id] ?? 0}
-                viewCount={viewCounts[event.id] ?? 0}
-                clickCount={clickCounts[event.id] ?? 0}
-                upcomingInSeries={event.recurrence_rule ? (upcomingChildCounts[event.id] ?? 0) : undefined}
-                needsDetails={isIncomplete(event)}
-              />
-            ))}
-          </ExpandableList>
-        )}
-      </section>
-
-      {/* Past events */}
-      {pastEvents.length > 0 && (
-        <section>
-          <h2 className="font-serif text-2xl text-cream mb-4">Past events</h2>
-          <ExpandableList
-            initial={5}
-            step={10}
-            className="bg-navy-light border border-cream/10 rounded-2xl overflow-hidden opacity-70"
-          >
-            {pastEvents.map((event, i) => (
-              <DashboardEventRow
-                key={event.id}
-                event={event}
-                divider={i < pastEvents.length - 1}
-                isPast
-                rsvpCount={rsvpCounts[event.id] ?? 0}
-                saveCount={saveCounts[event.id] ?? 0}
-                viewCount={viewCounts[event.id] ?? 0}
-                clickCount={clickCounts[event.id] ?? 0}
-              />
-            ))}
-          </ExpandableList>
-        </section>
-      )}
+      <DashboardEventsClient
+        upcomingEvents={upcomingEvents}
+        pastEvents={pastEvents}
+        rsvpCounts={rsvpCounts}
+        saveCounts={saveCounts}
+        viewCounts={viewCounts}
+        clickCounts={clickCounts}
+        upcomingChildCounts={upcomingChildCounts}
+        needsDetailsIds={new Set(upcomingEvents.filter(isIncomplete).map((e) => e.id))}
+        incompleteCount={incompleteCount}
+        orgId={activeOrgId!}
+      />
 
       <div className="mt-10 pt-6 border-t border-cream/10 text-center">
         <p className="text-cream-muted text-sm mb-2">Having trouble posting or editing an event?</p>

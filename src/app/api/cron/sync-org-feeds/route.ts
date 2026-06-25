@@ -125,7 +125,7 @@ export async function GET(req: Request) {
 
   const { data: orgs, error: orgsError } = await supabase
     .from("organizer_profiles")
-    .select("id, name, user_id, calendar_feed_url, calendar_feed_default_genre, website")
+    .select("id, name, user_id, calendar_feed_url, calendar_feed_default_genre, website, default_banner_url")
     .not("calendar_feed_url", "is", null);
 
   if (orgsError) {
@@ -166,7 +166,7 @@ export async function GET(req: Request) {
           coords = await geocode(item.location_name);
         }
 
-        const row = mapToEventRow(item, { organizerId: org.id, defaultGenre, coords });
+        const row = mapToEventRow(item, { organizerId: org.id, defaultGenre, defaultBannerUrl: org.default_banner_url as string | null, coords });
 
         const { error: upsertError } = await supabase
           .from("events")
@@ -189,6 +189,16 @@ export async function GET(req: Request) {
 
       if (toCancel.length > 0) {
         await supabase.from("events").update({ is_cancelled: true }).in("id", toCancel);
+      }
+
+      // Apply org default banner to any synced events still missing one
+      if (org.default_banner_url) {
+        await supabase
+          .from("events")
+          .update({ banner_url: org.default_banner_url })
+          .eq("organizer_id", org.id)
+          .eq("is_imported", true)
+          .is("banner_url", null);
       }
 
       await supabase
