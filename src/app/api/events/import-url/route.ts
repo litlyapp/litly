@@ -67,7 +67,11 @@ export async function POST(request: Request) {
     html = html
       .replace(/<head[\s\S]*?<\/head>/gi, "")
       .replace(/<script[\s\S]*?<\/script>/gi, "")
-      .replace(/<style[\s\S]*?<\/style>/gi, "");
+      .replace(/<style[\s\S]*?<\/style>/gi, "")
+      // Strip datetime attributes on <time> elements — Claude reads these as UTC and gets the time wrong
+      .replace(/(<time\b[^>]*?)\sdatetime="[^"]*"/gi, "$1")
+      // Strip data-* attributes that may carry machine-encoded timestamps
+      .replace(/\sdata-(?:start|end|date|time|datetime)-?(?:utc|iso|unix|ts)?="[^"]*"/gi, "");
     // Trim to 50k chars — Claude doesn't need the full DOM
     html = html.slice(0, 50000);
   } catch (err) {
