@@ -23,23 +23,21 @@ export default async function OrganizerProfilePage({
   const organizer = organizerRaw;
 
   const now = new Date().toISOString();
+  const eventSelect = "id, title, description, genre, event_type, date_time, timezone, end_time, location_name, city, state, country, virtual_url, open_mic, rsvp_enabled, created_at, recurrence_rule, organizer:organizer_profiles!events_organizer_id_fkey(id, name, org_type)";
 
-  const [upcomingResult, pastResult] = await Promise.all([
+  // Fetch all top-level events (parents + one-offs) so recurring series with a
+  // past parent date but future children are not silently dropped.
+  const [allParentsResult, pastResult] = await Promise.all([
     supabase
       .from("events")
-      .select(
-        "id, title, description, genre, event_type, date_time, timezone, end_time, location_name, city, state, country, virtual_url, open_mic, rsvp_enabled, created_at, organizer:organizer_profiles!events_organizer_id_fkey(id, name, org_type)"
-      )
+      .select(eventSelect)
       .eq("organizer_id", id)
       .eq("is_cancelled", false)
       .is("parent_event_id", null)
-      .gte("date_time", now)
       .order("date_time", { ascending: true }),
     supabase
       .from("events")
-      .select(
-        "id, title, description, genre, event_type, date_time, timezone, end_time, location_name, city, state, country, virtual_url, open_mic, rsvp_enabled, created_at, organizer:organizer_profiles!events_organizer_id_fkey(id, name, org_type)"
-      )
+      .select(eventSelect)
       .eq("organizer_id", id)
       .eq("is_cancelled", false)
       .is("parent_event_id", null)
@@ -48,7 +46,38 @@ export default async function OrganizerProfilePage({
       .limit(12),
   ]);
 
-  const upcomingEvents = upcomingResult.data ?? [];
+  const allParents = allParentsResult.data ?? [];
+
+  // For recurring series, find the next future occurrence date
+  const upcomingEvents = [];
+  const isFuture = (iso: string) => iso >= now;
+
+  for (const event of allParents) {
+    if (event.recurrence_rule) {
+      // Check if the parent itself is upcoming, or if any child is
+      if (isFuture(event.date_time)) {
+        upcomingEvents.push(event);
+      } else {
+        const { data: nextChild } = await supabase
+          .from("events")
+          .select("date_time")
+          .eq("parent_event_id", event.id)
+          .eq("is_cancelled", false)
+          .gte("date_time", now)
+          .order("date_time", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if (nextChild) {
+          upcomingEvents.push({ ...event, date_time: nextChild.date_time });
+        }
+      }
+    } else if (isFuture(event.date_time)) {
+      upcomingEvents.push(event);
+    }
+  }
+
+  upcomingEvents.sort((a, b) => a.date_time.localeCompare(b.date_time));
+
   const pastEvents = pastResult.data ?? [];
 
   // Check if current user follows this organizer
@@ -121,9 +150,9 @@ export default async function OrganizerProfilePage({
         {/* Links */}
         {(organizer.website || socialLinks) && (
           <div className="flex flex-wrap gap-3 mt-5">
-            {organizer.website && (
+            {organizer.website && /^https?:\/\//i.test(organizer.website) && (
               <a
-                href={/^https?:\/\//i.test(organizer.website ?? "") ? organizer.website! : "#"}
+                href={organizer.website}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-4 py-1.5 rounded-full border border-cream/20 text-cream-muted text-sm hover:text-cream hover:border-cream/40 transition"
@@ -133,7 +162,7 @@ export default async function OrganizerProfilePage({
             )}
             {socialLinks &&
               Object.entries(socialLinks).map(([platform, url]) =>
-                url ? (
+                url && /^https?:\/\//i.test(url) ? (
                   <a
                     key={platform}
                     href={url}
