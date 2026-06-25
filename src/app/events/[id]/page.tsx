@@ -435,7 +435,26 @@ export default async function EventDetailPage({
           </div>
         )}
 
-        {/* Confirm-with-organizer reminder — shown for curated listings and any event with source attribution */}
+        {/* Source attribution + confirm reminder */}
+        {ev.source_name && (
+          <div className="border-t border-cream/10 pt-4 mt-2 flex items-start justify-between gap-4">
+            <div>
+              <p className="text-cream-muted/50 text-xs uppercase tracking-wider mb-0.5">Originally posted by</p>
+              {ev.source_url && /^https?:\/\//.test(ev.source_url) ? (
+                <a
+                  href={ev.source_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-cream text-sm font-medium hover:text-orange transition"
+                >
+                  {ev.source_name} ↗
+                </a>
+              ) : (
+                <p className="text-cream text-sm font-medium">{ev.source_name}</p>
+              )}
+            </div>
+          </div>
+        )}
         {!isPast && (organizer?.id === CURATED_ORG_ID || ev.source_name) && (
           <p className="text-cream-muted/60 text-xs leading-relaxed mt-3">
             Details can change. Please confirm the date, time, location, and
