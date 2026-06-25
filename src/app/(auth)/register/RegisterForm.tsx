@@ -6,7 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import PasswordInput from "@/components/PasswordInput";
 import type { UserRole, OrgType } from "@/types/database";
-import { checkContent } from "@/lib/moderation";
+import { checkContent, checkContentRelaxed } from "@/lib/moderation";
 
 interface Props {
   invite?: { token: string; orgName: string } | null;
@@ -39,8 +39,7 @@ export default function RegisterForm({ invite }: Props) {
     e.preventDefault();
     setError(null);
 
-    const modResult = checkContent(form.displayName, form.orgName, form.bio);
-    if (modResult.blocked) {
+    if (checkContent(form.displayName, form.orgName).blocked || checkContentRelaxed(form.bio).blocked) {
       setError("Your profile contains content that isn't allowed on litly. Please remove any explicit language.");
       return;
     }

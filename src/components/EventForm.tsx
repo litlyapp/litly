@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { checkContent } from "@/lib/moderation";
+import { checkContent, checkContentRelaxed } from "@/lib/moderation";
 import DateTimePicker from "./DateTimePicker";
 import BannerUpload from "./BannerUpload";
 import RecurrenceOptions from "./RecurrenceOptions";
@@ -538,14 +538,14 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
 
     // Moderation check — only block on publish, not on save draft
     if (publishIntent) {
-      const modResult = checkContent(
-        form.title,
+      // Strict check on title, location, and source attribution
+      const strictResult = checkContent(form.title, form.location_name, form.source_name);
+      // Relaxed check on description and reader bios (literary references allowed)
+      const relaxedResult = checkContentRelaxed(
         form.description,
-        form.location_name,
-        form.source_name,
         ...readers.map((r) => r.name + " " + (r.bio ?? ""))
       );
-      if (modResult.blocked) {
+      if (strictResult.blocked || relaxedResult.blocked) {
         setError("This event contains content that isn't allowed on litly. Please review and remove any explicit language before posting.");
         return;
       }

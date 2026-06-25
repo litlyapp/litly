@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
-import { checkContent } from "@/lib/moderation";
+import { checkContent, checkContentRelaxed } from "@/lib/moderation";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   if (website && !/^https?:\/\//i.test(website)) {
     return NextResponse.json({ error: "Website must start with http:// or https://" }, { status: 400 });
   }
-  if (checkContent(orgName, bio).blocked) {
+  if (checkContent(orgName).blocked || checkContentRelaxed(bio).blocked) {
     return NextResponse.json({ error: "Your org profile contains content that isn't allowed on litly." }, { status: 400 });
   }
 
