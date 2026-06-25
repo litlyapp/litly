@@ -1023,7 +1023,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
               />
             </div>
             <div>
-              <label className={labelClass}>Zip / Postal code</label>
+              <label className={labelClass}>Zip / Postal code *</label>
               <input
                 type="text"
                 placeholder="e.g. 27701"
@@ -1044,7 +1044,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelClass}>State / Province</label>
+              <label className={labelClass}>State / Province *</label>
               <input
                 type="text"
                 placeholder="e.g. NC"
@@ -1093,7 +1093,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
                   Locating…
                 </span>
               )}
-              {geocoded && !geocoding && (
+              {geocoded && !geocoding && form.address.trim() && (
                 <span className="absolute right-3 top-3 text-orange text-xs">
                   ✓ Located{geocoded.label ? `: ${geocoded.label}` : ""}
                   {geocoded.approximate ? " (approximate)" : ""}
