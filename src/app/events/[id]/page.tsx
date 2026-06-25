@@ -260,10 +260,10 @@ export default async function EventDetailPage({
       {/* Breadcrumb */}
       <div className="mb-6">
         <Link
-          href="/events"
+          href={isOrganizer ? "/dashboard" : "/events"}
           className="text-cream-muted text-sm hover:text-cream transition"
         >
-          ← Events
+          {isOrganizer ? "← Dashboard" : "← Events"}
         </Link>
       </div>
 
