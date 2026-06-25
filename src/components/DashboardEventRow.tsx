@@ -3,7 +3,6 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import type { Genre, EventType } from "@/types/database";
 import { GENRE_LABELS } from "@/lib/genres";
 import { formatEventDate, formatEventTime } from "@/lib/formatDate";
@@ -45,8 +44,6 @@ export default function DashboardEventRow({ event, divider, isPast, isDraft, rsv
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   const router = useRouter();
-  const supabase = createClient();
-
   const isRecurring = !!(event.parent_event_id || event.recurrence_rule);
   const parentId = event.parent_event_id ?? event.id;
 
@@ -54,15 +51,12 @@ export default function DashboardEventRow({ event, divider, isPast, isDraft, rsv
     setDeleting(true);
     setDeleteError(null);
 
-    if (isRecurring) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: childError } = await (supabase as any).from("events").delete().eq("parent_event_id", parentId);
-      if (childError) { setDeleteError(childError.message); setDeleting(false); return; }
-      const { error: parentError } = await supabase.from("events").delete().eq("id", parentId);
-      if (parentError) { setDeleteError(parentError.message); setDeleting(false); return; }
-    } else {
-      const { error } = await supabase.from("events").delete().eq("id", event.id);
-      if (error) { setDeleteError(error.message); setDeleting(false); return; }
+    const res = await fetch(`/api/events/${event.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setDeleteError(body.error ?? "Failed to delete draft.");
+      setDeleting(false);
+      return;
     }
 
     startTransition(() => router.refresh());
