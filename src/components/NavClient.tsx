@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
@@ -22,6 +22,11 @@ export default function NavClient({ user, role, postEventHref }: Props) {
   function close() {
     setMenuOpen(false);
   }
+
+  // Also close whenever the route changes (catches programmatic navigation)
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   async function signOut() {
     await supabase.auth.signOut();
