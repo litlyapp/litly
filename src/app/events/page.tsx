@@ -4,6 +4,7 @@ import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import EventCard from "@/components/EventCard";
 import FiltersSidebar from "@/components/FiltersSidebar";
+import ExpandableGrid from "@/components/ExpandableGrid";
 import { GENRES } from "@/lib/genres";
 import { applyEventFilters } from "@/lib/events/filterQuery";
 import ViewToggle from "@/components/ViewToggle";
@@ -120,7 +121,7 @@ export default async function EventsPage({
         .gte("date_time", new Date().toISOString())
         .in("organizer_id", followedOrgIds)
         .order("date_time", { ascending: true })
-        .limit(6);
+        .limit(3);
       followingEvents = followingRaw ?? [];
     }
   }
@@ -199,9 +200,9 @@ export default async function EventsPage({
         <div className="flex-1">
           {/* Following feed — signed-in users following at least one org */}
           {followingEvents.length > 0 && (
-            <div className="mb-8">
+            <div className="mb-10">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="font-serif text-xl text-cream">From orgs you follow</h2>
+                <h2 className="font-serif text-xl text-cream">Upcoming from orgs you follow</h2>
                 <Link
                   href="/following"
                   className="text-orange text-sm hover:text-orange/80 transition"
@@ -214,7 +215,11 @@ export default async function EventsPage({
                   <EventCard key={event.id} event={event} savedEventIds={savedEventIds} />
                 ))}
               </div>
-              <div className="mt-4 border-t border-cream/10" />
+              <div className="mt-8 flex items-center gap-4">
+                <div className="flex-1 h-px bg-cream/10" />
+                <span className="text-cream-muted text-xs uppercase tracking-widest shrink-0">All events</span>
+                <div className="flex-1 h-px bg-cream/10" />
+              </div>
             </div>
           )}
 
@@ -280,11 +285,15 @@ export default async function EventsPage({
               </div>
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <ExpandableGrid
+              initial={9}
+              step={9}
+              className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+            >
               {events.map((event) => (
                 <EventCard key={event.id} event={event} savedEventIds={savedEventIds} />
               ))}
-            </div>
+            </ExpandableGrid>
           )}
         </div>
       </div>
