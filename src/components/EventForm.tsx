@@ -800,12 +800,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         }
       }
 
-      // Drafts go to dashboard; published events go to the event detail page
-      if (publishIntent) {
-        router.push(`/events/${data.id}`);
-      } else {
-        router.push("/dashboard");
-      }
+      router.push(`/events/${data.id}`);
     }
   }
 
