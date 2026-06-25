@@ -216,6 +216,11 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
             &quot;export&quot; link on Google Calendar, Squarespace, Wix, WordPress events
             plugins, or Eventbrite.
           </p>
+          <p className="text-cream-muted text-xs mb-2">
+            Note: if you use Wix, Squarespace, or a similar site builder, events must be added
+            to your site&apos;s built-in calendar — not just posted as pages or blog entries —
+            for them to appear in the feed.
+          </p>
           <input
             type="url"
             value={calendarFeedUrl}
