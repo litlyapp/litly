@@ -3,37 +3,73 @@
 // Leet-speak variants (@ for a, 3 for e, etc.) are normalized before matching.
 
 const BLOCKED_TERMS = [
-  // Core profanity
-  "fuck", "fucks", "fucked", "fucking", "fucker", "fuckers",
+  // Core profanity — f-word family
+  "fuck", "fucks", "fucked", "fucking", "fucker", "fuckers", "fuckery",
   "motherfuck", "motherfucker", "motherfuckers", "motherfucking",
-  "shit", "shits", "shitted", "shitting", "shitter", "shitters", "shitty", "bullshit",
-  "ass", "asses", "asshole", "assholes", "jackass", "jackasses", "dumbass", "dumbasses",
-  "bitch", "bitches", "bitched", "bitching", "bitchy",
+  "clusterfuck", "clusterfucks", "fuckhead", "fuckheads", "fuckwit", "fuckwits",
+  "fucktard", "fucktards",
+
+  // s-word family
+  "shit", "shits", "shitted", "shitting", "shitter", "shitters", "shitty",
+  "bullshit", "bullshits", "bullshitting", "bullshitter", "bullshitters",
+  "dipshit", "dipshits", "shithead", "shitheads", "horseshit",
+
+  // a-word family
+  "ass", "asses", "asshole", "assholes", "asshat", "asshats",
+  "jackass", "jackasses", "dumbass", "dumbasses", "smartass", "smartasses",
+  "badass", "badasses", "fatass", "fatasses", "halfass", "halfassed",
+  "asswipe", "asswipes", "assclown", "assclowns",
+
+  // b-word family
+  "bitch", "bitches", "bitched", "bitching", "bitchy", "bitchass",
+  "sonofabitch", "sonsofbitches",
   "bastard", "bastards",
+
+  // c-word family
+  "cunt", "cunts", "cunting",
+  "cock", "cocks", "cocksucker", "cocksuckers", "cockhead", "cockheads",
+  "cockwomble", "cockwombles",
+
+  // d-word family
+  "dick", "dicks", "dickhead", "dickheads", "dickwad", "dickwads",
+  "dickweed", "dickweeds",
   "damn", "damned",
-  "cunt", "cunts",
-  "cock", "cocks", "cocksucker", "cocksuckers", "cockhead",
-  "dick", "dicks", "dickhead", "dickheads",
+
+  // p-word family
   "pussy", "pussies",
   "prick", "pricks",
-  "whore", "whores",
-  "slut", "sluts",
-  "wanker", "wankers",
+  "piss", "pisses", "pissed", "pissing", "pisser", "pissers",
+
+  // w/s/t families
+  "whore", "whores", "whorish",
+  "slut", "sluts", "slutty",
+  "wanker", "wankers", "wanking",
   "twat", "twats",
-  "arse", "arsehole", "arseholes",
   "tosser", "tossers",
+  "twatwaffle", "twatwaffles",
+
+  // British variants
+  "arse", "arses", "arsehole", "arseholes",
   "bollocks",
-  "bugger", "buggers",
-  "piss", "pisses", "pissed", "pissing",
+  "bugger", "buggers", "buggered", "buggering",
+  "bellend", "bellends",
+  "muppet",
+
+  // misc
   "crap", "craps", "crapped", "crappy",
   "boner", "boners",
+
+  // Sexual acts
   "blowjob", "blowjobs",
   "handjob", "handjobs",
   "rimjob", "rimjobs",
   "cumshot", "cumshots",
-  "gangbang", "gangbangs",
+  "gangbang", "gangbangs", "gangbanged", "gangbanging",
   "jizz",
-  "cum",
+  "cum", "cumming",
+  "creampie", "creampies",
+  "fisting",
+  "teabagging",
 
   // Slurs — racial, ethnic, identity-based
   "nigger", "niggers", "nigga", "niggas",
