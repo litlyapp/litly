@@ -48,7 +48,7 @@ export default function AccountPage() {
     setNameError(null);
 
     if (checkContent(displayName).blocked) {
-      setNameError("Display name contains content that isn't allowed on litly.");
+      setNameError("Please remove any potentially harmful or explicit language.");
       setNameStatus("error");
       return;
     }

@@ -74,7 +74,7 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
     const trimmedFeedUrl = calendarFeedUrl.trim();
 
     if (checkContent(name, bio).blocked) {
-      setError("Your org profile contains content that isn't allowed on litly. Please remove any explicit language.");
+      setError("Please remove any potentially harmful or explicit language.");
       return;
     }
 

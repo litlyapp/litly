@@ -546,7 +546,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         ...readers.map((r) => r.name + " " + (r.bio ?? ""))
       );
       if (strictResult.blocked || relaxedResult.blocked) {
-        setError("This event contains content that isn't allowed on litly. Please review and remove any explicit language before posting.");
+        setError("Please remove any potentially harmful or explicit language.");
         return;
       }
     }

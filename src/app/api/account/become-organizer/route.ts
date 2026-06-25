@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Website must start with http:// or https://" }, { status: 400 });
   }
   if (checkContent(orgName, bio).blocked) {
-    return NextResponse.json({ error: "Your org profile contains content that isn't allowed on litly." }, { status: 400 });
+    return NextResponse.json({ error: "Please remove any potentially harmful or explicit language." }, { status: 400 });
   }
 
   const serviceClient = createServiceClient(
