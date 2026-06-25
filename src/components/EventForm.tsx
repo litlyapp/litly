@@ -502,6 +502,14 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
     if (!form.date_time) return "Date and time are required.";
     if (form.event_type === "in_person" && !form.location_name.trim())
       return "Location name is required for in-person events.";
+    if (form.event_type === "in_person" && !form.address.trim())
+      return "Street address is required for in-person events.";
+    if (form.event_type === "in_person" && !form.city.trim())
+      return "City is required for in-person events.";
+    if (form.event_type === "in_person" && !form.state.trim())
+      return "State / region is required for in-person events.";
+    if (form.event_type === "in_person" && !form.zip_code?.trim())
+      return "Zip / postal code is required for in-person events.";
     if (form.event_type === "virtual" && !form.virtual_url.trim())
       return "A link is required for virtual events.";
     if (form.virtual_url.trim() && !/^https?:\/\//i.test(form.virtual_url.trim()))
