@@ -837,7 +837,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         <label className={labelClass}>Description</label>
         <textarea
           placeholder="Tell readers what to expect…"
-          rows={5}
+          rows={12}
           value={form.description}
           onChange={(e) => set("description", e.target.value)}
           className={`${inputClass} resize-none`}
