@@ -94,8 +94,8 @@ export async function POST(request: Request) {
 Fields:
 - title: string (event name)
 - description: string | null (full event description, plain text)
-- date_time: string | null (ISO 8601 format WITHOUT timezone offset, e.g. "2026-08-15T19:00:00" — use the human-readable local time shown on the page, NOT any UTC or machine-encoded datetime from schema.org/JSON-LD metadata)
-- end_time: string | null (ISO 8601 format without timezone offset, local time as displayed)
+- date_time: string | null (ISO 8601 format WITHOUT timezone offset, e.g. "2026-08-15T19:00:00". If the page shows "6pm" output "2026-08-15T18:00:00". NEVER subtract or add hours. NEVER convert to UTC. Copy the clock time exactly as a human would read it.)
+- end_time: string | null (same rule — copy the displayed end time exactly, no conversion)
 - timezone: string | null (IANA timezone, e.g. "America/New_York" — infer from the event location or any timezone label shown on the page)
 - event_type: "in_person" | "virtual" (default to "in_person" if unclear)
 - location_name: string | null (venue name)
