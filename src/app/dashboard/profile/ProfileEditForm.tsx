@@ -213,7 +213,7 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
           <p className="text-cream-muted text-xs mb-2">
             Paste your calendar&apos;s subscribe / iCal link and your events will sync here
             automatically — no need to post manually. Look for a calendar &quot;subscribe&quot; or
-            &quot;export&quot; link on Google Calendar, Squarespace, Wix, WordPress events
+            &quot;export&quot; link on Google Calendar, Apple Calendar, Squarespace, Wix, WordPress events
             plugins, or Eventbrite.
           </p>
           <p className="text-cream-muted text-xs mb-2">
