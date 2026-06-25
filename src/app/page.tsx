@@ -18,19 +18,32 @@ function MapPinIcon() {
 export default async function HomePage() {
   const supabase = await createClient();
 
-  // Grab the next 6 upcoming events as "featured"
-  const { data: featuredEvents } = await supabase
+  // Grab the next 6 upcoming events as "featured". Query all occurrences
+  // (including recurring children) so series with a past parent date but
+  // future children are not silently dropped. Deduplicate by series keeping
+  // only the earliest upcoming occurrence per series.
+  const { data: featuredRaw } = await supabase
     .from("events")
     .select(
       `id, title, description, genre, event_type, date_time, timezone, end_time,
        location_name, address, city, state, country, lat, lng, virtual_url, open_mic, rsvp_enabled, created_at,
+       parent_event_id,
        organizer:organizer_profiles!events_organizer_id_fkey(id, name, org_type)`
     )
     .eq("is_cancelled", false)
-    .is("parent_event_id", null)
     .gte("date_time", new Date().toISOString())
     .order("date_time", { ascending: true })
-    .limit(6);
+    .limit(60);
+
+  const seenFeatured = new Set<string>();
+  const featuredEvents = [];
+  for (const e of featuredRaw ?? []) {
+    const key = (e as typeof e & { parent_event_id?: string | null }).parent_event_id ?? e.id;
+    if (seenFeatured.has(key)) continue;
+    seenFeatured.add(key);
+    featuredEvents.push(e);
+    if (featuredEvents.length === 6) break;
+  }
 
   const { data: { user } } = await supabase.auth.getUser();
   let savedEventIds = new Set<string>();
