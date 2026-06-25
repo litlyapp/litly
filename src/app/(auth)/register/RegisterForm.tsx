@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import PasswordInput from "@/components/PasswordInput";
 import type { UserRole, OrgType } from "@/types/database";
+import { checkContent } from "@/lib/moderation";
 
 interface Props {
   invite?: { token: string; orgName: string } | null;
@@ -37,6 +38,13 @@ export default function RegisterForm({ invite }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    const modResult = checkContent(form.displayName, form.orgName, form.bio);
+    if (modResult.blocked) {
+      setError("Your profile contains content that isn't allowed on litly. Please remove any explicit language.");
+      return;
+    }
+
     setLoading(true);
 
     const { error: signUpError } = await supabase.auth.signUp({

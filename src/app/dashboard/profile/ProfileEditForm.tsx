@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { checkContent } from "@/lib/moderation";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -71,6 +72,12 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
     e.preventDefault();
 
     const trimmedFeedUrl = calendarFeedUrl.trim();
+
+    const modResult = checkContent(name, bio);
+    if (modResult.blocked) {
+      setError("Your org profile contains content that isn't allowed on litly. Please remove any explicit language.");
+      return;
+    }
 
     setSaving(true);
     setError(null);

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import PasswordInput from "@/components/PasswordInput";
+import { checkContent } from "@/lib/moderation";
 
 export default function AccountPage() {
   const supabase = createClient();
@@ -45,6 +46,12 @@ export default function AccountPage() {
     e.preventDefault();
     setNameStatus("saving");
     setNameError(null);
+
+    if (checkContent(displayName).blocked) {
+      setNameError("Display name contains content that isn't allowed on litly.");
+      setNameStatus("error");
+      return;
+    }
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push("/login"); return; }

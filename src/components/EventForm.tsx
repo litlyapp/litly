@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { checkContent } from "@/lib/moderation";
 import DateTimePicker from "./DateTimePicker";
 import BannerUpload from "./BannerUpload";
 import RecurrenceOptions from "./RecurrenceOptions";
@@ -533,6 +534,21 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
     if (validationError) {
       setError(validationError);
       return;
+    }
+
+    // Moderation check — only block on publish, not on save draft
+    if (publishIntent) {
+      const modResult = checkContent(
+        form.title,
+        form.description,
+        form.location_name,
+        form.source_name,
+        ...readers.map((r) => r.name + " " + (r.bio ?? ""))
+      );
+      if (modResult.blocked) {
+        setError("This event contains content that isn't allowed on litly. Please review and remove any explicit language before posting.");
+        return;
+      }
     }
 
     setError(null);
