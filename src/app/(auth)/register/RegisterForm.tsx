@@ -39,7 +39,7 @@ export default function RegisterForm({ invite }: Props) {
     e.preventDefault();
     setError(null);
 
-    if (checkContent(form.displayName, form.orgName).blocked || checkContentRelaxed(form.bio).blocked) {
+    if (checkContent(form.displayName, form.orgName, form.bio).blocked) {
       setError("Your profile contains content that isn't allowed on litly. Please remove any explicit language.");
       return;
     }

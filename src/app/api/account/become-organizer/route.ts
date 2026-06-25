@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   if (website && !/^https?:\/\//i.test(website)) {
     return NextResponse.json({ error: "Website must start with http:// or https://" }, { status: 400 });
   }
-  if (checkContent(orgName).blocked || checkContentRelaxed(bio).blocked) {
+  if (checkContent(orgName, bio).blocked) {
     return NextResponse.json({ error: "Your org profile contains content that isn't allowed on litly." }, { status: 400 });
   }
 
