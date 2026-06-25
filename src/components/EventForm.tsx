@@ -555,15 +555,9 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       ticket_url: form.ticket_url.trim() || null,
       ticket_type: (form.ticket_type === "none" ? "none" : form.ticket_type || null) as "paid" | "free" | "none" | null,
       banner_url: bannerUrl,
-      // Only the admin form includes these keys — regular org edits leave any
-      // existing attribution untouched
-      ...(allowSourceAttribution
-        ? {
-            source_name: form.source_name.trim() || null,
-            source_url: form.source_url.trim() || null,
-            is_imported: !!form.source_name.trim(),
-          }
-        : {}),
+      source_name: form.source_name.trim() || null,
+      source_url: form.source_url.trim() || null,
+      is_imported: !!form.source_name.trim(),
     };
 
     // Future occurrences for a recurring series (parent = first occurrence).
@@ -1177,34 +1171,6 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         ))(highlightMissingFields && form.event_type === "in_person" && !form.ticket_url.trim() && form.ticket_type !== "none")}
       </div>
 
-      {/* Source attribution — admin only */}
-      {allowSourceAttribution && (
-        <div className="border border-orange/30 rounded-2xl p-5 space-y-4">
-          <div>
-            <label className={labelClass}>Source attribution (admin)</label>
-            <p className="text-cream-muted/60 text-xs -mt-1 mb-3">
-              Credit the org that originally posted this event. Shows as
-              &ldquo;via [name]&rdquo; on cards and adds the claim link on the
-              event page. Leave blank for litly&apos;s own events.
-            </p>
-            <input
-              type="text"
-              placeholder="Original org or publication name"
-              value={form.source_name}
-              onChange={(e) => set("source_name", e.target.value)}
-              className={inputClass}
-            />
-          </div>
-          <input
-            type="url"
-            placeholder="https://… link to the original listing (optional)"
-            value={form.source_url}
-            onChange={(e) => set("source_url", e.target.value)}
-            className={inputClass}
-          />
-        </div>
-      )}
-
       {/* Featured readers */}
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -1272,6 +1238,31 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
             );
           })}
         </div>
+      </div>
+
+      {/* Source attribution */}
+      <div className="border border-cream/10 rounded-2xl p-5 space-y-4">
+        <div>
+          <label className={labelClass}>Source attribution</label>
+          <p className="text-cream-muted/60 text-xs -mt-1 mb-3">
+            Credit the org that originally posted this event. Shows as
+            &ldquo;via [name]&rdquo; on cards and adds a link on the event page.
+          </p>
+          <input
+            type="text"
+            placeholder="Original org or publication name"
+            value={form.source_name}
+            onChange={(e) => set("source_name", e.target.value)}
+            className={inputClass}
+          />
+        </div>
+        <input
+          type="url"
+          placeholder="https://… link to the original listing (optional)"
+          value={form.source_url}
+          onChange={(e) => set("source_url", e.target.value)}
+          className={inputClass}
+        />
       </div>
 
       {/* Series settings — only shown when editing the parent (first) event of a recurring series */}

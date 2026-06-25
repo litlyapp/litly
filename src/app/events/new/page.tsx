@@ -97,7 +97,6 @@ export default async function NewEventPage({
       <EventForm
         organizerId={orgProfile.id}
         initialData={initialData as Parameters<typeof EventForm>[0]["initialData"]}
-        allowSourceAttribution={user.email === "admin@thelitlyapp.com"}
       />
     </div>
   );
