@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { isSafeUrl } from "@/lib/safeUrl";
 
 const anthropic = new Anthropic();
 
@@ -37,14 +38,30 @@ export async function POST(request: Request) {
     .maybeSingle();
   if (!membership) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
-  // Fetch the page
+  // Block SSRF: reject private/internal addresses before fetching
+  if (!(await isSafeUrl(url))) {
+    return NextResponse.json({ error: "URL is not reachable" }, { status: 422 });
+  }
+
+  // Fetch the page — try with a browser-like UA first; some sites block bots
+  const BROWSER_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
   let html: string;
   try {
-    const res = await fetch(url, {
-      headers: { "User-Agent": "litly/1.0 (thelitlyapp.com)" },
+    let res = await fetch(url, {
+      headers: { "User-Agent": BROWSER_UA, "Accept": "text/html,application/xhtml+xml,*/*" },
       signal: AbortSignal.timeout(10000),
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    // Fall back to our own UA if the browser UA still fails
+    if (!res.ok && res.status !== 403 && res.status !== 401) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    if (!res.ok) {
+      res = await fetch(url, {
+        headers: { "User-Agent": "litly/1.0 (thelitlyapp.com)" },
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    }
     html = await res.text();
     // Trim to 30k chars — Claude doesn't need the full DOM
     html = html.slice(0, 30000);
@@ -124,7 +141,11 @@ ${html}`,
       lng: coords?.lng ?? null,
       virtual_url: (extracted.virtual_url as string) ?? null,
       ticket_url: (extracted.ticket_url as string) ?? null,
-      banner_url: (extracted.banner_url as string) ?? null,
+      banner_url: await (async () => {
+        const raw = extracted.banner_url as string | null | undefined;
+        if (!raw || !/^https:\/\//i.test(raw)) return null;
+        return (await isSafeUrl(raw)) ? raw : null;
+      })(),
       open_mic: false,
       rsvp_enabled: false,
       is_published: false,
