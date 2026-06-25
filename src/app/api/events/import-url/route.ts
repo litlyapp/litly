@@ -81,9 +81,9 @@ export async function POST(request: Request) {
 Fields:
 - title: string (event name)
 - description: string | null (full event description, plain text)
-- date_time: string | null (ISO 8601 format, e.g. "2026-08-15T19:00:00")
-- end_time: string | null (ISO 8601 format)
-- timezone: string | null (IANA timezone, e.g. "America/New_York")
+- date_time: string | null (ISO 8601 format WITHOUT timezone offset, e.g. "2026-08-15T19:00:00" — use the human-readable local time shown on the page, NOT any UTC or machine-encoded datetime from schema.org/JSON-LD metadata)
+- end_time: string | null (ISO 8601 format without timezone offset, local time as displayed)
+- timezone: string | null (IANA timezone, e.g. "America/New_York" — infer from the event location or any timezone label shown on the page)
 - event_type: "in_person" | "virtual" (default to "in_person" if unclear)
 - location_name: string | null (venue name)
 - address: string | null (street address only, no city/state)
@@ -93,6 +93,8 @@ Fields:
 - ticket_url: string | null (URL to buy tickets or RSVP)
 - virtual_url: string | null (URL to join virtual event)
 - banner_url: string | null (URL of the main event image if present as an absolute URL)
+
+IMPORTANT: For date_time and end_time, always use the time as it appears to the reader on the page (e.g. "3:00 PM"), never convert from UTC or use raw schema.org datetime values.
 
 Return ONLY the JSON object, no explanation.
 
