@@ -125,7 +125,7 @@ export async function GET(req: Request) {
 
   const { data: orgs, error: orgsError } = await supabase
     .from("organizer_profiles")
-    .select("id, name, user_id, calendar_feed_url, calendar_feed_default_genre")
+    .select("id, name, user_id, calendar_feed_url, calendar_feed_default_genre, website")
     .not("calendar_feed_url", "is", null);
 
   if (orgsError) {
@@ -147,7 +147,7 @@ export async function GET(req: Request) {
 
       if (existingError) throw new Error(existingError.message);
 
-      const parsed = await parseFeed(feedUrl);
+      const parsed = await parseFeed(feedUrl, org.website as string | null);
 
       // Glitch guard: a previously-synced org returning ~no events on this run
       // is far more likely a feed outage than every event being deleted at once.

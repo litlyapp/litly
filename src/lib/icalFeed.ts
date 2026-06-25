@@ -46,17 +46,40 @@ const URL_PRIORITY: { pattern: RegExp; score: number }[] = [
   { pattern: /partiful\.com\//i, score: 85 },
 ];
 
-function scoreUrl(url: string): number {
+function scoreUrl(url: string, orgHost: string | null): number {
+  // Known event/ticket/meeting platforms always win
   for (const { pattern, score } of URL_PRIORITY) {
     if (pattern.test(url)) return score;
   }
-  return 0;
+  // Org's own domain: score by path depth — specific event pages rank higher
+  // than the bare homepage, but never above a known platform
+  if (orgHost) {
+    try {
+      const parsed = new URL(url);
+      if (parsed.hostname === orgHost || parsed.hostname.endsWith(`.${orgHost}`)) {
+        const pathSegments = parsed.pathname.replace(/^\/|\/$/g, "").split("/").filter(Boolean);
+        // homepage (no path) = 5, each path segment adds 10, cap at 50
+        return Math.min(5 + pathSegments.length * 10, 50);
+      }
+    } catch { /* ignore malformed URLs */ }
+  }
+  // Unknown generic URL — usable but lowest priority
+  return 1;
 }
 
 function extractUrls(text: string): string[] {
   return [...text.matchAll(URL_REGEX)]
     .map((m) => m[0].replace(/[.,;:!?]+$/, ""))
     .filter((u) => !SELF_HOSTS.some((h) => u.includes(h)));
+}
+
+function orgHostname(website: string | null): string | null {
+  if (!website) return null;
+  try {
+    return new URL(website.startsWith("http") ? website : `https://${website}`).hostname;
+  } catch {
+    return null;
+  }
 }
 
 async function testUrl(url: string): Promise<boolean> {
@@ -73,12 +96,14 @@ async function testUrl(url: string): Promise<boolean> {
 }
 
 async function resolveEventUrl(
-  item: { url?: string; description?: string }
+  item: { url?: string; description?: string },
+  orgWebsite: string | null
 ): Promise<string | null> {
   if (item.url) return String(item.url).trim();
   if (!item.description) return null;
+  const host = orgHostname(orgWebsite);
   const candidates = extractUrls(String(item.description))
-    .sort((a, b) => scoreUrl(b) - scoreUrl(a));
+    .sort((a, b) => scoreUrl(b, host) - scoreUrl(a, host));
   for (const url of candidates) {
     if (await testUrl(url)) return url;
   }
@@ -125,7 +150,7 @@ function startToFields(
   return { date_time: start.toISOString(), timezone: calendarTz };
 }
 
-export async function parseFeed(url: string): Promise<ParsedFeedEvent[]> {
+export async function parseFeed(url: string, orgWebsite?: string | null): Promise<ParsedFeedEvent[]> {
   const res = await fetch(url, {
     headers: {
       "User-Agent": "litlybot/1.0 (+https://thelitlyapp.com; calendar sync; contact: support@thelitlyapp.com)",
@@ -150,7 +175,7 @@ export async function parseFeed(url: string): Promise<ParsedFeedEvent[]> {
 
     const { date_time, timezone } = startToFields(item.start, calendarTz);
     const end_time = item.end ? startToFields(item.end, calendarTz).date_time : null;
-    const resolvedUrl = await resolveEventUrl(item);
+    const resolvedUrl = await resolveEventUrl(item, orgWebsite ?? null);
 
     events.push({
       uid: String(item.uid),
