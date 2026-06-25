@@ -81,6 +81,9 @@ export default async function EditEventPage({
         eventId={id}
         seriesContext={seriesContext}
         allowSourceAttribution={user.email === "admin@thelitlyapp.com"}
+        highlightMissingFields={
+          ev.event_type === "in_person" ? !ev.ticket_url : !ev.virtual_url
+        }
       />
     </div>
   );

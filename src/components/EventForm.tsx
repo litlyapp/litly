@@ -197,6 +197,8 @@ interface Props {
   seriesContext?: SeriesContext;
   /** Admin-only: expose "via [org]" source attribution fields */
   allowSourceAttribution?: boolean;
+  /** Flag incomplete fields that triggered the "Needs details" tag */
+  highlightMissingFields?: boolean;
 }
 
 // Strip suite/apt/unit suffixes before geocoding — Nominatim returns nothing
@@ -287,7 +289,7 @@ async function resolveZip(
   return null;
 }
 
-export default function EventForm({ organizerId, initialData, eventId, seriesContext, allowSourceAttribution }: Props) {
+export default function EventForm({ organizerId, initialData, eventId, seriesContext, allowSourceAttribution, highlightMissingFields }: Props) {
   const router = useRouter();
   const supabase = createClient();
   const isEditing = !!eventId;
@@ -1078,22 +1080,27 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       )}
 
       {/* Virtual URL */}
-      <div>
-        <label className={labelClass}>
-          {form.event_type === "virtual" ? "Event link *" : "Event link (optional)"}
-        </label>
-        <input
-          type="url"
-          placeholder={
-            form.event_type === "virtual"
-              ? "https://zoom.us/j/… or similar"
-              : "Optional — link to event page, Eventbrite listing, livestream, etc."
-          }
-          value={form.virtual_url}
-          onChange={(e) => set("virtual_url", e.target.value)}
-          className={inputClass}
-        />
-      </div>
+      {((needsVirtualUrl) => (
+        <div className={needsVirtualUrl ? "rounded-xl border border-orange/60 p-3 -mx-3" : ""}>
+          {needsVirtualUrl && (
+            <p className="text-orange text-xs mb-2">Add an event link to remove the &quot;Needs details&quot; flag.</p>
+          )}
+          <label className={labelClass}>
+            {form.event_type === "virtual" ? "Event link *" : "Event link (optional)"}
+          </label>
+          <input
+            type="url"
+            placeholder={
+              form.event_type === "virtual"
+                ? "https://zoom.us/j/… or similar"
+                : "Optional — link to event page, Eventbrite listing, livestream, etc."
+            }
+            value={form.virtual_url}
+            onChange={(e) => set("virtual_url", e.target.value)}
+            className={inputClass}
+          />
+        </div>
+      ))(highlightMissingFields && form.event_type !== "in_person" && !form.virtual_url.trim())}
 
       {/* Toggles + ticket link */}
       <div className="space-y-4">
@@ -1111,50 +1118,55 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         </label>
 
         {/* External ticketing */}
-        <div className="space-y-3">
-          <label className={labelClass}>External ticketing</label>
-          <div className="flex gap-2 flex-wrap">
-            {(
-              [
-                { value: "", label: "No tickets" },
-                { value: "free", label: "Free ticket / registration" },
-                { value: "paid", label: "Paid ticket" },
-              ] as const
-            ).map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => {
-                  set("ticket_type", opt.value);
-                  if (!opt.value) set("ticket_url", "");
-                }}
-                className={`px-4 py-1.5 rounded-full text-sm border transition ${
-                  form.ticket_type === opt.value
-                    ? "bg-orange border-orange text-cream"
-                    : "border-cream/20 text-cream-muted hover:border-cream hover:text-cream"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-          {form.ticket_type && (
-            <div>
-              <input
-                type="url"
-                placeholder={form.ticket_type === "paid" ? "https://eventbrite.com/… or ticketing page" : "https://… registration or RSVP page"}
-                value={form.ticket_url}
-                onChange={(e) => set("ticket_url", e.target.value)}
-                className={inputClass}
-              />
-              <p className="text-cream-muted/60 text-xs mt-1">
-                {form.ticket_type === "paid"
-                  ? "Users will be directed here to purchase a ticket — litly does not handle payments."
-                  : "Users will be directed here to register or claim a free ticket."}
-              </p>
+        {((needsTicket) => (
+          <div className={needsTicket ? "rounded-xl border border-orange/60 p-3 -mx-3 space-y-3" : "space-y-3"}>
+            {needsTicket && (
+              <p className="text-orange text-xs">Add a ticket or registration link to remove the &quot;Needs details&quot; flag.</p>
+            )}
+            <label className={labelClass}>External ticketing</label>
+            <div className="flex gap-2 flex-wrap">
+              {(
+                [
+                  { value: "", label: "No tickets" },
+                  { value: "free", label: "Free ticket / registration" },
+                  { value: "paid", label: "Paid ticket" },
+                ] as const
+              ).map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    set("ticket_type", opt.value);
+                    if (!opt.value) set("ticket_url", "");
+                  }}
+                  className={`px-4 py-1.5 rounded-full text-sm border transition ${
+                    form.ticket_type === opt.value
+                      ? "bg-orange border-orange text-cream"
+                      : "border-cream/20 text-cream-muted hover:border-cream hover:text-cream"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
-          )}
-        </div>
+            {form.ticket_type && (
+              <div>
+                <input
+                  type="url"
+                  placeholder={form.ticket_type === "paid" ? "https://eventbrite.com/… or ticketing page" : "https://… registration or RSVP page"}
+                  value={form.ticket_url}
+                  onChange={(e) => set("ticket_url", e.target.value)}
+                  className={inputClass}
+                />
+                <p className="text-cream-muted/60 text-xs mt-1">
+                  {form.ticket_type === "paid"
+                    ? "Users will be directed here to purchase a ticket — litly does not handle payments."
+                    : "Users will be directed here to register or claim a free ticket."}
+                </p>
+              </div>
+            )}
+          </div>
+        ))(highlightMissingFields && form.event_type === "in_person" && !form.ticket_url.trim())}
       </div>
 
       {/* Source attribution — admin only */}
