@@ -192,7 +192,20 @@ ${emailContent.slice(0, 12000)}`,
       return NextResponse.json({ ok: true, events: 0 });
     }
 
-    const events = JSON.parse(jsonMatch[0]);
+    let events: Record<string, unknown>[];
+    try {
+      events = JSON.parse(jsonMatch[0]);
+    } catch (e) {
+      console.warn("[inbound-email] invalid JSON from parser:", e);
+      await supabase.from("pending_imports").insert({
+        source_email: from,
+        source_subject: subject,
+        raw_body: body.slice(0, 10000),
+        parsed_data: null,
+        status: "pending",
+      });
+      return NextResponse.json({ ok: true, events: 0 });
+    }
     const validEvents = events.filter((e: { ignore?: boolean }) => !e.ignore);
 
     // Fill gaps so queue items arrive approve-ready: first from this source's

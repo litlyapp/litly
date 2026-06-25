@@ -32,6 +32,7 @@ interface Props {
   clickCount?: number;
   upcomingInSeries?: number;
   needsDetails?: boolean;
+  isDraft?: boolean;
   selectionMode?: boolean;
   selected?: boolean;
   onToggle?: () => void;
@@ -41,7 +42,7 @@ function formatDate(iso: string, timeZone?: string | null) {
   return `${formatEventDate(iso, timeZone)} · ${formatEventTime(iso, timeZone)}`;
 }
 
-export default function DashboardEventRow({ event, divider, isPast, rsvpCount, viewCount, saveCount, clickCount, upcomingInSeries, needsDetails, selectionMode, selected, onToggle }: Props) {
+export default function DashboardEventRow({ event, divider, isPast, isDraft, rsvpCount, viewCount, saveCount, clickCount, upcomingInSeries, needsDetails, selectionMode, selected, onToggle }: Props) {
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -100,6 +101,11 @@ export default function DashboardEventRow({ event, divider, isPast, rsvpCount, v
           {isRecurring && (
             <span className="px-2 py-0.5 rounded-full bg-cream/10 text-cream-muted text-xs">
               🔁 Series{upcomingInSeries !== undefined ? ` · ${upcomingInSeries} upcoming` : ""}
+            </span>
+          )}
+          {isDraft && (
+            <span className="px-2 py-0.5 rounded-full bg-cream/10 text-cream-muted text-xs font-medium border border-cream/20">
+              Draft
             </span>
           )}
           {event.is_cancelled && (

@@ -33,6 +33,7 @@ export default async function OrganizerProfilePage({
       .select(eventSelect)
       .eq("organizer_id", id)
       .eq("is_cancelled", false)
+      .neq("is_published", false)
       .is("parent_event_id", null)
       .order("date_time", { ascending: true }),
     supabase
@@ -40,6 +41,7 @@ export default async function OrganizerProfilePage({
       .select(eventSelect)
       .eq("organizer_id", id)
       .eq("is_cancelled", false)
+      .neq("is_published", false)
       .is("parent_event_id", null)
       .lt("date_time", now)
       .order("date_time", { ascending: false })

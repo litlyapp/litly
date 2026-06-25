@@ -157,6 +157,7 @@ export default async function EventDetailPage({
       .select("id, title, genre, event_type, date_time, timezone, location_name, city, state, country, virtual_url, open_mic, banner_url, ticket_url, description, is_imported, source_url, source_name, lat, lng, parent_event_id, organizer:organizer_profiles!events_organizer_id_fkey(id, name)")
       .eq("event_type", "in_person")
       .eq("is_cancelled", false)
+      .neq("is_published", false)
       .gte("date_time", new Date().toISOString())
       .neq("id", id);
 
@@ -232,6 +233,10 @@ export default async function EventDetailPage({
     isOrganizer = !!membership;
   }
 
+  // Drafts are only visible to org members — treat as 404 for everyone else
+  const isDraft = (ev as typeof ev & { is_published?: boolean }).is_published === false;
+  if (isDraft && !isOrganizer) notFound();
+
   const organizer = Array.isArray(event.organizer)
     ? event.organizer[0]
     : event.organizer;
@@ -245,6 +250,22 @@ export default async function EventDetailPage({
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
       <EventViewTracker eventId={event.id} />
+
+      {/* Draft banner — only org members can see this page */}
+      {isDraft && (
+        <div className="mb-6 bg-cream/5 border border-cream/20 rounded-2xl px-6 py-4 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-cream font-semibold text-sm">Draft — not visible to the public</p>
+            <p className="text-cream-muted text-xs mt-0.5">Edit and post this event when it&apos;s ready.</p>
+          </div>
+          <a
+            href={`/events/${event.id}/edit`}
+            className="shrink-0 bg-orange text-cream text-sm font-semibold px-4 py-2 rounded-full hover:bg-orange/90 transition"
+          >
+            Edit &amp; post
+          </a>
+        </div>
+      )}
 
       {/* Cancellation banner */}
       {ev.is_cancelled && (

@@ -157,7 +157,10 @@ export async function GET(req: Request) {
 
       const defaultGenre = (org.calendar_feed_default_genre as Genre[] | null) ?? [];
       let synced = 0;
-      const existingUids = new Set((existing ?? []).map((e) => e.external_uid).filter(Boolean));
+      // Map from external_uid → event row id for existing events
+      const existingUidToId = new Map(
+        (existing ?? []).filter((e) => e.external_uid).map((e) => [e.external_uid, e.id])
+      );
       let newCount = 0;
 
       for (const item of parsed) {
@@ -167,18 +170,27 @@ export async function GET(req: Request) {
         }
 
         const row = mapToEventRow(item, { organizerId: org.id, defaultGenre, defaultBannerUrl: org.default_banner_url as string | null, coords });
+        const isNew = !existingUidToId.has(item.uid);
 
-        const { error: upsertError } = await supabase
-          .from("events")
-          .upsert(row, { onConflict: "organizer_id,external_uid" });
+        let opError: { message: string } | null = null;
+        if (isNew) {
+          // New events from the feed land as drafts — org must approve before they go live
+          const { error } = await supabase.from("events").insert({ ...row, is_published: false });
+          opError = error;
+        } else {
+          // Existing events: update without touching is_published so org-published events stay live
+          const existingId = existingUidToId.get(item.uid)!;
+          const { error } = await supabase.from("events").update(row).eq("id", existingId);
+          opError = error;
+        }
 
-        if (upsertError) {
-          console.error(`sync-org-feeds: upsert failed for org ${org.id} uid ${item.uid}:`, upsertError.message);
+        if (opError) {
+          console.error(`sync-org-feeds: ${isNew ? "insert" : "update"} failed for org ${org.id} uid ${item.uid}:`, opError.message);
           continue;
         }
         synced++;
 
-        if (!existingUids.has(item.uid)) newCount++;
+        if (isNew) newCount++;
       }
 
       // Cancel sweep: previously-synced events no longer present in the feed
@@ -218,7 +230,8 @@ export async function GET(req: Request) {
           .from("events")
           .select("title, event_type, ticket_url, virtual_url")
           .eq("feed_source_organizer_id", org.id)
-          .eq("is_cancelled", false);
+          .eq("is_cancelled", false)
+          .eq("is_published", true);
 
         const incomplete = (liveEvents ?? []).filter((e) =>
           e.event_type === "in_person" ? !e.ticket_url : !e.virtual_url

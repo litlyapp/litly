@@ -24,6 +24,7 @@ interface DashboardEvent {
   parent_event_id?: string | null;
   recurrence_rule?: object | null;
   is_cancelled?: boolean;
+  is_published?: boolean;
 }
 
 // Missing the relevant link (ticket for in-person, join link for virtual) —
@@ -85,7 +86,7 @@ export default async function DashboardPage({
   const nowMs = Date.now();
   const isFuture = (iso: string) => new Date(iso).getTime() >= nowMs;
 
-  const eventSelect = "id, title, genre, event_type, date_time, timezone, location_name, virtual_url, ticket_url, ticket_type, rsvp_enabled, open_mic, parent_event_id, recurrence_rule, is_cancelled, view_count, ticket_click_count";
+  const eventSelect = "id, title, genre, event_type, date_time, timezone, location_name, virtual_url, ticket_url, ticket_type, rsvp_enabled, open_mic, parent_event_id, recurrence_rule, is_cancelled, is_published, view_count, ticket_click_count";
 
   // Fetch every top-level event (series parents + one-offs) for this org. We
   // can't split upcoming/past on the parent's own date alone: a series parent's
@@ -134,11 +135,16 @@ export default async function DashboardPage({
     }
   }
 
-  // Partition into upcoming vs past. A recurring series is upcoming as long as
-  // it has any future occurrence, displayed at that next occurrence date.
+  // Partition into drafts, upcoming, and past.
+  // Drafts (is_published === false) are shown separately regardless of date.
+  const draftEvents: DashboardEvent[] = [];
   const upcomingEvents: DashboardEvent[] = [];
   const pastEvents: DashboardEvent[] = [];
   for (const event of allParents) {
+    if (event.is_published === false) {
+      draftEvents.push(event);
+      continue;
+    }
     if (event.recurrence_rule) {
       const next = seriesNextDate[event.id];
       if (next) upcomingEvents.push({ ...event, date_time: next });
@@ -150,10 +156,9 @@ export default async function DashboardPage({
     }
   }
   upcomingEvents.sort((a, b) => new Date(a.date_time).getTime() - new Date(b.date_time).getTime());
+  draftEvents.sort((a, b) => new Date(a.date_time).getTime() - new Date(b.date_time).getTime());
   pastEvents.splice(55); // cap past list (query was ordered date desc)
 
-  // Count each series once (not every materialized occurrence), so an infinite
-  // series doesn't inflate the upcoming total with a year of pre-built dates.
   const totalUpcoming = upcomingEvents.length;
   const incompleteCount = upcomingEvents.filter(isIncomplete).length;
 
@@ -229,11 +234,12 @@ export default async function DashboardPage({
       {/* Stats strip */}
       <div className="grid grid-cols-3 gap-4 mb-10">
         <StatCard label="Upcoming" value={totalUpcoming} />
+        <StatCard label="Drafts" value={draftEvents.length} />
         <StatCard label="Past events" value={pastEvents.length} />
-        <StatCard label="Total posted" value={upcomingEvents.length + pastEvents.length} />
       </div>
 
       <DashboardEventsClient
+        draftEvents={draftEvents}
         upcomingEvents={upcomingEvents}
         pastEvents={pastEvents}
         rsvpCounts={rsvpCounts}

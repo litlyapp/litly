@@ -63,6 +63,7 @@ export default async function EventsPage({
     `
     )
     .eq("is_cancelled", false)
+    .neq("is_published", false)
     .gte("date_time", new Date().toISOString())
     .order("date_time", { ascending: true });
 

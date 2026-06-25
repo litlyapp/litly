@@ -16,6 +16,16 @@ function escapeIcs(str: string): string {
   return str.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
 }
 
+// RFC 5545 §3.1: lines longer than 75 octets must be folded with CRLF + single space
+function foldLine(line: string): string {
+  if (line.length <= 75) return line;
+  const chunks: string[] = [line.slice(0, 75)];
+  for (let i = 75; i < line.length; i += 74) {
+    chunks.push(line.slice(i, i + 74));
+  }
+  return chunks.join("\r\n ");
+}
+
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -55,7 +65,7 @@ export async function GET(
     `URL:https://thelitlyapp.com/events/${event.id}`,
     "END:VEVENT",
     "END:VCALENDAR",
-  ].filter(Boolean).join("\r\n");
+  ].filter(Boolean).map(foldLine).join("\r\n");
 
   return new NextResponse(lines, {
     headers: {

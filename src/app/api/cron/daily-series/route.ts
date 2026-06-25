@@ -65,7 +65,7 @@ export async function GET(req: Request) {
       .eq("parent_event_id", parent.id)
       .order("date_time", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     const parentStart = new Date(parent.date_time);
     const lastDate = lastChild ? new Date(lastChild.date_time) : parentStart;

@@ -200,7 +200,14 @@ ${text}`,
         if (content.type === "text") {
           const jsonMatch = content.text.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
-            const event = JSON.parse(jsonMatch[0]);
+            let event: Record<string, unknown>;
+            try {
+              event = JSON.parse(jsonMatch[0]);
+            } catch (e) {
+              console.warn(`[crawl-calendars] invalid JSON from parser for ${url}:`, e);
+              await sleep(delayMs);
+              continue;
+            }
             if (!event.ignore && event.title) {
               const { error } = await supabase.from("pending_imports").insert({
                 source_email: source.sourceEmail,

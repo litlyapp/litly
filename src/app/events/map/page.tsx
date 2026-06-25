@@ -34,6 +34,7 @@ export default async function EventMapPage({
       "id, title, genre, event_type, date_time, timezone, lat, lng, location_name, parent_event_id, organizer:organizer_profiles!events_organizer_id_fkey(id, name)"
     )
     .eq("is_cancelled", false)
+    .neq("is_published", false)
     .gte("date_time", new Date().toISOString())
     .order("date_time", { ascending: true });
 

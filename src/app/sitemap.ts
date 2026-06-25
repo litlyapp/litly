@@ -11,6 +11,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .from("events")
     .select("id")
     .eq("is_cancelled", false)
+    .neq("is_published", false)
     .gte("date_time", sixMonthsAgo.toISOString())
     .order("date_time", { ascending: false });
 

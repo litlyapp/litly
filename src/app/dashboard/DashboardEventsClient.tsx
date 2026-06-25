@@ -23,9 +23,11 @@ export interface DashboardEventClientData {
   parent_event_id?: string | null;
   recurrence_rule?: object | null;
   is_cancelled?: boolean;
+  is_published?: boolean;
 }
 
 interface Props {
+  draftEvents: DashboardEventClientData[];
   upcomingEvents: DashboardEventClientData[];
   pastEvents: DashboardEventClientData[];
   rsvpCounts: Record<string, number>;
@@ -39,6 +41,7 @@ interface Props {
 }
 
 export default function DashboardEventsClient({
+  draftEvents,
   upcomingEvents,
   pastEvents,
   rsvpCounts,
@@ -91,6 +94,34 @@ export default function DashboardEventsClient({
         <div className="bg-orange/10 border border-orange/30 rounded-2xl px-5 py-4 mb-6 text-cream text-sm">
           {`${incompleteCount} upcoming event${incompleteCount !== 1 ? "s" : ""} ${incompleteCount !== 1 ? "are" : "is"} missing a ticket/join link — look for the "Needs details" tag below.`}
         </div>
+      )}
+
+      {/* Drafts */}
+      {draftEvents.length > 0 && (
+        <section className="mb-10">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="font-serif text-2xl text-cream">Drafts</h2>
+              <p className="text-cream-muted text-xs mt-0.5">
+                Not visible to the public — edit and post when ready.
+              </p>
+            </div>
+          </div>
+          <div className="bg-navy-light border border-cream/10 rounded-2xl overflow-hidden">
+            {draftEvents.map((event, i) => (
+              <DashboardEventRow
+                key={event.id}
+                event={event}
+                divider={i < draftEvents.length - 1}
+                isDraft
+                rsvpCount={0}
+                saveCount={0}
+                viewCount={0}
+                clickCount={0}
+              />
+            ))}
+          </div>
+        </section>
       )}
 
       {/* Upcoming events */}

@@ -79,6 +79,7 @@ export default async function CalendarPage({
     .from("events")
     .select("id, date_time, timezone")
     .eq("is_cancelled", false)
+    .neq("is_published", false)
     .gte("date_time", lowerBound)
     .lt("date_time", rangeEnd.toISOString());
 

@@ -31,6 +31,7 @@ export default async function HomePage() {
        organizer:organizer_profiles!events_organizer_id_fkey(id, name, org_type)`
     )
     .eq("is_cancelled", false)
+    .neq("is_published", false)
     .gte("date_time", new Date().toISOString())
     .order("date_time", { ascending: true })
     .limit(60);
@@ -64,6 +65,7 @@ export default async function HomePage() {
     .from("events")
     .select("id, parent_event_id")
     .eq("is_cancelled", false)
+    .neq("is_published", false)
     .gte("date_time", new Date().toISOString())
     .order("date_time", { ascending: true });
 

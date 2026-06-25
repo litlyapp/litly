@@ -51,6 +51,8 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
   const [defaultBannerUrl, setDefaultBannerUrl] = useState<string | null>(profile.default_banner_url);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   function toggleFeedGenre(genre: Genre) {
@@ -107,6 +109,36 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
           body: JSON.stringify({ orgId: profile.id }),
         });
       }
+
+      // Trigger an immediate sync if a calendar feed URL was just added or changed
+      const feedChanged =
+        trimmedFeedUrl && trimmedFeedUrl !== (profile.calendar_feed_url ?? "").trim();
+      if (feedChanged) {
+        setSyncing(true);
+        setSyncResult(null);
+        try {
+          const syncRes = await fetch("/api/org/sync-feed", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ orgId: profile.id }),
+          });
+          const syncBody = await syncRes.json();
+          if (syncRes.ok) {
+            const { newCount } = syncBody as { newCount: number };
+            setSyncResult(
+              newCount > 0
+                ? `${newCount} new event${newCount !== 1 ? "s" : ""} imported as drafts — review them in your dashboard.`
+                : "Feed synced — no new events found."
+            );
+          } else {
+            setSyncResult(`Feed sync failed: ${syncBody.error ?? "unknown error"}`);
+          }
+        } catch {
+          setSyncResult("Feed sync failed — your profile was saved. The daily sync will retry.");
+        }
+        setSyncing(false);
+      }
+
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
       router.refresh();
@@ -242,7 +274,15 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
             placeholder="https://calendar.google.com/calendar/ical/…"
             className="w-full bg-navy border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange"
           />
-          {profile.calendar_feed_url && (
+          {syncing && (
+            <p className="text-cream-muted text-xs mt-2">Syncing your calendar feed…</p>
+          )}
+          {syncResult && !syncing && (
+            <p className={`text-xs mt-2 ${syncResult.includes("failed") ? "text-orange" : "text-orange"}`}>
+              {syncResult}
+            </p>
+          )}
+          {profile.calendar_feed_url && !syncing && !syncResult && (
             <p className="text-cream-muted text-xs mt-2">
               {profile.calendar_feed_last_status === "error" ? (
                 <span className="text-orange">
@@ -314,10 +354,10 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
 
       <button
         type="submit"
-        disabled={saving}
+        disabled={saving || syncing}
         className="w-full bg-orange text-cream font-semibold py-3 rounded-full hover:bg-orange/90 transition disabled:opacity-60"
       >
-        {saving ? "Saving…" : saved ? "Saved!" : "Save profile"}
+        {saving ? "Saving…" : syncing ? "Syncing feed…" : saved ? "Saved!" : "Save profile"}
       </button>
 
       {/* Delete org */}

@@ -782,6 +782,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
           ...sharedFields,
           recurrence_rule: recurrenceRule ?? null,
           is_ongoing: recurrenceRule ? newEventOngoing : false,
+          is_published: publishIntent,
         })
         .select("id")
         .single();
@@ -805,7 +806,12 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         }
       }
 
-      router.push(`/events/${data.id}`);
+      // Drafts go to dashboard; published events go to the event detail page
+      if (publishIntent) {
+        router.push(`/events/${data.id}`);
+      } else {
+        router.push("/dashboard");
+      }
     }
   }
 
@@ -1381,7 +1387,18 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
 
       {/* Submit */}
       <div className="flex gap-3 pt-2">
-        {isDraft ? (
+        {isEditing && !isDraft ? (
+          // Live event being edited — single "Save changes" button
+          <button
+            type="submit"
+            disabled={loading}
+            onClick={() => setPublishIntent(true)}
+            className="flex-1 bg-orange text-cream font-semibold rounded-full py-3 hover:bg-orange/90 transition disabled:opacity-60"
+          >
+            {loading ? "Saving…" : "Save changes"}
+          </button>
+        ) : (
+          // New event or draft — two buttons: Post event (primary) + Save draft
           <>
             <button
               type="submit"
@@ -1389,7 +1406,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
               onClick={() => setPublishIntent(true)}
               className="flex-1 bg-orange text-cream font-semibold rounded-full py-3 hover:bg-orange/90 transition disabled:opacity-60"
             >
-              {loading && publishIntent ? "Publishing…" : "Publish event"}
+              {loading && publishIntent ? "Posting…" : "Post event"}
             </button>
             <button
               type="submit"
@@ -1400,20 +1417,6 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
               {loading && !publishIntent ? "Saving…" : "Save draft"}
             </button>
           </>
-        ) : (
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex-1 bg-orange text-cream font-semibold rounded-full py-3 hover:bg-orange/90 transition disabled:opacity-60"
-          >
-            {loading
-              ? isEditing
-                ? "Saving…"
-                : "Publishing…"
-              : isEditing
-              ? "Save changes"
-              : "Publish event"}
-          </button>
         )}
         <button
           type="button"

@@ -151,6 +151,7 @@ export type Database = {
           recurrence_rule: RecurrenceRule | null;
           parent_event_id: string | null;
           is_cancelled: boolean;
+          is_published: boolean;
           series_end_date: string | null;
           is_ongoing: boolean;
           created_at: string;
@@ -189,6 +190,7 @@ export type Database = {
           recurrence_rule?: RecurrenceRule | null;
           parent_event_id?: string | null;
           is_cancelled?: boolean;
+          is_published?: boolean;
           series_end_date?: string | null;
           is_ongoing?: boolean;
           created_at?: string;
@@ -222,6 +224,7 @@ export type Database = {
           recurrence_rule?: RecurrenceRule | null;
           parent_event_id?: string | null;
           is_cancelled?: boolean;
+          is_published?: boolean;
           series_end_date?: string | null;
           is_ongoing?: boolean;
           external_uid?: string | null;
