@@ -68,10 +68,12 @@ export async function POST(request: Request) {
       .replace(/<head[\s\S]*?<\/head>/gi, "")
       .replace(/<script[\s\S]*?<\/script>/gi, "")
       .replace(/<style[\s\S]*?<\/style>/gi, "")
-      // Strip datetime attributes on <time> elements — Claude reads these as UTC and gets the time wrong
-      .replace(/(<time\b[^>]*?)\sdatetime="[^"]*"/gi, "$1")
-      // Strip data-* attributes that may carry machine-encoded timestamps
-      .replace(/\sdata-(?:start|end|date|time|datetime)-?(?:utc|iso|unix|ts)?="[^"]*"/gi, "");
+      // Remove datetime/content attributes that carry UTC-encoded timestamps.
+      // Claude reads these and gets the local time wrong (e.g. 18:00Z → 2 PM EDT instead of 6 PM).
+      // Matches: datetime="...", content="2026-..." on <meta> tags, data-* timestamp attrs.
+      .replace(/\bdatetime="[^"]*"/gi, "")
+      .replace(/(<meta\b[^>]*?)\scontent="20\d\d-\d\d-\d\dT[^"]*"/gi, "$1")
+      .replace(/\sdata-[a-z-]*(?:date|time|start|end|unix|utc|ts)[a-z-]*="[^"]*"/gi, "");
     // Trim to 50k chars — Claude doesn't need the full DOM
     html = html.slice(0, 50000);
   } catch (err) {
