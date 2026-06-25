@@ -104,8 +104,10 @@ ${html}`,
 
   let extracted: Record<string, unknown>;
   try {
-    const text = message.content[0].type === "text" ? message.content[0].text : "";
-    extracted = JSON.parse(text.trim());
+    const raw = message.content[0].type === "text" ? message.content[0].text : "";
+    // Strip markdown code fences Claude sometimes wraps around JSON
+    const text = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+    extracted = JSON.parse(text);
   } catch {
     return NextResponse.json({ error: "Failed to parse extracted event data" }, { status: 500 });
   }
