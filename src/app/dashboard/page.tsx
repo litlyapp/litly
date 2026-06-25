@@ -230,8 +230,7 @@ export default async function DashboardPage({
 
       {incompleteCount > 0 && (
         <div className="bg-orange/10 border border-orange/30 rounded-2xl px-5 py-4 mb-6 text-cream text-sm">
-          {incompleteCount} upcoming event{incompleteCount !== 1 ? "s" : ""}{" "}
-          {incompleteCount !== 1 ? "are" : "is"} missing a ticket/join link — look for the &quot;Needs details&quot; tag below.
+          {`${incompleteCount} upcoming event${incompleteCount !== 1 ? "s" : ""} ${incompleteCount !== 1 ? "are" : "is"} missing a ticket/join link — look for the "Needs details" tag below.`}
         </div>
       )}
 
