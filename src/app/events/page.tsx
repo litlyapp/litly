@@ -58,7 +58,7 @@ export default async function EventsPage({
       `
       id, title, description, genre, event_type, date_time, timezone, end_time,
       location_name, address, city, state, country, lat, lng, virtual_url, open_mic, rsvp_enabled, created_at,
-      is_cancelled, parent_event_id,
+      is_cancelled, parent_event_id, is_imported, source_url, source_name,
       organizer:organizer_profiles!events_organizer_id_fkey(id, name, org_type)
     `
     )
