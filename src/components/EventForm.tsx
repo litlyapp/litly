@@ -449,6 +449,26 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
     setReaders((prev) => prev.filter((_, i) => i !== index));
   }
 
+  async function handleDeleteDraft() {
+    if (!eventId) return;
+    setCancelling(true);
+    try {
+      const res = await fetch(`/api/events/${eventId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = await res.json();
+        setError(body.error ?? "Failed to delete draft.");
+        setCancelling(false);
+        setCancelConfirm(false);
+        return;
+      }
+      window.location.href = "/dashboard";
+    } catch {
+      setError("Network error. Please try again.");
+      setCancelling(false);
+      setCancelConfirm(false);
+    }
+  }
+
   async function handleCancel() {
     if (!eventId) return;
     setCancelling(true);
@@ -776,7 +796,8 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
           ...sharedFields,
           recurrence_rule: recurrenceRule ?? null,
           is_ongoing: recurrenceRule ? newEventOngoing : false,
-          is_published: publishIntent,
+          // Duplicates always start as drafts regardless of which button was clicked
+          is_published: initialData?.title ? false : publishIntent,
         })
         .select("id")
         .single();
@@ -1332,41 +1353,77 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         </p>
       )}
 
-      {/* Cancel this event — only when editing */}
+      {/* Cancel / delete — only when editing */}
       {isEditing && (
         <div className="pt-2 border-t border-cream/10">
-          {!cancelConfirm ? (
-            <button
-              type="button"
-              onClick={() => setCancelConfirm(true)}
-              className="w-full py-3 rounded-full border border-orange/40 text-orange text-sm font-medium hover:bg-orange/10 transition"
-            >
-              Cancel this event
-            </button>
-          ) : (
-            <div className="bg-orange/10 border border-orange/30 rounded-2xl p-5 space-y-3">
-              <p className="text-cream text-sm font-medium">Cancel this event?</p>
-              <p className="text-cream-muted text-xs">
-                This cannot be undone. All RSVPd patrons will receive a cancellation email.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  disabled={cancelling}
-                  className="px-5 py-2 rounded-full bg-orange text-cream text-sm font-medium hover:bg-orange/90 transition disabled:opacity-60"
-                >
-                  {cancelling ? "Cancelling…" : "Yes, cancel event"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCancelConfirm(false)}
-                  className="px-5 py-2 rounded-full border border-cream/20 text-cream-muted hover:text-cream hover:border-cream/40 transition text-sm"
-                >
-                  Keep event
-                </button>
+          {isDraft ? (
+            // Draft: offer permanent deletion
+            !cancelConfirm ? (
+              <button
+                type="button"
+                onClick={() => setCancelConfirm(true)}
+                className="w-full py-3 rounded-full border border-orange/40 text-orange text-sm font-medium hover:bg-orange/10 transition"
+              >
+                Delete draft
+              </button>
+            ) : (
+              <div className="bg-orange/10 border border-orange/30 rounded-2xl p-5 space-y-3">
+                <p className="text-cream text-sm font-medium">Delete this draft?</p>
+                <p className="text-cream-muted text-xs">This cannot be undone.</p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={handleDeleteDraft}
+                    disabled={cancelling}
+                    className="px-5 py-2 rounded-full bg-orange text-cream text-sm font-medium hover:bg-orange/90 transition disabled:opacity-60"
+                  >
+                    {cancelling ? "Deleting…" : "Yes, delete draft"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCancelConfirm(false)}
+                    className="px-5 py-2 rounded-full border border-cream/20 text-cream-muted hover:text-cream hover:border-cream/40 transition text-sm"
+                  >
+                    Keep draft
+                  </button>
+                </div>
               </div>
-            </div>
+            )
+          ) : (
+            // Live event: cancel (notifies RSVPs)
+            !cancelConfirm ? (
+              <button
+                type="button"
+                onClick={() => setCancelConfirm(true)}
+                className="w-full py-3 rounded-full border border-orange/40 text-orange text-sm font-medium hover:bg-orange/10 transition"
+              >
+                Cancel this event
+              </button>
+            ) : (
+              <div className="bg-orange/10 border border-orange/30 rounded-2xl p-5 space-y-3">
+                <p className="text-cream text-sm font-medium">Cancel this event?</p>
+                <p className="text-cream-muted text-xs">
+                  This cannot be undone. All RSVPd patrons will receive a cancellation email.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    disabled={cancelling}
+                    className="px-5 py-2 rounded-full bg-orange text-cream text-sm font-medium hover:bg-orange/90 transition disabled:opacity-60"
+                  >
+                    {cancelling ? "Cancelling…" : "Yes, cancel event"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCancelConfirm(false)}
+                    className="px-5 py-2 rounded-full border border-cream/20 text-cream-muted hover:text-cream hover:border-cream/40 transition text-sm"
+                  >
+                    Keep event
+                  </button>
+                </div>
+              </div>
+            )
           )}
         </div>
       )}
