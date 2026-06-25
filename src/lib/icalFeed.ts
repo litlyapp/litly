@@ -16,6 +16,75 @@ export interface ParsedFeedEvent {
 
 const DEFAULT_FEED_TZ = "America/New_York";
 
+const URL_REGEX = /https?:\/\/[^\s<>"')\]]+/gi;
+const SELF_HOSTS = ["thelitlyapp.com", "litly.app"];
+
+// Higher score = more likely to be the event/ticket/join link
+const URL_PRIORITY: { pattern: RegExp; score: number }[] = [
+  // Virtual meeting links
+  { pattern: /zoom\.us\/j\//i, score: 100 },
+  { pattern: /meet\.google\.com\//i, score: 100 },
+  { pattern: /teams\.microsoft\.com\//i, score: 100 },
+  { pattern: /whereby\.com\//i, score: 100 },
+  { pattern: /webex\.com\//i, score: 100 },
+  { pattern: /streamyard\.com\//i, score: 90 },
+  { pattern: /youtube\.com\/live\//i, score: 90 },
+  { pattern: /youtu\.be\//i, score: 80 },
+  { pattern: /youtube\.com\/watch/i, score: 80 },
+  // Ticketing / registration platforms
+  { pattern: /eventbrite\.com\//i, score: 95 },
+  { pattern: /ticketmaster\.com\//i, score: 95 },
+  { pattern: /etix\.com\//i, score: 95 },
+  { pattern: /universe\.com\//i, score: 90 },
+  { pattern: /tito\.io\//i, score: 90 },
+  { pattern: /eventbee\.com\//i, score: 90 },
+  { pattern: /humanitix\.com\//i, score: 90 },
+  { pattern: /squareup\.com\//i, score: 85 },
+  { pattern: /forms\.gle\//i, score: 80 },
+  { pattern: /docs\.google\.com\/forms/i, score: 80 },
+  { pattern: /lu\.ma\//i, score: 85 },
+  { pattern: /partiful\.com\//i, score: 85 },
+];
+
+function scoreUrl(url: string): number {
+  for (const { pattern, score } of URL_PRIORITY) {
+    if (pattern.test(url)) return score;
+  }
+  return 0;
+}
+
+function extractUrls(text: string): string[] {
+  return [...text.matchAll(URL_REGEX)]
+    .map((m) => m[0].replace(/[.,;:!?]+$/, ""))
+    .filter((u) => !SELF_HOSTS.some((h) => u.includes(h)));
+}
+
+async function testUrl(url: string): Promise<boolean> {
+  try {
+    const res = await fetch(url, {
+      method: "HEAD",
+      redirect: "follow",
+      signal: AbortSignal.timeout(4000),
+    });
+    return res.ok || (res.status >= 300 && res.status < 400);
+  } catch {
+    return false;
+  }
+}
+
+async function resolveEventUrl(
+  item: { url?: string; description?: string }
+): Promise<string | null> {
+  if (item.url) return String(item.url).trim();
+  if (!item.description) return null;
+  const candidates = extractUrls(String(item.description))
+    .sort((a, b) => scoreUrl(b) - scoreUrl(a));
+  for (const url of candidates) {
+    if (await testUrl(url)) return url;
+  }
+  return null;
+}
+
 // node-ical's VEVENT.start carries a `tz` property (IANA name) when the
 // source used a floating/local DTSTART with a TZID. UTC/Z-suffixed values
 // have no tz — those are true UTC instants, so the app's display layer
@@ -81,6 +150,7 @@ export async function parseFeed(url: string): Promise<ParsedFeedEvent[]> {
 
     const { date_time, timezone } = startToFields(item.start, calendarTz);
     const end_time = item.end ? startToFields(item.end, calendarTz).date_time : null;
+    const resolvedUrl = await resolveEventUrl(item);
 
     events.push({
       uid: String(item.uid),
@@ -90,7 +160,7 @@ export async function parseFeed(url: string): Promise<ParsedFeedEvent[]> {
       end_time,
       timezone,
       location_name: item.location ? String(item.location).trim() : null,
-      url: item.url ? String(item.url).trim() : null,
+      url: resolvedUrl,
     });
   }
   return events;
