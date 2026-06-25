@@ -91,17 +91,38 @@ export default async function EventsPage({
         )
       : rawEvents;
 
-  // Fetch the logged-in user's saved event IDs and organizer status
+  // Fetch the logged-in user's saved event IDs, organizer status, and following feed
   const { data: { user } } = await supabase.auth.getUser();
   let savedEventIds = new Set<string>();
   let isOrganizer = false;
+  let followingEvents: typeof events = [];
   if (user) {
-    const [savedResult, profileResult] = await Promise.all([
+    const [savedResult, profileResult, followsResult] = await Promise.all([
       supabase.from("saved_events").select("event_id").eq("user_id", user.id),
       supabase.from("organizer_profiles").select("id").eq("user_id", user.id).maybeSingle(),
+      supabase.from("follows").select("organizer_id").eq("patron_id", user.id),
     ]);
     savedEventIds = new Set((savedResult.data ?? []).map((s) => s.event_id));
     isOrganizer = !!profileResult.data;
+
+    const followedOrgIds = (followsResult.data ?? []).map((f) => f.organizer_id);
+    if (followedOrgIds.length > 0) {
+      const { data: followingRaw } = await supabase
+        .from("events")
+        .select(`
+          id, title, description, genre, event_type, date_time, timezone, end_time,
+          location_name, address, city, state, country, lat, lng, virtual_url, open_mic, rsvp_enabled, created_at,
+          is_cancelled, parent_event_id, is_imported, source_url, source_name,
+          organizer:organizer_profiles!events_organizer_id_fkey(id, name, org_type)
+        `)
+        .eq("is_cancelled", false)
+        .neq("is_published", false)
+        .gte("date_time", new Date().toISOString())
+        .in("organizer_id", followedOrgIds)
+        .order("date_time", { ascending: true })
+        .limit(6);
+      followingEvents = followingRaw ?? [];
+    }
   }
 
   // Deduplicate recurring series: keep only the next upcoming occurrence per series.
@@ -176,6 +197,27 @@ export default async function EventsPage({
 
         {/* Event grid */}
         <div className="flex-1">
+          {/* Following feed — signed-in users following at least one org */}
+          {followingEvents.length > 0 && (
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-serif text-xl text-cream">From orgs you follow</h2>
+                <Link
+                  href="/following"
+                  className="text-orange text-sm hover:text-orange/80 transition"
+                >
+                  See all →
+                </Link>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {followingEvents.map((event) => (
+                  <EventCard key={event.id} event={event} savedEventIds={savedEventIds} />
+                ))}
+              </div>
+              <div className="mt-4 border-t border-cream/10" />
+            </div>
+          )}
+
           {/* Organizer profile banner */}
           {params.organizer && (() => {
             const org = (organizers ?? []).find((o) => o.id === params.organizer);
