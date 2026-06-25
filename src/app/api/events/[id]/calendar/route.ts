@@ -65,7 +65,7 @@ export async function GET(
     `URL:https://thelitlyapp.com/events/${event.id}`,
     "END:VEVENT",
     "END:VCALENDAR",
-  ].filter(Boolean).map(foldLine).join("\r\n");
+  ].filter((l): l is string => l !== null).map(foldLine).join("\r\n");
 
   return new NextResponse(lines, {
     headers: {
