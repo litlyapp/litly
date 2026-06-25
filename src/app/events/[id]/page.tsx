@@ -548,12 +548,13 @@ export default async function EventDetailPage({
         </div>
       )}
 
-      {/* Organizer cancel control — only shown to members of this event's org */}
+      {/* Organizer cancel/delete control — only shown to members of this event's org */}
       {isOrganizer && !isPast && !ev.is_cancelled && (
         <div className="mb-6">
           <CancelEventButton
             eventId={event.id}
             isRecurring={isRecurring}
+            isDraft={isDraft}
           />
         </div>
       )}
