@@ -94,8 +94,9 @@ export async function POST(request: Request) {
 Fields:
 - title: string (event name)
 - description: string | null (full event description, plain text)
-- date_time: string | null (ISO 8601 format WITHOUT timezone offset, e.g. "2026-08-15T19:00:00". If the page shows "6pm" output "2026-08-15T18:00:00". NEVER subtract or add hours. NEVER convert to UTC. Copy the clock time exactly as a human would read it.)
-- end_time: string | null (same rule — copy the displayed end time exactly, no conversion)
+- date: string | null (date only, YYYY-MM-DD format, e.g. "2026-08-15")
+- start_time_display: string | null (time exactly as shown on the page, e.g. "6:00 PM" or "6pm" or "18:00" — copy verbatim, do NOT convert or adjust)
+- end_time_display: string | null (end time exactly as shown on the page, same rule)
 - timezone: string | null (IANA timezone, e.g. "America/New_York" — infer from the event location or any timezone label shown on the page)
 - event_type: "in_person" | "virtual" (default to "in_person" if unclear)
 - location_name: string | null (venue name)
@@ -106,8 +107,6 @@ Fields:
 - ticket_url: string | null (URL to buy tickets or RSVP)
 - virtual_url: string | null (URL to join virtual event)
 - banner_url: string | null (URL of the main event image if present as an absolute URL)
-
-IMPORTANT: For date_time and end_time, always use the time as it appears to the reader on the page (e.g. "3:00 PM"), never convert from UTC or use raw schema.org datetime values.
 
 Return ONLY the JSON object, no explanation.
 
@@ -120,12 +119,36 @@ ${html}`,
   let extracted: Record<string, unknown>;
   try {
     const raw = message.content[0].type === "text" ? message.content[0].text : "";
-    // Strip markdown code fences Claude sometimes wraps around JSON
     const text = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
     extracted = JSON.parse(text);
   } catch {
     return NextResponse.json({ error: "Failed to parse extracted event data" }, { status: 500 });
   }
+
+  // Convert date + display time string → ISO 8601 local datetime (no offset)
+  function buildIso(date: string | null | undefined, timeDisplay: string | null | undefined): string | null {
+    if (!date) return null;
+    if (!timeDisplay) return `${date}T00:00:00`;
+    const t = timeDisplay.trim().toLowerCase();
+    // Already HH:MM or HH:MM:SS
+    const already = t.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+    if (already) return `${date}T${already[1].padStart(2,"0")}:${already[2]}:00`;
+    // 12-hour: "6:00 pm", "6pm", "6:30am"
+    const twelve = t.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/);
+    if (twelve) {
+      let h = parseInt(twelve[1], 10);
+      const m = parseInt(twelve[2] ?? "0", 10);
+      const meridiem = twelve[3];
+      if (meridiem === "pm" && h !== 12) h += 12;
+      if (meridiem === "am" && h === 12) h = 0;
+      return `${date}T${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:00`;
+    }
+    return null;
+  }
+
+  const dateStr = extracted.date as string | null;
+  const isoDateTime = buildIso(dateStr, extracted.start_time_display as string | null);
+  const isoEndTime = buildIso(dateStr, extracted.end_time_display as string | null);
 
   // Geocode if in-person
   let coords: { lat: number; lng: number } | null = null;
@@ -146,9 +169,9 @@ ${html}`,
       description: (extracted.description as string) ?? null,
       genre: [],
       event_type: ((extracted.event_type as string) === "virtual" ? "virtual" : "in_person"),
-      date_time: (extracted.date_time as string) ?? null,
+      date_time: isoDateTime,
       timezone: (extracted.timezone as string) ?? null,
-      end_time: (extracted.end_time as string) ?? null,
+      end_time: isoEndTime,
       location_name: (extracted.location_name as string) ?? null,
       address: (extracted.address as string) ?? null,
       city: (extracted.city as string) ?? null,
