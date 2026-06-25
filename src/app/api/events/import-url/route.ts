@@ -68,9 +68,11 @@ export async function POST(request: Request) {
       .replace(/<head[\s\S]*?<\/head>/gi, "")
       .replace(/<script[\s\S]*?<\/script>/gi, "")
       .replace(/<style[\s\S]*?<\/style>/gi, "")
-      // Remove datetime/content attributes that carry UTC-encoded timestamps.
-      // Claude reads these and gets the local time wrong (e.g. 18:00Z → 2 PM EDT instead of 6 PM).
-      // Matches: datetime="...", content="2026-..." on <meta> tags, data-* timestamp attrs.
+      // Remove machine-encoded timestamps that confuse Claude into wrong local times.
+      // Root cause: "startDate":"2026-06-25T18:00:00-04:00" → Claude subtracts offset → 2 PM instead of 6 PM.
+      // Strip all ISO 8601 datetimes with timezone offsets or Z suffix anywhere in the HTML.
+      .replace(/\b20\d\d-\d\d-\d\dT\d\d:\d\d:\d\d(?:[+-]\d\d:\d\d|Z)\b/g, "")
+      // Also strip datetime="..." and content="..." attributes carrying timestamps
       .replace(/\bdatetime="[^"]*"/gi, "")
       .replace(/(<meta\b[^>]*?)\scontent="20\d\d-\d\d-\d\dT[^"]*"/gi, "$1")
       .replace(/\sdata-[a-z-]*(?:date|time|start|end|unix|utc|ts)[a-z-]*="[^"]*"/gi, "");
