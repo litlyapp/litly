@@ -23,7 +23,7 @@ export default async function JoinPage({
 
   const { data: invite } = await svc
     .from("org_invites")
-    .select("id, org_id, email, expires_at, accepted_at, organizer_profiles(name)")
+    .select("id, org_id, email, expires_at, accepted_at, invited_role, organizer_profiles(name)")
     .eq("token", token)
     .maybeSingle();
 
@@ -77,7 +77,7 @@ export default async function JoinPage({
     // Accept invite
     const { error: memberError } = await svc
       .from("org_members")
-      .upsert({ org_id: invite.org_id, user_id: user.id, role: "editor" }, { onConflict: "org_id,user_id", ignoreDuplicates: true });
+      .upsert({ org_id: invite.org_id, user_id: user.id, role: (invite as typeof invite & { invited_role?: string }).invited_role === "admin" ? "admin" : "editor" }, { onConflict: "org_id,user_id", ignoreDuplicates: true });
 
     if (memberError) {
       return (

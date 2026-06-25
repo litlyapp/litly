@@ -30,6 +30,7 @@ export default function TeamClient({
 }) {
   const router = useRouter();
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<"admin" | "editor">("editor");
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteSuccess, setInviteSuccess] = useState(false);
@@ -45,7 +46,7 @@ export default function TeamClient({
       const res = await fetch("/api/org/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: inviteEmail, orgId }),
+        body: JSON.stringify({ email: inviteEmail, orgId, role: inviteRole }),
       });
       const data = await res.json();
 
@@ -240,6 +241,14 @@ export default function TeamClient({
               onChange={(e) => { setInviteEmail(e.target.value); setInviteSuccess(false); }}
               className="flex-1 bg-navy border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange"
             />
+            <select
+              value={inviteRole}
+              onChange={(e) => setInviteRole(e.target.value as "admin" | "editor")}
+              className="bg-navy border border-cream/20 text-cream text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-orange"
+            >
+              <option value="editor">Editor</option>
+              <option value="admin">Admin</option>
+            </select>
             <button
               type="submit"
               disabled={inviting}

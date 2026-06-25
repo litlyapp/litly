@@ -13,8 +13,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Too many invites sent. Please try again later." }, { status: 429 });
   }
 
-  const { email: rawEmail, orgId } = await request.json();
+  const { email: rawEmail, orgId, role: rawRole } = await request.json();
   if (!rawEmail || !orgId) return NextResponse.json({ error: "email and orgId required" }, { status: 400 });
+  const invitedRole: "admin" | "editor" = rawRole === "admin" ? "admin" : "editor";
   if (typeof rawEmail !== "string" || rawEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail.trim())) {
     return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
   }
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
   const { error: inviteError } = await serviceClient
     .from("org_invites")
     .upsert(
-      { org_id: orgId, email, token: newToken, invited_by: user.id, expires_at: expiresAt, accepted_at: null },
+      { org_id: orgId, email, token: newToken, invited_by: user.id, expires_at: expiresAt, accepted_at: null, invited_role: invitedRole },
       { onConflict: "org_id,email", ignoreDuplicates: false }
     );
 
@@ -83,12 +84,11 @@ export async function POST(request: Request) {
     await sendEmail({
     to: email,
     subject: `You've been invited to manage ${orgName} on litly`,
-    text: `You've been invited to join ${orgName} as a team member on litly.\n\nAccept your invitation: ${joinUrl}\n\nThis link expires in 7 days.`,
+    text: `You've been invited to join ${orgName} as ${invitedRole === "admin" ? "an admin" : "an editor"} on litly.\n\nAccept your invitation: ${joinUrl}\n\nThis link expires in 7 days.`,
     html: emailWrapper(`
       <h1 style="font-family:Georgia,'Times New Roman',Times,serif;font-size:22px;margin:0 0 8px;color:#1B2A3E">You're invited to join ${escapeHtml(orgName)}</h1>
       <p style="color:#5a4a3a;margin:0 0 24px">
-        You've been invited to help manage <strong>${escapeHtml(orgName)}</strong> on litly as an editor —
-        you'll be able to post and edit events for this organization.
+        You've been invited to help manage <strong>${escapeHtml(orgName)}</strong> on litly as ${invitedRole === "admin" ? "an <strong>admin</strong> — you'll be able to manage team members, edit the org profile, and post events" : "an <strong>editor</strong> — you'll be able to post and edit events for this organization"}.
       </p>
       <a href="${joinUrl}"
          style="background:#E8622A;color:#fff;padding:12px 24px;border-radius:999px;
