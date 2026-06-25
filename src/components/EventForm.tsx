@@ -485,7 +485,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       return "A link is required for virtual events.";
     if (form.virtual_url.trim() && !/^https?:\/\//i.test(form.virtual_url.trim()))
       return "Virtual event link must start with http:// or https://";
-    if (form.ticket_type && !form.ticket_url.trim())
+    if (form.ticket_type && form.ticket_type !== "none" && !form.ticket_url.trim())
       return "A ticket URL is required when a ticket type is selected.";
     if (form.ticket_url.trim() && !/^https?:\/\//i.test(form.ticket_url.trim()))
       return "Ticket URL must start with http:// or https://";
@@ -553,7 +553,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         : null,
       rsvp_enabled: form.rsvp_enabled,
       ticket_url: form.ticket_url.trim() || null,
-      ticket_type: (form.ticket_type || null) as "paid" | "free" | null,
+      ticket_type: (form.ticket_type === "none" ? "none" : form.ticket_type || null) as "paid" | "free" | "none" | null,
       banner_url: bannerUrl,
       // Only the admin form includes these keys — regular org edits leave any
       // existing attribution untouched
@@ -1129,7 +1129,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
             <div className="flex gap-2 flex-wrap">
               {(
                 [
-                  { value: "", label: "No tickets" },
+                  { value: "none", label: "No tickets" },
                   { value: "free", label: "Free ticket / registration" },
                   { value: "paid", label: "Paid ticket" },
                 ] as const
@@ -1151,7 +1151,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
                 </button>
               ))}
             </div>
-            {form.ticket_type && (
+            {form.ticket_type && form.ticket_type !== "none" && (
               <div>
                 <input
                   type="url"
@@ -1168,7 +1168,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
               </div>
             )}
           </div>
-        ))(highlightMissingFields && form.event_type === "in_person" && !form.ticket_url.trim() && form.ticket_type !== "")}
+        ))(highlightMissingFields && form.event_type === "in_person" && !form.ticket_url.trim() && form.ticket_type !== "none")}
       </div>
 
       {/* Source attribution — admin only */}

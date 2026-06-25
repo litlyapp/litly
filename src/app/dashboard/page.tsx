@@ -18,6 +18,7 @@ interface DashboardEvent {
   location_name: string | null;
   virtual_url: string | null;
   ticket_url?: string | null;
+  ticket_type?: string | null;
   rsvp_enabled: boolean;
   open_mic: boolean;
   parent_event_id?: string | null;
@@ -31,7 +32,12 @@ interface DashboardEvent {
 // plenty of legitimate events have none, so flagging every banner-less event
 // would just be permanent noise orgs learn to ignore.
 function isIncomplete(event: DashboardEvent): boolean {
-  return event.event_type === "in_person" ? !event.ticket_url : !event.virtual_url;
+  if (event.event_type === "in_person") {
+    // "No tickets" explicitly chosen — org has made a deliberate choice, not an oversight
+    if (event.ticket_type === "none") return false;
+    return !event.ticket_url;
+  }
+  return !event.virtual_url;
 }
 
 export default async function DashboardPage({
@@ -79,7 +85,7 @@ export default async function DashboardPage({
   const nowMs = Date.now();
   const isFuture = (iso: string) => new Date(iso).getTime() >= nowMs;
 
-  const eventSelect = "id, title, genre, event_type, date_time, timezone, location_name, virtual_url, ticket_url, rsvp_enabled, open_mic, parent_event_id, recurrence_rule, is_cancelled, view_count, ticket_click_count";
+  const eventSelect = "id, title, genre, event_type, date_time, timezone, location_name, virtual_url, ticket_url, ticket_type, rsvp_enabled, open_mic, parent_event_id, recurrence_rule, is_cancelled, view_count, ticket_click_count";
 
   // Fetch every top-level event (series parents + one-offs) for this org. We
   // can't split upcoming/past on the parent's own date alone: a series parent's
