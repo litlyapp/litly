@@ -13,6 +13,19 @@ import EventViewTracker from "@/components/EventViewTracker";
 import TicketLinkButton from "@/components/TicketLinkButton";
 import ShareButton from "@/components/ShareButton";
 import CancelEventButton from "@/components/CancelEventButton";
+
+function stripHtml(text: string): string {
+  return text
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .trim();
+}
 import { CURATED_ORG_ID } from "@/lib/curatedOrg";
 
 export async function generateMetadata({
@@ -44,6 +57,9 @@ export async function generateMetadata({
   return {
     title: `${event.title} — litly`,
     description,
+    alternates: {
+      canonical: `https://thelitlyapp.com/events/${id}`,
+    },
     openGraph: {
       title: event.title,
       description,
@@ -367,11 +383,11 @@ export default async function EventDetailPage({
             );
           })()}
 
-          {event.virtual_url && (
+          {event.virtual_url && /^https?:\/\//i.test(event.virtual_url) && (
             <div className="flex items-center gap-3 text-cream">
               <GlobeIcon />
               <a
-                href={/^https?:\/\//i.test(event.virtual_url ?? "") ? event.virtual_url! : "#"}
+                href={event.virtual_url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-orange hover:underline"
@@ -413,7 +429,7 @@ export default async function EventDetailPage({
         <div className="bg-navy-light border border-cream/10 rounded-2xl p-8 mb-6">
           <h2 className="font-serif text-xl text-cream mb-4">About this event</h2>
           <p className="text-cream-muted leading-relaxed whitespace-pre-line">
-            {event.description}
+            {stripHtml(event.description)}
           </p>
         </div>
       )}
@@ -423,17 +439,26 @@ export default async function EventDetailPage({
         <div className="bg-navy-light border border-cream/10 rounded-2xl p-8 mb-6">
           <h2 className="font-serif text-xl text-cream mb-4">Featured readers</h2>
           <div className="flex flex-wrap gap-3">
-            {featuredReaders.map((reader, i) => (
-              <a
-                key={i}
-                href={reader.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2 rounded-full border border-cream/20 text-cream text-sm hover:border-orange hover:text-orange transition"
-              >
-                {reader.name} ↗
-              </a>
-            ))}
+            {featuredReaders.map((reader, i) =>
+              /^https?:\/\//i.test(reader.url ?? "") ? (
+                <a
+                  key={i}
+                  href={reader.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 rounded-full border border-cream/20 text-cream text-sm hover:border-orange hover:text-orange transition"
+                >
+                  {reader.name} ↗
+                </a>
+              ) : (
+                <span
+                  key={i}
+                  className="px-4 py-2 rounded-full border border-cream/20 text-cream text-sm"
+                >
+                  {reader.name}
+                </span>
+              )
+            )}
           </div>
         </div>
       )}
