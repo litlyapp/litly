@@ -502,7 +502,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
     for (const r of readers) {
       if (!r.name.trim()) return "All featured readers need a name.";
       const wordCount = (r.bio ?? "").trim().split(/\s+/).filter(Boolean).length;
-      if (wordCount > 50) return `Bio for ${r.name} exceeds 50 words (${wordCount} words).`;
+      if (wordCount > 75) return `Bio for ${r.name} exceeds 75 words (${wordCount} words).`;
     }
     return null;
   }
@@ -1243,14 +1243,14 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
                   </div>
                   <div>
                     <textarea
-                      placeholder="Short bio (optional, 50 words max)"
+                      placeholder="Short bio (optional, 75 words max)"
                       value={reader.bio ?? ""}
                       onChange={(e) => updateReader(i, "bio", e.target.value)}
                       rows={2}
                       className={`${inputClass} resize-none`}
                     />
-                    <p className={`text-xs mt-0.5 text-right ${wordCount > 50 ? "text-orange" : "text-cream-muted/50"}`}>
-                      {wordCount}/50 words
+                    <p className={`text-xs mt-0.5 text-right ${wordCount > 75 ? "text-orange" : "text-cream-muted/50"}`}>
+                      {wordCount}/75 words
                     </p>
                   </div>
                 </div>
