@@ -192,12 +192,14 @@ export default function DashboardEventRow({ event, divider, isPast, isDraft, rsv
             >
               Duplicate
             </Link>
-            <button
-              onClick={() => setConfirming(true)}
-              className="text-cream-muted text-xs border border-cream/20 rounded-full px-3 py-1.5 hover:text-orange hover:border-orange/40 transition"
-            >
-              Delete
-            </button>
+            {isDraft && (
+              <button
+                onClick={() => setConfirming(true)}
+                className="text-cream-muted text-xs border border-cream/20 rounded-full px-3 py-1.5 hover:text-orange hover:border-orange/40 transition"
+              >
+                Delete
+              </button>
+            )}
           </>
         )}
       </div>
