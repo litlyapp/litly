@@ -63,8 +63,13 @@ export async function POST(request: Request) {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
     }
     html = await res.text();
-    // Trim to 30k chars — Claude doesn't need the full DOM
-    html = html.slice(0, 30000);
+    // Strip <head>, <script>, <style> blocks to save token budget for actual content
+    html = html
+      .replace(/<head[\s\S]*?<\/head>/gi, "")
+      .replace(/<script[\s\S]*?<\/script>/gi, "")
+      .replace(/<style[\s\S]*?<\/style>/gi, "");
+    // Trim to 50k chars — Claude doesn't need the full DOM
+    html = html.slice(0, 50000);
   } catch (err) {
     return NextResponse.json({ error: `Could not fetch URL: ${err}` }, { status: 422 });
   }
