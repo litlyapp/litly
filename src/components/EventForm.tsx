@@ -1168,7 +1168,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
               </div>
             )}
           </div>
-        ))(highlightMissingFields && form.event_type === "in_person" && !form.ticket_url.trim())}
+        ))(highlightMissingFields && form.event_type === "in_person" && !form.ticket_url.trim() && form.ticket_type !== "")}
       </div>
 
       {/* Source attribution — admin only */}
