@@ -79,6 +79,7 @@ export type Database = {
           calendar_feed_last_synced_at: string | null;
           calendar_feed_last_status: "success" | "error" | null;
           calendar_feed_last_error: string | null;
+          default_banner_for_all_events: boolean;
         };
         Insert: {
           id?: string;
@@ -94,6 +95,7 @@ export type Database = {
           calendar_feed_last_synced_at?: string | null;
           calendar_feed_last_status?: "success" | "error" | null;
           calendar_feed_last_error?: string | null;
+          default_banner_for_all_events?: boolean;
         };
         Update: {
           org_type?: OrgType;
@@ -107,6 +109,7 @@ export type Database = {
           calendar_feed_last_synced_at?: string | null;
           calendar_feed_last_status?: "success" | "error" | null;
           calendar_feed_last_error?: string | null;
+          default_banner_for_all_events?: boolean;
         };
         Relationships: [
           {

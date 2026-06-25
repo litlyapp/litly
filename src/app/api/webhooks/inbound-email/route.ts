@@ -212,7 +212,7 @@ ${emailContent.slice(0, 12000)}`,
     // past venues, then (capped, best-effort) from the event's own webpage
     let enrichmentBudget = 3;
     for (let i = 0; i < validEvents.length; i++) {
-      let event = await applyKnownVenue(supabase, validEvents[i], validEvents[i].source_name);
+      let event = await applyKnownVenue(supabase, validEvents[i], validEvents[i].source_name as string | null | undefined);
       const sparse =
         ((event.event_type ?? "in_person") === "in_person" && (!event.address || !event.city)) ||
         !event.date_time ||

@@ -23,6 +23,7 @@ interface Profile {
   calendar_feed_last_status: "success" | "error" | null;
   calendar_feed_last_error: string | null;
   default_banner_url: string | null;
+  default_banner_for_all_events: boolean;
 }
 
 function timeAgo(iso: string): string {
@@ -49,6 +50,7 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
   const [calendarFeedUrl, setCalendarFeedUrl] = useState(profile.calendar_feed_url ?? "");
   const [feedGenres, setFeedGenres] = useState<Genre[]>(profile.calendar_feed_default_genre ?? []);
   const [defaultBannerUrl, setDefaultBannerUrl] = useState<string | null>(profile.default_banner_url);
+  const [defaultBannerForAll, setDefaultBannerForAll] = useState(profile.default_banner_for_all_events);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -90,6 +92,7 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
         calendar_feed_url: trimmedFeedUrl || null,
         calendar_feed_default_genre: trimmedFeedUrl ? feedGenres : null,
         default_banner_url: defaultBannerUrl || null,
+        default_banner_for_all_events: defaultBannerForAll,
       })
       .eq("id", profile.id)
       .select("id");
@@ -337,17 +340,42 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
       </div>
 
       {/* Default event banner */}
-      <div className="bg-navy-light border border-cream/10 rounded-2xl p-6 space-y-3">
+      <div className="bg-navy-light border border-cream/10 rounded-2xl p-6 space-y-4">
         <div>
           <label className="text-cream-muted text-xs uppercase tracking-wider mb-1.5 block">
             Default event banner (optional)
           </label>
           <p className="text-cream-muted text-xs mb-4">
-            This banner will be applied automatically to any synced events that don&apos;t have their own banner image.
+            This banner is applied automatically to iCal-synced events that don&apos;t have their own image.
             Individual events can still have their own banner set from the edit page.
           </p>
         </div>
         <BannerUpload value={defaultBannerUrl} onChange={setDefaultBannerUrl} />
+        {defaultBannerUrl && (
+          <label className="flex items-center gap-3 cursor-pointer pt-1">
+            <button
+              type="button"
+              onClick={() => setDefaultBannerForAll((v) => !v)}
+              className={`w-11 h-6 rounded-full border transition relative shrink-0 ${
+                defaultBannerForAll ? "bg-orange border-orange" : "bg-navy border-cream/30"
+              }`}
+              role="switch"
+              aria-checked={defaultBannerForAll}
+            >
+              <span
+                className={`absolute top-0.5 w-5 h-5 rounded-full bg-cream transition-all ${
+                  defaultBannerForAll ? "left-5" : "left-0.5"
+                }`}
+              />
+            </button>
+            <div>
+              <span className="text-cream text-sm font-medium">Apply to all new events</span>
+              <p className="text-cream-muted text-xs">
+                Pre-fill this banner on every new event you post, not just iCal imports. You can still swap it out per event.
+              </p>
+            </div>
+          </label>
+        )}
       </div>
 
       {error && <p className="text-orange text-sm">{error}</p>}

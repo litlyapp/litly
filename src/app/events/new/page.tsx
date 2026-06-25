@@ -29,24 +29,25 @@ export default async function NewEventPage({
   const activeOrgId = await getActiveOrgId(orgIds);
   if (!activeOrgId) redirect("/become-organizer");
 
-  const { data: profile } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: orgProfile } = await (supabase as any)
     .from("organizer_profiles")
-    .select("id, name")
+    .select("id, name, default_banner_url, default_banner_for_all_events")
     .eq("id", activeOrgId)
-    .maybeSingle();
+    .maybeSingle() as { data: { id: string; name: string; default_banner_url: string | null; default_banner_for_all_events: boolean } | null };
 
-  if (!profile) redirect("/become-organizer");
+  if (!orgProfile) redirect("/become-organizer");
 
   // Pre-fill from an existing event if ?from=<id> is set
   const { from } = await searchParams;
-  let initialData = undefined;
+  let initialData: Record<string, unknown> | undefined = undefined;
 
   if (from) {
     const { data: source } = await supabase
       .from("events")
       .select("title, description, genre, event_type, location_name, address, city, state, country, lat, lng, virtual_url, open_mic, featured_readers, rsvp_enabled, banner_url, ticket_url")
       .eq("id", from)
-      .eq("organizer_id", profile.id)
+      .eq("organizer_id", orgProfile.id)
       .single();
 
     if (source) {
@@ -56,23 +57,26 @@ export default async function NewEventPage({
         end_time: null,
       };
     }
+  } else if (orgProfile.default_banner_for_all_events && orgProfile.default_banner_url) {
+    // Pre-fill the default banner for blank new events when the org has opted in
+    initialData = { banner_url: orgProfile.default_banner_url };
   }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-10">
       <div className="mb-8">
         <h1 className="font-serif text-4xl text-cream mb-1">
-          {initialData ? "Duplicate event" : "New event"}
+          {from ? "Duplicate event" : "New event"}
         </h1>
         <p className="text-cream-muted">
-          {initialData
-            ? `Duplicating "${initialData.title}" — pick a new date and publish.`
-            : `Posting as ${profile.name}`}
+          {from
+            ? `Duplicating — pick a new date and publish.`
+            : `Posting as ${orgProfile.name}`}
         </p>
       </div>
-      {!initialData && (
+      {!from && (
         <>
-          <ImportFromUrl organizerId={profile.id} />
+          <ImportFromUrl organizerId={orgProfile.id} />
           <div className="flex items-center gap-3 mb-8">
             <div className="flex-1 h-px bg-cream/10" />
             <span className="text-cream-muted text-xs uppercase tracking-wider">or enter manually</span>
@@ -81,8 +85,8 @@ export default async function NewEventPage({
         </>
       )}
       <EventForm
-        organizerId={profile.id}
-        initialData={initialData}
+        organizerId={orgProfile.id}
+        initialData={initialData as Parameters<typeof EventForm>[0]["initialData"]}
         allowSourceAttribution={user.email === "admin@thelitlyapp.com"}
       />
     </div>
