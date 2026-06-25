@@ -14,6 +14,7 @@ interface DashboardEvent {
   genre: Genre | Genre[];
   event_type: EventType;
   date_time: string;
+  end_time?: string | null;
   timezone?: string | null;
   location_name: string | null;
   virtual_url: string | null;
@@ -84,9 +85,10 @@ export default async function DashboardPage({
 
   const now = new Date().toISOString();
   const nowMs = Date.now();
-  const isFuture = (iso: string) => new Date(iso).getTime() >= nowMs;
+  const isFuture = (iso: string, endIso?: string | null) =>
+    new Date(endIso ?? iso).getTime() >= nowMs;
 
-  const eventSelect = "id, title, genre, event_type, date_time, timezone, location_name, virtual_url, ticket_url, ticket_type, rsvp_enabled, open_mic, parent_event_id, recurrence_rule, is_cancelled, is_published, view_count, ticket_click_count";
+  const eventSelect = "id, title, genre, event_type, date_time, end_time, timezone, location_name, virtual_url, ticket_url, ticket_type, rsvp_enabled, open_mic, parent_event_id, recurrence_rule, is_cancelled, is_published, view_count, ticket_click_count";
 
   // Fetch every top-level event (series parents + one-offs) for this org. We
   // can't split upcoming/past on the parent's own date alone: a series parent's
@@ -149,7 +151,7 @@ export default async function DashboardPage({
       const next = seriesNextDate[event.id];
       if (next) upcomingEvents.push({ ...event, date_time: next });
       else pastEvents.push(event);
-    } else if (isFuture(event.date_time)) {
+    } else if (isFuture(event.date_time, event.end_time)) {
       upcomingEvents.push(event);
     } else {
       pastEvents.push(event);
