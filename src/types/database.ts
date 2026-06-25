@@ -19,6 +19,7 @@ export type OrgRole = "admin" | "editor";
 export interface FeaturedReader {
   name: string;
   url: string;
+  bio?: string;
 }
 
 export type RecurrenceFrequency = "weekly" | "biweekly" | "monthly_date" | "monthly_day";

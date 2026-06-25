@@ -237,7 +237,7 @@ export default async function EventDetailPage({
     : event.organizer;
 
   const featuredReaders = event.featured_readers as
-    | { name: string; url: string }[]
+    | { name: string; url: string; bio?: string }[]
     | null;
 
   const isPast = new Date(event.date_time) < new Date();
@@ -438,27 +438,26 @@ export default async function EventDetailPage({
       {featuredReaders && featuredReaders.length > 0 && (
         <div className="bg-navy-light border border-cream/10 rounded-2xl p-8 mb-6">
           <h2 className="font-serif text-xl text-cream mb-4">Featured readers</h2>
-          <div className="flex flex-wrap gap-3">
-            {featuredReaders.map((reader, i) =>
-              /^https?:\/\//i.test(reader.url ?? "") ? (
-                <a
-                  key={i}
-                  href={reader.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-4 py-2 rounded-full border border-cream/20 text-cream text-sm hover:border-orange hover:text-orange transition"
-                >
-                  {reader.name} ↗
-                </a>
-              ) : (
-                <span
-                  key={i}
-                  className="px-4 py-2 rounded-full border border-cream/20 text-cream text-sm"
-                >
-                  {reader.name}
-                </span>
-              )
-            )}
+          <div className="space-y-4">
+            {featuredReaders.map((reader, i) => (
+              <div key={i}>
+                {/^https?:\/\//i.test(reader.url ?? "") ? (
+                  <a
+                    href={reader.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-cream font-medium text-sm hover:text-orange transition"
+                  >
+                    {reader.name} ↗
+                  </a>
+                ) : (
+                  <span className="text-cream font-medium text-sm">{reader.name}</span>
+                )}
+                {reader.bio && (
+                  <p className="text-cream-muted text-sm mt-1 leading-relaxed">{reader.bio}</p>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       )}

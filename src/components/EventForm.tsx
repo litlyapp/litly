@@ -432,7 +432,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
 
   // Featured readers helpers
   function addReader() {
-    setReaders((prev) => [...prev, { name: "", url: "" }]);
+    setReaders((prev) => [...prev, { name: "", url: "", bio: "" }]);
   }
 
   function updateReader(
@@ -501,6 +501,8 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       return "Event date is in the past. Please check the date and time.";
     for (const r of readers) {
       if (!r.name.trim()) return "All featured readers need a name.";
+      const wordCount = (r.bio ?? "").trim().split(/\s+/).filter(Boolean).length;
+      if (wordCount > 50) return `Bio for ${r.name} exceeds 50 words (${wordCount} words).`;
     }
     return null;
   }
@@ -1217,35 +1219,52 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
           </p>
         )}
 
-        <div className="space-y-3">
-          {readers.map((reader, i) => (
-            <div key={i} className="flex gap-2 items-start">
-              <div className="flex-1 grid grid-cols-2 gap-2">
-                <input
-                  type="text"
-                  placeholder="Name"
-                  value={reader.name}
-                  onChange={(e) => updateReader(i, "name", e.target.value)}
-                  className={inputClass}
-                />
-                <input
-                  type="url"
-                  placeholder="https://…"
-                  value={reader.url}
-                  onChange={(e) => updateReader(i, "url", e.target.value)}
-                  className={inputClass}
-                />
+        <div className="space-y-4">
+          {readers.map((reader, i) => {
+            const wordCount = (reader.bio ?? "").trim().split(/\s+/).filter(Boolean).length;
+            return (
+              <div key={i} className="flex gap-2 items-start">
+                <div className="flex-1 space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      placeholder="Name"
+                      value={reader.name}
+                      onChange={(e) => updateReader(i, "name", e.target.value)}
+                      className={inputClass}
+                    />
+                    <input
+                      type="url"
+                      placeholder="https://…"
+                      value={reader.url}
+                      onChange={(e) => updateReader(i, "url", e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <textarea
+                      placeholder="Short bio (optional, 50 words max)"
+                      value={reader.bio ?? ""}
+                      onChange={(e) => updateReader(i, "bio", e.target.value)}
+                      rows={2}
+                      className={`${inputClass} resize-none`}
+                    />
+                    <p className={`text-xs mt-0.5 text-right ${wordCount > 50 ? "text-orange" : "text-cream-muted/50"}`}>
+                      {wordCount}/50 words
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeReader(i)}
+                  className="mt-3 text-cream-muted hover:text-cream transition text-lg leading-none"
+                  aria-label="Remove reader"
+                >
+                  ×
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => removeReader(i)}
-                className="mt-3 text-cream-muted hover:text-cream transition text-lg leading-none"
-                aria-label="Remove reader"
-              >
-                ×
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
