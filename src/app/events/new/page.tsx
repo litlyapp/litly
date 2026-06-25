@@ -29,14 +29,24 @@ export default async function NewEventPage({
   const activeOrgId = await getActiveOrgId(orgIds);
   if (!activeOrgId) redirect("/become-organizer");
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: orgProfile } = await (supabase as any)
+  const { data: orgProfile } = await supabase
     .from("organizer_profiles")
-    .select("id, name, default_banner_url, default_banner_for_all_events")
+    .select("id, name")
     .eq("id", activeOrgId)
-    .maybeSingle() as { data: { id: string; name: string; default_banner_url: string | null; default_banner_for_all_events: boolean } | null };
+    .maybeSingle();
 
   if (!orgProfile) redirect("/become-organizer");
+
+  // Fetch banner defaults separately so a missing column (pre-migration) doesn't break the page
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: bannerDefaults } = await (supabase as any)
+    .from("organizer_profiles")
+    .select("default_banner_url, default_banner_for_all_events")
+    .eq("id", activeOrgId)
+    .maybeSingle();
+
+  const defaultBannerUrl: string | null = bannerDefaults?.default_banner_url ?? null;
+  const defaultBannerForAll: boolean = bannerDefaults?.default_banner_for_all_events ?? false;
 
   // Pre-fill from an existing event if ?from=<id> is set
   const { from } = await searchParams;
@@ -57,9 +67,9 @@ export default async function NewEventPage({
         end_time: null,
       };
     }
-  } else if (orgProfile.default_banner_for_all_events && orgProfile.default_banner_url) {
+  } else if (defaultBannerForAll && defaultBannerUrl) {
     // Pre-fill the default banner for blank new events when the org has opted in
-    initialData = { banner_url: orgProfile.default_banner_url };
+    initialData = { banner_url: defaultBannerUrl };
   }
 
   return (
