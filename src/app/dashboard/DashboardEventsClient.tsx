@@ -1,10 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import DashboardEventRow from "@/components/DashboardEventRow";
-import DashboardBulkToolbar from "@/components/DashboardBulkToolbar";
 import ExpandableList from "@/components/ExpandableList";
 import type { Genre, EventType } from "@/types/database";
 
@@ -50,62 +47,17 @@ export default function DashboardEventsClient({
   clickCounts,
   upcomingChildCounts,
   needsDetailsIds,
-  incompleteCount,
-  orgId,
 }: Props) {
-  const [selectionMode, setSelectionMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [, startTransition] = useTransition();
-  const router = useRouter();
-
-  function toggleSelect(id: string) {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  function toggleSelectAll() {
-    const allIds = upcomingEvents.map((e) => e.id);
-    if (selectedIds.size === allIds.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(allIds));
-    }
-  }
-
-  function exitSelection() {
-    setSelectionMode(false);
-    setSelectedIds(new Set());
-  }
-
-  function handleDone() {
-    exitSelection();
-    startTransition(() => router.refresh());
-  }
-
-  const allUpcomingSelected = upcomingEvents.length > 0 && selectedIds.size === upcomingEvents.length;
-
   return (
     <>
-      {incompleteCount > 0 && (
-        <div className="bg-orange/10 border border-orange/30 rounded-2xl px-5 py-4 mb-6 text-cream text-sm">
-          {`${incompleteCount} upcoming event${incompleteCount !== 1 ? "s" : ""} ${incompleteCount !== 1 ? "are" : "is"} missing a ticket/join link — look for the "Needs details" tag below.`}
-        </div>
-      )}
-
       {/* Drafts */}
       {draftEvents.length > 0 && (
         <section className="mb-10">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="font-serif text-2xl text-cream">Drafts</h2>
-              <p className="text-cream-muted text-xs mt-0.5">
-                Not visible to the public — edit and post when ready.
-              </p>
-            </div>
+          <div className="mb-4">
+            <h2 className="font-serif text-2xl text-cream">Drafts</h2>
+            <p className="text-cream-muted text-xs mt-0.5">
+              Not visible to the public — edit and post when ready.
+            </p>
           </div>
           <div className="bg-navy-light border border-cream/10 rounded-2xl overflow-hidden">
             {draftEvents.map((event, i) => (
@@ -126,34 +78,7 @@ export default function DashboardEventsClient({
 
       {/* Upcoming events */}
       <section className="mb-10">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-serif text-2xl text-cream">Upcoming events</h2>
-          {upcomingEvents.length > 0 && (
-            selectionMode ? (
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={toggleSelectAll}
-                  className="text-cream-muted text-xs hover:text-cream transition"
-                >
-                  {allUpcomingSelected ? "Deselect all" : "Select all"}
-                </button>
-                <button
-                  onClick={exitSelection}
-                  className="text-cream-muted text-xs border border-cream/20 rounded-full px-3 py-1 hover:text-cream hover:border-cream/40 transition"
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setSelectionMode(true)}
-                className="text-cream-muted text-xs border border-cream/20 rounded-full px-3 py-1 hover:text-cream hover:border-cream/40 transition"
-              >
-                Select
-              </button>
-            )
-          )}
-        </div>
+        <h2 className="font-serif text-2xl text-cream mb-4">Upcoming events</h2>
 
         {upcomingEvents.length === 0 ? (
           <div className="bg-navy-light border border-cream/10 rounded-2xl p-10 text-center">
@@ -182,9 +107,6 @@ export default function DashboardEventsClient({
                 clickCount={clickCounts[event.id] ?? 0}
                 upcomingInSeries={event.recurrence_rule ? (upcomingChildCounts[event.id] ?? 0) : undefined}
                 needsDetails={needsDetailsIds.has(event.id)}
-                selectionMode={selectionMode}
-                selected={selectedIds.has(event.id)}
-                onToggle={() => toggleSelect(event.id)}
               />
             ))}
           </ExpandableList>
@@ -214,16 +136,6 @@ export default function DashboardEventsClient({
             ))}
           </ExpandableList>
         </section>
-      )}
-
-      {/* Bulk toolbar */}
-      {selectionMode && selectedIds.size > 0 && (
-        <DashboardBulkToolbar
-          selectedIds={[...selectedIds]}
-          orgId={orgId}
-          onClear={() => setSelectedIds(new Set())}
-          onDone={handleDone}
-        />
       )}
     </>
   );

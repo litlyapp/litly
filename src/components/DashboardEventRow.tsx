@@ -33,16 +33,13 @@ interface Props {
   upcomingInSeries?: number;
   needsDetails?: boolean;
   isDraft?: boolean;
-  selectionMode?: boolean;
-  selected?: boolean;
-  onToggle?: () => void;
 }
 
 function formatDate(iso: string, timeZone?: string | null) {
   return `${formatEventDate(iso, timeZone)} · ${formatEventTime(iso, timeZone)}`;
 }
 
-export default function DashboardEventRow({ event, divider, isPast, isDraft, rsvpCount, viewCount, saveCount, clickCount, upcomingInSeries, needsDetails, selectionMode, selected, onToggle }: Props) {
+export default function DashboardEventRow({ event, divider, isPast, isDraft, rsvpCount, viewCount, saveCount, clickCount, upcomingInSeries, needsDetails }: Props) {
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -73,17 +70,8 @@ export default function DashboardEventRow({ event, divider, isPast, isDraft, rsv
 
   return (
     <div
-      className={`px-5 py-4 flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4 ${divider ? "border-b border-cream/10" : ""} ${selectionMode && selected ? "bg-orange/5" : ""}`}
-      onClick={selectionMode ? onToggle : undefined}
-      style={selectionMode ? { cursor: "pointer" } : undefined}
+      className={`px-5 py-4 flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4 ${divider ? "border-b border-cream/10" : ""}`}
     >
-      {selectionMode && (
-        <div className="flex items-center shrink-0 pt-0.5">
-          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition ${selected ? "bg-orange border-orange" : "border-cream/40"}`}>
-            {selected && <span className="text-cream text-[10px] leading-none">✓</span>}
-          </div>
-        </div>
-      )}
       {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -153,7 +141,7 @@ export default function DashboardEventRow({ event, divider, isPast, isDraft, rsv
       </div>
 
       {/* Actions — below the info on mobile, beside it on wider screens */}
-      <div className={`flex items-start gap-2 shrink-0 ${selectionMode ? "hidden" : ""}`}>
+      <div className="flex items-start gap-2 shrink-0">
         {confirming ? (
           <div className="flex flex-col items-end gap-2">
             <span className="text-cream-muted text-xs">
