@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { isSafeUrl } from "@/lib/safeUrl";
 
 // Shared rules appended to both import-parsing prompts so dates survive the
 // timestamptz round-trip: naive wall-clock strings pass through unchanged,
@@ -81,15 +82,16 @@ export function stripHtml(html: string): string {
 
 // Fetch a page and return its visible text, or null on any failure.
 // Best-effort: import parsing should degrade gracefully, never throw.
-export async function fetchPageText(url: string, maxChars = 12000): Promise<string | null> {
+export async function fetchPageText(url: string, maxChars = 50000): Promise<string | null> {
+  if (!(await isSafeUrl(url))) return null;
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 8000);
     const res = await fetch(url, {
       signal: controller.signal,
       headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; litly/1.0; +https://thelitlyapp.com)",
-        Accept: "text/html,application/xhtml+xml",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+        Accept: "text/html,application/xhtml+xml,*/*",
       },
       redirect: "follow",
     });
@@ -191,7 +193,7 @@ export async function enrichFromLink(
 
   try {
     const message = await anthropic.messages.create({
-      model: "claude-haiku-4-5",
+      model: "claude-haiku-4-5-20251001",
       max_tokens: 512,
       messages: [
         {
