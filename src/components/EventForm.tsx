@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Genre, EventType, FeaturedReader } from "@/types/database";
 import { GENRES } from "@/lib/genres";
 import { type RecurrenceRule, generateOccurrenceDates, generateNextOccurrence } from "@/lib/recurrence";
+import { formatEventDate } from "@/lib/formatDate";
 
 // Common time zones for the picker, grouped by region
 export const TIME_ZONE_GROUPS: { region: string; zones: { value: string; label: string }[] }[] = [
@@ -373,8 +374,28 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Cross-org duplicate warning (gated publish): candidates from
+  // /api/events/check-duplicate plus the reviewer's acknowledgement.
+  type DupMatch = {
+    id: string;
+    title: string;
+    date_time: string;
+    timezone: string | null;
+    location_name: string | null;
+    organizer_name: string;
+    strength: "strong" | "soft";
+  };
+  const [dupeMatches, setDupeMatches] = useState<DupMatch[] | null>(null);
+  const [dupeAck, setDupeAck] = useState(false);
+
+  // Editing any field that affects duplicate matching invalidates a prior check
+  const DUPE_KEYS = new Set(["title", "date_time", "location_name", "address", "city", "zip_code"]);
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
+    if (DUPE_KEYS.has(key as string)) {
+      setDupeMatches(null);
+      setDupeAck(false);
+    }
   }
 
   // Geocode when address, city, or state loses focus. Include the city/state/
@@ -566,6 +587,49 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
     let coords = geocoded;
     if (form.event_type === "in_person" && !coords && form.address.trim()) {
       coords = await geocodeBestEffort();
+    }
+
+    // Cross-org duplicate guard — only when publishing a new event or a draft
+    // (a live event being edited is already posted, so skip it).
+    const shouldDupeCheck = publishIntent && (!isEditing || isDraft);
+    if (shouldDupeCheck) {
+      const strongUnacked = !!dupeMatches?.some((m) => m.strength === "strong") && !dupeAck;
+      if (strongUnacked) {
+        // Defensive — Post is disabled in this state; never publish over an
+        // unacknowledged strong match.
+        setLoading(false);
+        return;
+      }
+      if (dupeMatches === null) {
+        // First publish attempt for these values — run the check.
+        try {
+          const res = await fetch("/api/events/check-duplicate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: form.title.trim(),
+              date_time: zonedToUtcIso(form.date_time, timezone),
+              lat: coords?.lat ?? null,
+              lng: coords?.lng ?? null,
+              location_name: form.event_type === "in_person" ? form.location_name.trim() || null : null,
+              zip_code: form.event_type === "in_person" ? form.zip_code.trim() || null : null,
+              excludeEventId: eventId ?? null,
+            }),
+          });
+          const { matches } = await res.json();
+          if (Array.isArray(matches) && matches.length > 0) {
+            // Surface the warning. A strong match gates Post (confirm checkbox);
+            // soft matches are an informational heads-up, so clicking Post again
+            // (with the box now shown) goes straight through.
+            setDupeMatches(matches);
+            setLoading(false);
+            return;
+          }
+        } catch {
+          // A failed check must never block a legitimate post
+        }
+      }
+      // Matches already shown and no unacknowledged strong match → publish.
     }
 
     const sharedFields = {
@@ -848,6 +912,9 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       router.push(`/events/${data.id}`);
     }
   }
+
+  // Only a strong match gates publishing; soft matches are informational
+  const hasStrongDupe = !!dupeMatches?.some((m) => m.strength === "strong");
 
   const inputClass =
     "w-full bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-orange";
@@ -1452,6 +1519,51 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         </div>
       )}
 
+      {/* Possible cross-org duplicate. Strong match → require confirmation; soft → informational heads-up. */}
+      {dupeMatches && dupeMatches.length > 0 && (
+        <div className="bg-orange/10 border border-orange/30 rounded-2xl p-5 space-y-3">
+          <p className="text-cream text-sm font-medium">
+            {hasStrongDupe ? "This may already be on litly." : "Similar events are already on litly that day."}
+          </p>
+          <div className="space-y-1.5">
+            {dupeMatches.map((m) => (
+              <p key={m.id} className="text-cream-muted text-sm">
+                <a
+                  href={`/events/${m.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-cream underline hover:text-orange"
+                >
+                  {m.title}
+                </a>
+                {m.location_name ? ` at ${m.location_name}` : ""} on {formatEventDate(m.date_time, m.timezone)} — posted by {m.organizer_name}.
+              </p>
+            ))}
+          </div>
+          {hasStrongDupe ? (
+            <>
+              <p className="text-cream-muted/70 text-xs">
+                If it&apos;s the same event, there&apos;s no need to post it again — its source may have already listed it.
+                Otherwise, confirm below to continue.
+              </p>
+              <label className="flex items-center gap-2 text-cream text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={dupeAck}
+                  onChange={(e) => setDupeAck(e.target.checked)}
+                  className="accent-orange w-4 h-4"
+                />
+                I&apos;ve checked — this isn&apos;t a duplicate.
+              </label>
+            </>
+          ) : (
+            <p className="text-cream-muted/70 text-xs">
+              If yours is a different event, click <span className="text-cream">Post event</span> again to publish it.
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Submit */}
       <div className="flex gap-3 pt-2">
         {isEditing && !isDraft ? (
@@ -1469,7 +1581,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
           <>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || (hasStrongDupe && !dupeAck)}
               onClick={() => setPublishIntent(true)}
               className="flex-1 bg-orange text-cream font-semibold rounded-full py-3 hover:bg-orange/90 transition disabled:opacity-60"
             >
