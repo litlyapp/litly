@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/server";
 import { rateLimit } from "@/lib/rateLimit";
 import { looksLikeUrl, fetchPageText, applyKnownVenue, TIME_RULES } from "@/lib/importParsing";
+
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@thelitlyapp.com";
 
 // Page fetch + parse can exceed Vercel's default timeout
 export const maxDuration = 60;
@@ -17,7 +20,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
   }
 
-  // Check admin password
+  // Require both a valid session for the admin account and the shared password
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || user.email !== ADMIN_EMAIL) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { input, password } = await request.json();
 
   if (password !== process.env.ADMIN_PASSWORD) {
@@ -61,6 +70,7 @@ Extract structured event data from the following text or webpage content. Return
   "address": "Full street address (string or null)",
   "city": "City name parsed directly from the address/venue text — do not guess or infer one that isn't stated (string or null)",
   "state": "US state as a 2-letter code (e.g. CA, NY) parsed directly from the address — do not guess (string or null)",
+  "zip": "Zip / postal code parsed directly from the address, exactly as shown — do not guess (string or null)",
   "country": "Country name parsed directly from the address. If a US state/zip code is present, this MUST be 'United States' — never infer a different country from city/street names that happen to resemble place names elsewhere in the world (string or null)",
   "virtual_url": "URL for virtual events (string or null)",
   "open_mic": "true if open_mic is in the genre array, false otherwise",
@@ -81,7 +91,7 @@ Return ONLY the JSON object, no other text.`;
 
   try {
     const message = await client.messages.create({
-      model: "claude-haiku-4-5",
+      model: "claude-haiku-4-5-20251001",
       max_tokens: 2048,
       messages: [{ role: "user", content: prompt }],
     });
@@ -101,11 +111,11 @@ Return ONLY the JSON object, no other text.`;
     if (fetchedUrl && !parsed.source_url) parsed.source_url = fetchedUrl;
 
     // Fill missing venue fields from this source's past approved events
-    const supabase = createServiceClient(
+    const serviceClient = createServiceClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
-    parsed = await applyKnownVenue(supabase, parsed, parsed.source_name);
+    parsed = await applyKnownVenue(serviceClient, parsed, parsed.source_name);
 
     return NextResponse.json({ parsed });
   } catch (error) {

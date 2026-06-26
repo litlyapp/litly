@@ -136,6 +136,7 @@ export type Database = {
           address: string | null;
           city: string | null;
           state: string | null;
+          zip_code: string | null;
           country: string | null;
           lat: number | null;
           lng: number | null;
@@ -175,6 +176,7 @@ export type Database = {
           address?: string | null;
           city?: string | null;
           state?: string | null;
+          zip_code?: string | null;
           country?: string | null;
           lat?: number | null;
           lng?: number | null;
@@ -211,6 +213,7 @@ export type Database = {
           address?: string | null;
           city?: string | null;
           state?: string | null;
+          zip_code?: string | null;
           country?: string | null;
           lat?: number | null;
           lng?: number | null;

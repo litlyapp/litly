@@ -155,7 +155,7 @@ export async function GET(req: Request) {
         const text = htmlToText(html).slice(0, 16000);
 
         const message = await anthropic.messages.create({
-          model: "claude-haiku-4-5",
+          model: "claude-haiku-4-5-20251001",
           max_tokens: 1024,
           messages: [
             {
@@ -178,6 +178,7 @@ Return a single JSON object:
   "address": "street address or null",
   "city": "string or null",
   "state": "string or null",
+  "zip": "zip / postal code exactly as shown, or null",
   "country": "string or null",
   "virtual_url": "registration/zoom link if virtual, or null",
   "ticket_url": "ticket/registration link or null",

@@ -1,4 +1,5 @@
-const LOGO_URL = "https://thelitlyapp.com/logo.png";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://thelitlyapp.com";
+const LOGO_URL = `${APP_URL}/logo.png`;
 
 // Escape user-controlled content before inserting into HTML email bodies
 export function escapeHtml(str: string): string {
@@ -25,7 +26,7 @@ export function emailWrapper(body: string): string {
           </td></tr>
           <!-- Footer -->
           <tr><td bgcolor="#1B2A3E" align="center" style="padding:16px 32px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;font-size:12px">
-            <a href="https://thelitlyapp.com" style="color:#F2E8D5;opacity:0.7;text-decoration:none">thelitlyapp.com</a>
+            <a href="${APP_URL}" style="color:#F2E8D5;opacity:0.7;text-decoration:none">thelitlyapp.com</a>
           </td></tr>
         </table>
       </td></tr>

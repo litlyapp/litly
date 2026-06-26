@@ -110,6 +110,7 @@ export interface KnownVenue {
   address: string | null;
   city: string | null;
   state: string | null;
+  zip_code: string | null;
   country: string | null;
 }
 
@@ -124,7 +125,7 @@ export async function findKnownVenue(
   if (!sourceName?.trim()) return null;
   const { data } = await supabase
     .from("events")
-    .select("location_name, address, city, state, country")
+    .select("location_name, address, city, state, zip_code, country")
     .eq("source_name", sourceName.trim())
     .eq("event_type", "in_person")
     .not("address", "is", null)
@@ -142,6 +143,7 @@ export interface ParsedImportEvent {
   address?: string | null;
   city?: string | null;
   state?: string | null;
+  zip?: string | null;
   country?: string | null;
   date_time?: string | null;
   time_confirmed?: boolean;
@@ -170,6 +172,7 @@ export async function applyKnownVenue(
     address: event.address ?? venue.address,
     city: event.city ?? venue.city,
     state: event.state ?? venue.state,
+    zip: event.zip ?? venue.zip_code,
     country: event.country ?? venue.country,
     venue_filled_from: "previous events from this source",
   };
@@ -204,6 +207,7 @@ export async function enrichFromLink(
   "address": "street address or null",
   "city": "city or null",
   "state": "US state 2-letter code or null",
+  "zip": "zip / postal code or null",
   "country": "country or null",
   "date_time": "local wall-clock ISO 8601 WITHOUT timezone offset (e.g. 2026-07-15T19:00:00) or null",
   "time_confirmed": "true only if a start time is explicitly stated"
@@ -229,6 +233,7 @@ ${pageText}`,
       enriched.address = event.address ?? found.address ?? null;
       enriched.city = event.city ?? found.city ?? null;
       enriched.state = event.state ?? found.state ?? null;
+      enriched.zip = event.zip ?? found.zip ?? null;
       enriched.country = event.country ?? found.country ?? null;
     }
     if (needsTime && found.date_time && found.time_confirmed === true) {

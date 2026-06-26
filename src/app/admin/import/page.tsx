@@ -18,6 +18,7 @@ interface ParsedEvent {
   address: string | null;
   city?: string | null;
   state?: string | null;
+  zip?: string | null;
   country?: string | null;
   virtual_url: string | null;
   open_mic: boolean;

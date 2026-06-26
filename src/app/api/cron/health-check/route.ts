@@ -146,6 +146,77 @@ export async function GET(req: Request) {
     await new Promise((r) => setTimeout(r, 1100));
   }
 
+  // 7. Upcoming published event count — the most critical check. Zero means
+  // events were mass-deleted, mass-unpublished, or a date bug is hiding them all.
+  // Uses the anon key to mirror what a real visitor's query sees (RLS included).
+  const anonSupabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+  const { count: upcomingCount, error: upcomingError } = await anonSupabase
+    .from("events")
+    .select("id", { count: "exact", head: true })
+    .eq("is_cancelled", false)
+    .neq("is_published", false)
+    .gte("date_time", new Date().toISOString());
+  if (upcomingError) {
+    issues.push(`Failed to count upcoming events: ${upcomingError.message}`);
+  } else if ((upcomingCount ?? 0) === 0) {
+    issues.push(
+      "CRITICAL: 0 upcoming published events visible to the public — events may have been mass-deleted, mass-unpublished, or there is a date/timezone regression"
+    );
+  }
+
+  // 8. Newsletter crawler activity: at least one of the 4 crawl sources should
+  // have produced a pending_import in the last 48 hours. If none have, the
+  // crawler has silently stalled (broken link pattern, site redesign, etc.).
+  const CRAWLER_EMAILS = [
+    "crawler@pw.org",
+    "crawler@poets.org",
+    "crawler@literary-arts.org",
+    "crawler@nationalbook.org",
+  ];
+  const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+  const { count: crawlerCount, error: crawlerError } = await supabase
+    .from("pending_imports")
+    .select("id", { count: "exact", head: true })
+    .in("source_email", CRAWLER_EMAILS)
+    .gte("created_at", fortyEightHoursAgo);
+  if (crawlerError) {
+    issues.push(`Failed to check crawler activity: ${crawlerError.message}`);
+  } else if ((crawlerCount ?? 0) === 0) {
+    issues.push(
+      "Newsletter crawler produced no new queue items in the last 48 hours — crawl-calendars cron may have stalled or all source sites may have changed their markup"
+    );
+  }
+
+  // 9. Org feed sync health: flag any org that has a feed URL configured but
+  // hasn't had a successful sync in the last 48 hours.
+  const { data: staleFeeds, error: feedsError } = await supabase
+    .from("organizer_profiles")
+    .select("name, calendar_feed_last_synced_at, calendar_feed_last_status, calendar_feed_last_error")
+    .not("calendar_feed_url", "is", null)
+    .or(
+      `calendar_feed_last_synced_at.is.null,calendar_feed_last_synced_at.lt.${fortyEightHoursAgo},calendar_feed_last_status.eq.error`
+    );
+  if (feedsError) {
+    issues.push(`Failed to check org feed sync status: ${feedsError.message}`);
+  } else {
+    for (const org of staleFeeds ?? []) {
+      if (!org.calendar_feed_last_synced_at) {
+        issues.push(`Org "${org.name}" has a calendar feed configured but has never synced`);
+      } else if (org.calendar_feed_last_status === "error") {
+        issues.push(
+          `Org "${org.name}" feed last sync failed: ${org.calendar_feed_last_error ?? "unknown error"}`
+        );
+      } else {
+        issues.push(
+          `Org "${org.name}" feed hasn't synced successfully in 48+ hours (last: ${org.calendar_feed_last_synced_at})`
+        );
+      }
+    }
+  }
+
   if (issues.length > 0) {
     await sendEmail({
       to: ALERT_EMAIL,

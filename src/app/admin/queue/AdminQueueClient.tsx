@@ -433,8 +433,8 @@ export default function AdminQueueClient() {
                               className={inputClass}
                             />
                           </div>
-                          <div className="grid grid-cols-3 gap-3">
-                            {(["city", "state", "country"] as const).map((f) => (
+                          <div className="grid grid-cols-4 gap-3">
+                            {(["city", "state", "zip", "country"] as const).map((f) => (
                               <div key={f}>
                                 <label className="text-cream-muted text-xs uppercase tracking-wider mb-1 block">{f}</label>
                                 <input

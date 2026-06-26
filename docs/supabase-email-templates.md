@@ -16,6 +16,8 @@ recipients see the Helvetica/Arial body fallback — intentional, a clean sans m
 **Variables:** keep `{{ .ConfirmationURL }}`, `{{ .Token }}`, `{{ .Email }}`, `{{ .NewEmail }}`
 exactly as written; Supabase fills them in.
 
+**Button style matches app transactional emails:** pill shape (`border-radius:999px`), 14px/600 weight, 12px 24px padding, inline `<a>` (no wrapping table).
+
 ---
 
 ## 1. Confirm signup — Subject: `Confirm your litly account`
@@ -27,12 +29,10 @@ exactly as written; Supabase fills them in.
       <img src="https://thelitlyapp.com/logo.png" alt="litly" width="80" height="80" style="display:block;border:0" />
     </td></tr>
     <tr><td bgcolor="#F2E8D5" style="padding:32px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;color:#1B2A3E">
-      <h1 style="margin:0 0 16px;font-family:Georgia,'Times New Roman',Times,serif;font-size:24px;font-weight:700;color:#1B2A3E">Welcome to litly</h1>
-      <p style="margin:0 0 24px;font-size:15px;line-height:1.6">Thanks for signing up. Click the button below to confirm your email address and finish creating your account.</p>
-      <table cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#E8622A" style="border-radius:8px">
-        <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:14px 28px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none">Confirm email address</a>
-      </td></tr></table>
-      <p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#1B2A3E;opacity:0.7">If you didn't create a litly account, you can safely ignore this email.</p>
+      <h1 style="margin:0 0 8px;font-family:Georgia,'Times New Roman',Times,serif;font-size:22px;color:#1B2A3E">Welcome to litly</h1>
+      <p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#5a4a3a">Thanks for signing up. Click the button below to confirm your email address and finish creating your account.</p>
+      <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#E8622A;color:#ffffff;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:14px;font-weight:600;font-family:'Libre Franklin',Helvetica,Arial,sans-serif">Confirm email address</a>
+      <p style="margin:24px 0 0;font-size:12px;line-height:1.6;color:#7a6a5a">If you didn't create a litly account, you can safely ignore this email.</p>
     </td></tr>
     <tr><td bgcolor="#1B2A3E" align="center" style="padding:16px 32px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;font-size:12px">
       <a href="https://thelitlyapp.com" style="color:#F2E8D5;opacity:0.7;text-decoration:none">thelitlyapp.com</a>
@@ -50,12 +50,10 @@ exactly as written; Supabase fills them in.
       <img src="https://thelitlyapp.com/logo.png" alt="litly" width="80" height="80" style="display:block;border:0" />
     </td></tr>
     <tr><td bgcolor="#F2E8D5" style="padding:32px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;color:#1B2A3E">
-      <h1 style="margin:0 0 16px;font-family:Georgia,'Times New Roman',Times,serif;font-size:24px;font-weight:700;color:#1B2A3E">Reset your password</h1>
-      <p style="margin:0 0 24px;font-size:15px;line-height:1.6">We received a request to reset your litly password. Click the button below to choose a new one.</p>
-      <table cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#E8622A" style="border-radius:8px">
-        <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:14px 28px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none">Reset password</a>
-      </td></tr></table>
-      <p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#1B2A3E;opacity:0.7">If you didn't request this, you can safely ignore this email — your password won't change.</p>
+      <h1 style="margin:0 0 8px;font-family:Georgia,'Times New Roman',Times,serif;font-size:22px;color:#1B2A3E">Reset your password</h1>
+      <p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#5a4a3a">We received a request to reset your litly password. Click the button below to choose a new one.</p>
+      <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#E8622A;color:#ffffff;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:14px;font-weight:600;font-family:'Libre Franklin',Helvetica,Arial,sans-serif">Reset password</a>
+      <p style="margin:24px 0 0;font-size:12px;line-height:1.6;color:#7a6a5a">If you didn't request this, you can safely ignore this email — your password won't change.</p>
     </td></tr>
     <tr><td bgcolor="#1B2A3E" align="center" style="padding:16px 32px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;font-size:12px">
       <a href="https://thelitlyapp.com" style="color:#F2E8D5;opacity:0.7;text-decoration:none">thelitlyapp.com</a>
@@ -73,12 +71,10 @@ exactly as written; Supabase fills them in.
       <img src="https://thelitlyapp.com/logo.png" alt="litly" width="80" height="80" style="display:block;border:0" />
     </td></tr>
     <tr><td bgcolor="#F2E8D5" style="padding:32px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;color:#1B2A3E">
-      <h1 style="margin:0 0 16px;font-family:Georgia,'Times New Roman',Times,serif;font-size:24px;font-weight:700;color:#1B2A3E">Log in to litly</h1>
-      <p style="margin:0 0 24px;font-size:15px;line-height:1.6">Click the button below to securely log in to your litly account. This link will expire shortly.</p>
-      <table cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#E8622A" style="border-radius:8px">
-        <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:14px 28px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none">Log in to litly</a>
-      </td></tr></table>
-      <p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#1B2A3E;opacity:0.7">If you didn't request this link, you can safely ignore this email.</p>
+      <h1 style="margin:0 0 8px;font-family:Georgia,'Times New Roman',Times,serif;font-size:22px;color:#1B2A3E">Log in to litly</h1>
+      <p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#5a4a3a">Click the button below to securely log in to your litly account. This link will expire shortly.</p>
+      <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#E8622A;color:#ffffff;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:14px;font-weight:600;font-family:'Libre Franklin',Helvetica,Arial,sans-serif">Log in to litly</a>
+      <p style="margin:24px 0 0;font-size:12px;line-height:1.6;color:#7a6a5a">If you didn't request this link, you can safely ignore this email.</p>
     </td></tr>
     <tr><td bgcolor="#1B2A3E" align="center" style="padding:16px 32px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;font-size:12px">
       <a href="https://thelitlyapp.com" style="color:#F2E8D5;opacity:0.7;text-decoration:none">thelitlyapp.com</a>
@@ -96,12 +92,10 @@ exactly as written; Supabase fills them in.
       <img src="https://thelitlyapp.com/logo.png" alt="litly" width="80" height="80" style="display:block;border:0" />
     </td></tr>
     <tr><td bgcolor="#F2E8D5" style="padding:32px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;color:#1B2A3E">
-      <h1 style="margin:0 0 16px;font-family:Georgia,'Times New Roman',Times,serif;font-size:24px;font-weight:700;color:#1B2A3E">Confirm your new email</h1>
-      <p style="margin:0 0 24px;font-size:15px;line-height:1.6">You requested to change your litly email from <strong>{{ .Email }}</strong> to <strong>{{ .NewEmail }}</strong>. Click below to confirm the change.</p>
-      <table cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#E8622A" style="border-radius:8px">
-        <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:14px 28px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none">Confirm new email</a>
-      </td></tr></table>
-      <p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#1B2A3E;opacity:0.7">If you didn't request this change, you can safely ignore this email.</p>
+      <h1 style="margin:0 0 8px;font-family:Georgia,'Times New Roman',Times,serif;font-size:22px;color:#1B2A3E">Confirm your new email</h1>
+      <p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#5a4a3a">You requested to change your litly email from <strong>{{ .Email }}</strong> to <strong>{{ .NewEmail }}</strong>. Click below to confirm the change.</p>
+      <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#E8622A;color:#ffffff;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:14px;font-weight:600;font-family:'Libre Franklin',Helvetica,Arial,sans-serif">Confirm new email</a>
+      <p style="margin:24px 0 0;font-size:12px;line-height:1.6;color:#7a6a5a">If you didn't request this change, you can safely ignore this email.</p>
     </td></tr>
     <tr><td bgcolor="#1B2A3E" align="center" style="padding:16px 32px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;font-size:12px">
       <a href="https://thelitlyapp.com" style="color:#F2E8D5;opacity:0.7;text-decoration:none">thelitlyapp.com</a>
@@ -119,12 +113,10 @@ exactly as written; Supabase fills them in.
       <img src="https://thelitlyapp.com/logo.png" alt="litly" width="80" height="80" style="display:block;border:0" />
     </td></tr>
     <tr><td bgcolor="#F2E8D5" style="padding:32px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;color:#1B2A3E">
-      <h1 style="margin:0 0 16px;font-family:Georgia,'Times New Roman',Times,serif;font-size:24px;font-weight:700;color:#1B2A3E">You've been invited</h1>
-      <p style="margin:0 0 24px;font-size:15px;line-height:1.6">You've been invited to join litly. Click the button below to accept the invitation and set up your account.</p>
-      <table cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#E8622A" style="border-radius:8px">
-        <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:14px 28px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none">Accept invitation</a>
-      </td></tr></table>
-      <p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#1B2A3E;opacity:0.7">If you weren't expecting this invitation, you can safely ignore this email.</p>
+      <h1 style="margin:0 0 8px;font-family:Georgia,'Times New Roman',Times,serif;font-size:22px;color:#1B2A3E">You've been invited</h1>
+      <p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#5a4a3a">You've been invited to join litly. Click the button below to accept the invitation and set up your account.</p>
+      <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#E8622A;color:#ffffff;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:14px;font-weight:600;font-family:'Libre Franklin',Helvetica,Arial,sans-serif">Accept invitation</a>
+      <p style="margin:24px 0 0;font-size:12px;line-height:1.6;color:#7a6a5a">If you weren't expecting this invitation, you can safely ignore this email.</p>
     </td></tr>
     <tr><td bgcolor="#1B2A3E" align="center" style="padding:16px 32px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;font-size:12px">
       <a href="https://thelitlyapp.com" style="color:#F2E8D5;opacity:0.7;text-decoration:none">thelitlyapp.com</a>
@@ -142,10 +134,10 @@ exactly as written; Supabase fills them in.
       <img src="https://thelitlyapp.com/logo.png" alt="litly" width="80" height="80" style="display:block;border:0" />
     </td></tr>
     <tr><td bgcolor="#F2E8D5" style="padding:32px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;color:#1B2A3E">
-      <h1 style="margin:0 0 16px;font-family:Georgia,'Times New Roman',Times,serif;font-size:24px;font-weight:700;color:#1B2A3E">Your verification code</h1>
-      <p style="margin:0 0 24px;font-size:15px;line-height:1.6">Enter this code to confirm it's you:</p>
-      <p style="margin:0;font-size:32px;font-weight:700;letter-spacing:6px;color:#E8622A">{{ .Token }}</p>
-      <p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#1B2A3E;opacity:0.7">If you didn't request this code, you can safely ignore this email.</p>
+      <h1 style="margin:0 0 8px;font-family:Georgia,'Times New Roman',Times,serif;font-size:22px;color:#1B2A3E">Your verification code</h1>
+      <p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#5a4a3a">Enter this code to confirm it's you:</p>
+      <p style="margin:0 0 24px;font-size:32px;font-weight:700;letter-spacing:6px;color:#E8622A;font-family:'Libre Franklin',Helvetica,Arial,sans-serif">{{ .Token }}</p>
+      <p style="margin:0;font-size:12px;line-height:1.6;color:#7a6a5a">If you didn't request this code, you can safely ignore this email.</p>
     </td></tr>
     <tr><td bgcolor="#1B2A3E" align="center" style="padding:16px 32px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;font-size:12px">
       <a href="https://thelitlyapp.com" style="color:#F2E8D5;opacity:0.7;text-decoration:none">thelitlyapp.com</a>
@@ -166,9 +158,9 @@ address when the account email changes.
       <img src="https://thelitlyapp.com/logo.png" alt="litly" width="80" height="80" style="display:block;border:0" />
     </td></tr>
     <tr><td bgcolor="#F2E8D5" style="padding:32px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;color:#1B2A3E">
-      <h1 style="margin:0 0 16px;font-family:Georgia,'Times New Roman',Times,serif;font-size:24px;font-weight:700;color:#1B2A3E">Your email address was changed</h1>
-      <p style="margin:0 0 24px;font-size:15px;line-height:1.6">The email address on your litly account was changed from <strong>{{ .Email }}</strong> to <strong>{{ .NewEmail }}</strong>.</p>
-      <p style="margin:0;font-size:13px;line-height:1.6;color:#1B2A3E;opacity:0.7">If you made this change, no action is needed. If you didn't, contact us right away at <a href="mailto:support@thelitlyapp.com" style="color:#E8622A;text-decoration:none">support@thelitlyapp.com</a>.</p>
+      <h1 style="margin:0 0 8px;font-family:Georgia,'Times New Roman',Times,serif;font-size:22px;color:#1B2A3E">Your email address was changed</h1>
+      <p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#5a4a3a">The email address on your litly account was changed from <strong>{{ .Email }}</strong> to <strong>{{ .NewEmail }}</strong>.</p>
+      <p style="margin:0;font-size:12px;line-height:1.6;color:#7a6a5a">If you made this change, no action is needed. If you didn't, contact us right away at <a href="mailto:support@thelitlyapp.com" style="color:#E8622A;text-decoration:none">support@thelitlyapp.com</a>.</p>
     </td></tr>
     <tr><td bgcolor="#1B2A3E" align="center" style="padding:16px 32px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;font-size:12px">
       <a href="https://thelitlyapp.com" style="color:#F2E8D5;opacity:0.7;text-decoration:none">thelitlyapp.com</a>
@@ -189,9 +181,9 @@ password is updated.
       <img src="https://thelitlyapp.com/logo.png" alt="litly" width="80" height="80" style="display:block;border:0" />
     </td></tr>
     <tr><td bgcolor="#F2E8D5" style="padding:32px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;color:#1B2A3E">
-      <h1 style="margin:0 0 16px;font-family:Georgia,'Times New Roman',Times,serif;font-size:24px;font-weight:700;color:#1B2A3E">Your password was changed</h1>
-      <p style="margin:0 0 24px;font-size:15px;line-height:1.6">The password for your litly account (<strong>{{ .Email }}</strong>) was just changed.</p>
-      <p style="margin:0;font-size:13px;line-height:1.6;color:#1B2A3E;opacity:0.7">If you made this change, no action is needed. If you didn't, reset your password immediately and contact us at <a href="mailto:support@thelitlyapp.com" style="color:#E8622A;text-decoration:none">support@thelitlyapp.com</a>.</p>
+      <h1 style="margin:0 0 8px;font-family:Georgia,'Times New Roman',Times,serif;font-size:22px;color:#1B2A3E">Your password was changed</h1>
+      <p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#5a4a3a">The password for your litly account (<strong>{{ .Email }}</strong>) was just changed.</p>
+      <p style="margin:0;font-size:12px;line-height:1.6;color:#7a6a5a">If you made this change, no action is needed. If you didn't, reset your password immediately and contact us at <a href="mailto:support@thelitlyapp.com" style="color:#E8622A;text-decoration:none">support@thelitlyapp.com</a>.</p>
     </td></tr>
     <tr><td bgcolor="#1B2A3E" align="center" style="padding:16px 32px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;font-size:12px">
       <a href="https://thelitlyapp.com" style="color:#F2E8D5;opacity:0.7;text-decoration:none">thelitlyapp.com</a>

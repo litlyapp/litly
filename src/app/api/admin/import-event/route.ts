@@ -4,6 +4,8 @@ import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { rateLimit } from "@/lib/rateLimit";
 import { wallClockToUtc } from "@/lib/importParsing";
 
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@thelitlyapp.com";
+
 // Best-effort server-side geocode so imported events get a map pin
 async function geocode(query: string): Promise<{ lat: number; lng: number } | null> {
   try {
@@ -34,8 +36,8 @@ export async function POST(request: Request) {
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  if (!user || user.email !== ADMIN_EMAIL) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   // Attribute the event to an explicit target org when given; otherwise fall
@@ -71,7 +73,7 @@ export async function POST(request: Request) {
   // Geocode in-person events so they appear on the map
   let coords: { lat: number; lng: number } | null = null;
   if ((event.event_type ?? "in_person") === "in_person") {
-    const query = [event.address, event.location_name, event.city, event.state, event.country]
+    const query = [event.address, event.location_name, event.city, event.state, event.zip, event.country]
       .filter(Boolean)
       .join(", ");
     if (query) coords = await geocode(query);
@@ -93,6 +95,7 @@ export async function POST(request: Request) {
     address: event.address ?? null,
     city: event.city ?? null,
     state: event.state ?? null,
+    zip_code: event.zip ?? null,
     country: event.country ?? null,
     lat: coords?.lat ?? null,
     lng: coords?.lng ?? null,
