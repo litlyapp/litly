@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing url or organizerId" }, { status: 400 });
   }
 
-  // Verify user is a member of the org
+  // Verify user is a member of the org and fetch org website for source-domain check
   const { data: membership } = await supabase
     .from("org_members")
     .select("org_id")
@@ -37,6 +37,17 @@ export async function POST(request: Request) {
     .eq("user_id", user.id)
     .maybeSingle();
   if (!membership) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+
+  const { data: orgProfile } = await supabase
+    .from("organizer_profiles")
+    .select("website")
+    .eq("id", organizerId)
+    .maybeSingle();
+
+  // If the import URL is from the org's own website, don't credit it as an external source
+  const importHost = (() => { try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return ""; } })();
+  const orgHost = (() => { try { return new URL(orgProfile?.website ?? "").hostname.replace(/^www\./, ""); } catch { return ""; } })();
+  const isOwnSite = importHost && orgHost && importHost === orgHost;
 
   // Block SSRF: reject private/internal addresses before fetching
   if (!(await isSafeUrl(url))) {
@@ -176,10 +187,8 @@ ${html}`,
       lng: coords?.lng ?? null,
       virtual_url: (extracted.virtual_url as string) || (extracted.event_type !== "virtual" ? url : null),
       ticket_url: (extracted.ticket_url as string) ?? null,
-      source_url: url,
-      source_name: (() => {
-        try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return null; }
-      })(),
+      source_url: isOwnSite ? null : url,
+      source_name: isOwnSite ? null : importHost || null,
       is_imported: true,
       banner_url: await (async () => {
         const raw = extracted.banner_url as string | null | undefined;
