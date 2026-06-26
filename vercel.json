@@ -24,6 +24,10 @@
     {
       "path": "/api/cron/rsvp-reminders",
       "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-cancelled",
+      "schedule": "0 5 * * *"
     }
   ]
 }
