@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { sendEmail, emailWrapper, escapeHtml } from "@/lib/sendEmail";
+import { formatEventDate, formatEventTime } from "@/lib/formatDate";
 import { rateLimit } from "@/lib/rateLimit";
 
 export async function POST(req: Request) {
@@ -39,7 +41,53 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "This event has been cancelled." }, { status: 400 });
   }
 
-  // Reminder email is sent 2 days before the event via the rsvp-reminders cron job, not here.
+  // If the event is within 48 hours, send the reminder immediately.
+  // Otherwise the daily cron (rsvp-reminders) handles it 2 days before.
+  const { data: event } = await supabase
+    .from("events")
+    .select("title, date_time, timezone, location_name, city, state, event_type")
+    .eq("id", eventId)
+    .single();
+
+  if (event && user.email && event.date_time) {
+    const hoursUntil = (new Date(event.date_time).getTime() - Date.now()) / (1000 * 60 * 60);
+    if (hoursUntil <= 48) {
+      const date = formatEventDate(event.date_time, event.timezone);
+      const time = formatEventTime(event.date_time, event.timezone);
+      const location =
+        event.event_type === "virtual"
+          ? "Virtual event"
+          : [event.location_name, event.city, event.state].filter(Boolean).join(", ") || "Location TBD";
+
+      await sendEmail({
+        to: user.email,
+        subject: `You're going to ${event.title}`,
+        text: [
+          `You're confirmed for ${event.title}.`,
+          ``,
+          `Date: ${date}`,
+          `Time: ${time}`,
+          `Location: ${location}`,
+          ``,
+          `View event: https://thelitlyapp.com/events/${eventId}`,
+          ``,
+          `— litly`,
+        ].join("\n"),
+        html: emailWrapper(`
+          <h1 style="font-family:Georgia,'Times New Roman',Times,serif;font-size:24px;margin:0 0 8px;color:#1B2A3E">You're going to<br/><em>${escapeHtml(event.title)}</em></h1>
+          <p style="color:#5a4a3a;margin:0 0 24px">Your RSVP is confirmed.</p>
+          <table style="border-collapse:collapse;width:100%;margin-bottom:24px">
+            <tr><td style="padding:8px 0;color:#7a6a5a;width:90px">Date</td><td style="padding:8px 0;color:#1B2A3E">${escapeHtml(date)}</td></tr>
+            <tr><td style="padding:8px 0;color:#7a6a5a">Time</td><td style="padding:8px 0;color:#1B2A3E">${escapeHtml(time)}</td></tr>
+            <tr><td style="padding:8px 0;color:#7a6a5a">Location</td><td style="padding:8px 0;color:#1B2A3E">${escapeHtml(location)}</td></tr>
+          </table>
+          <a href="https://thelitlyapp.com/events/${eventId}" style="background:#E8622A;color:#fff;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:14px;font-weight:600">View event</a>
+          <p style="margin-top:32px;font-size:12px;color:#7a6a5a">You received this because you RSVPd on litly.</p>
+        `),
+      }).catch(console.error);
+    }
+  }
+
   return NextResponse.json({ ok: true });
 }
 
