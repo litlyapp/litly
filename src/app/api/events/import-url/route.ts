@@ -79,9 +79,20 @@ export async function POST(request: Request) {
       .replace(/<head[\s\S]*?<\/head>/gi, "")
       .replace(/<script[\s\S]*?<\/script>/gi, "")
       .replace(/<style[\s\S]*?<\/style>/gi, "")
-      // Strip ALL HTML attributes — removes every machine-readable timestamp, offset, and data-*
-      // regardless of encoding format or attribute name. Claude sees only tag structure + visible text.
-      .replace(/<([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/g, "<$1>");
+      // Strip machine-encoded timestamps so Claude reads only the visible display time.
+      // Root cause: Claude sees offset-aware datetimes and subtracts the offset (e.g. 19:00-04:00 → 3 PM).
+      // Dashed ISO with offset/Z: "2026-06-30T19:00:00-04:00"
+      .replace(/\b20\d\d-\d\d-\d\dT\d\d:\d\d:\d\d(?:[+-]\d\d:\d\d|Z)\b/g, "")
+      // Compact ISO with offset/Z (The Events Calendar iCal format): "20260630T190000-0400"
+      .replace(/\b20\d{6}T\d{6}(?:[+-]\d{4}|Z)\b/g, "")
+      // abbr title="..." (The Events Calendar puts compact ISO timestamps here)
+      .replace(/(<abbr\b[^>]*?)\stitle="[^"]*"/gi, "$1")
+      // datetime="..." attributes on <time> elements
+      .replace(/\bdatetime="[^"]*"/gi, "")
+      // <meta content="..."> carrying ISO timestamps
+      .replace(/(<meta\b[^>]*?)\scontent="20\d\d-\d\d-\d\dT[^"]*"/gi, "$1")
+      // data-* attributes whose names suggest timestamps
+      .replace(/\sdata-[a-z-]*(?:date|time|start|end|unix|utc|ts)[a-z-]*="[^"]*"/gi, "");
     // Trim to 50k chars — Claude doesn't need the full DOM
     html = html.slice(0, 50000);
   } catch (err) {
