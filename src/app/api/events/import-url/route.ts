@@ -69,9 +69,13 @@ export async function POST(request: Request) {
       .replace(/<script[\s\S]*?<\/script>/gi, "")
       .replace(/<style[\s\S]*?<\/style>/gi, "")
       // Remove machine-encoded timestamps that confuse Claude into wrong local times.
-      // Root cause: "startDate":"2026-06-25T18:00:00-04:00" → Claude subtracts offset → 2 PM instead of 6 PM.
-      // Strip all ISO 8601 datetimes with timezone offsets or Z suffix anywhere in the HTML.
+      // Root cause: Claude sees offset-aware ISO datetimes and subtracts the offset, shifting the time.
+      // Strip dashed ISO 8601 with offset or Z: "2026-06-30T19:00:00-04:00" / "...Z"
       .replace(/\b20\d\d-\d\d-\d\dT\d\d:\d\d:\d\d(?:[+-]\d\d:\d\d|Z)\b/g, "")
+      // Strip compact ISO 8601 with offset (The Events Calendar / iCal): "20260630T190000-0400"
+      .replace(/\b20\d{6}T\d{6}(?:[+-]\d{4}|Z)\b/g, "")
+      // Strip title="..." on <abbr> tags (The Events Calendar embeds timestamps there)
+      .replace(/(<abbr\b[^>]*?)\stitle="[^"]*"/gi, "$1")
       // Also strip datetime="..." and content="..." attributes carrying timestamps
       .replace(/\bdatetime="[^"]*"/gi, "")
       .replace(/(<meta\b[^>]*?)\scontent="20\d\d-\d\d-\d\dT[^"]*"/gi, "$1")
