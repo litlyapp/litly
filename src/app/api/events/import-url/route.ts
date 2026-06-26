@@ -57,6 +57,9 @@ export async function POST(request: Request) {
   // Fetch the page — try with a browser-like UA first; some sites block bots
   const BROWSER_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
   let html: string;
+  let diagStatus = 0;
+  let diagUa = "browser";
+  let rawLen = 0;
   try {
     let res = await fetch(url, {
       headers: { "User-Agent": BROWSER_UA, "Accept": "text/html,application/xhtml+xml,*/*" },
@@ -71,9 +74,12 @@ export async function POST(request: Request) {
         headers: { "User-Agent": "litly/1.0 (thelitlyapp.com)" },
         signal: AbortSignal.timeout(10000),
       });
+      diagUa = "litly";
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
     }
+    diagStatus = res.status;
     html = await res.text();
+    rawLen = html.length;
     // Strip <head>, <script>, <style> blocks to save token budget for actual content
     html = html
       .replace(/<head[\s\S]*?<\/head>/gi, "")
@@ -95,6 +101,19 @@ export async function POST(request: Request) {
       .replace(/\sdata-[a-z-]*(?:date|time|start|end|unix|utc|ts)[a-z-]*="[^"]*"/gi, "");
     // Trim to 50k chars — Claude doesn't need the full DOM
     html = html.slice(0, 50000);
+    // Diagnostic: confirm the fetched page actually contains event content.
+    // Distinguishes a genuine extraction miss from a bot-wall/challenge page
+    // (often HTTP 200 but no event body) served to datacenter IPs like Vercel's.
+    console.log("[import-url] fetch:", {
+      host: importHost,
+      status: diagStatus,
+      ua: diagUa,
+      rawLen,
+      strippedLen: html.length,
+      hasEventDate: /event\s*date/i.test(html),
+      hasDatePattern: /\b\d\d\/\d\d\/20\d\d\b|\b20\d\d-\d\d-\d\d\b/.test(html),
+      sample: html.slice(0, 300).replace(/\s+/g, " "),
+    });
   } catch (err) {
     return NextResponse.json({ error: `Could not fetch URL: ${err}` }, { status: 422 });
   }
@@ -193,6 +212,12 @@ ${html}`,
   // buried it among several secondary dates), fail with a clear message instead
   // of letting the constraint surface as a raw Postgres error.
   if (!isoDateTime) {
+    console.warn("[import-url] no date extracted:", {
+      url,
+      extractedDate: extracted.date,
+      extractedTitle: extracted.title,
+      extractedKeys: Object.keys(extracted),
+    });
     return NextResponse.json(
       { error: "Couldn't find the event date on that page. Please enter the event details manually below." },
       { status: 422 }
