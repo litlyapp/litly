@@ -124,6 +124,7 @@ Fields:
 - ticket_url: string | null (URL to buy tickets or RSVP)
 - virtual_url: string | null (URL to join virtual event)
 - banner_url: string | null (URL of the main event image if present as an absolute URL)
+- genres: string[] (list of genre/category keywords found anywhere on the page — extract every relevant word or phrase verbatim, e.g. ["Poetry", "Fiction", "Workshop", "Craft Talk", "Open Mic"])
 
 Return ONLY the JSON object, no explanation.
 
@@ -187,6 +188,29 @@ ${html}`,
   const isoEndTime  = naiveEnd   ? wallClockToUtc(naiveEnd,   tz) : null;
   console.log("[import-url] times:", { naiveStart, naiveEnd, isoDateTime, isoEndTime, tz });
 
+  // Map extracted genre keywords to litly's fixed genre list
+  const GENRE_MAP: Record<string, string> = {
+    poetry: "poetry",
+    fiction: "fiction",
+    nonfiction: "nonfiction", "non-fiction": "nonfiction", "non fiction": "nonfiction",
+    translation: "translation",
+    ya: "ya", "young adult": "ya",
+    "craft talk": "craft_talk", craft: "craft_talk",
+    "open mic": "open_mic", "open-mic": "open_mic",
+    workshop: "workshop", seminar: "workshop",
+    "in conversation": "in_conversation", conversation: "in_conversation", interview: "in_conversation",
+    slam: "slam", "poetry slam": "slam",
+  };
+  const rawGenres = Array.isArray(extracted.genres) ? (extracted.genres as string[]) : [];
+  const mappedGenres = [...new Set(
+    rawGenres.flatMap((g) => {
+      const lower = g.toLowerCase();
+      return Object.entries(GENRE_MAP)
+        .filter(([key]) => lower.includes(key))
+        .map(([, val]) => val);
+    })
+  )];
+
   // Geocode if in-person
   let coords: { lat: number; lng: number } | null = null;
   if (extracted.event_type !== "virtual") {
@@ -204,7 +228,7 @@ ${html}`,
       organizer_id: organizerId,
       title: (extracted.title as string) || "Untitled event",
       description: (extracted.description as string) ?? null,
-      genre: [],
+      genre: mappedGenres,
       event_type: ((extracted.event_type as string) === "virtual" ? "virtual" : "in_person"),
       date_time: isoDateTime,
       timezone: (extracted.timezone as string) ?? null,
