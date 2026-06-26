@@ -68,18 +68,9 @@ export async function POST(request: Request) {
       .replace(/<head[\s\S]*?<\/head>/gi, "")
       .replace(/<script[\s\S]*?<\/script>/gi, "")
       .replace(/<style[\s\S]*?<\/style>/gi, "")
-      // Remove machine-encoded timestamps that confuse Claude into wrong local times.
-      // Root cause: Claude sees offset-aware ISO datetimes and subtracts the offset, shifting the time.
-      // Strip dashed ISO 8601 with offset or Z: "2026-06-30T19:00:00-04:00" / "...Z"
-      .replace(/\b20\d\d-\d\d-\d\dT\d\d:\d\d:\d\d(?:[+-]\d\d:\d\d|Z)\b/g, "")
-      // Strip compact ISO 8601 with offset (The Events Calendar / iCal): "20260630T190000-0400"
-      .replace(/\b20\d{6}T\d{6}(?:[+-]\d{4}|Z)\b/g, "")
-      // Strip title="..." on <abbr> tags (The Events Calendar embeds timestamps there)
-      .replace(/(<abbr\b[^>]*?)\stitle="[^"]*"/gi, "$1")
-      // Also strip datetime="..." and content="..." attributes carrying timestamps
-      .replace(/\bdatetime="[^"]*"/gi, "")
-      .replace(/(<meta\b[^>]*?)\scontent="20\d\d-\d\d-\d\dT[^"]*"/gi, "$1")
-      .replace(/\sdata-[a-z-]*(?:date|time|start|end|unix|utc|ts)[a-z-]*="[^"]*"/gi, "");
+      // Strip ALL HTML attributes — removes every machine-readable timestamp, offset, and data-*
+      // regardless of encoding format or attribute name. Claude sees only tag structure + visible text.
+      .replace(/<([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/g, "<$1>");
     // Trim to 50k chars — Claude doesn't need the full DOM
     html = html.slice(0, 50000);
   } catch (err) {
