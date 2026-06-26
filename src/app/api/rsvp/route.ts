@@ -82,7 +82,8 @@ export async function POST(req: Request) {
             <tr><td style="padding:8px 0;color:#7a6a5a">Location</td><td style="padding:8px 0;color:#1B2A3E">${escapeHtml(location)}</td></tr>
           </table>
           <a href="https://thelitlyapp.com/events/${eventId}" style="background:#E8622A;color:#fff;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:14px;font-weight:600">View event</a>
-          <p style="margin-top:32px;font-size:12px;color:#7a6a5a">You received this because you RSVPd on litly.</p>
+          <p style="margin-top:24px;font-size:12px;color:#7a6a5a;border-top:1px solid #d4c9b5;padding-top:16px">If this is a ticketed event, your litly RSVP does not guarantee a ticket. Please confirm ticketing directly with the organizer before attending.</p>
+          <p style="margin-top:8px;font-size:12px;color:#7a6a5a">You received this because you RSVPd on litly.</p>
         `),
       }).catch(console.error);
     }
