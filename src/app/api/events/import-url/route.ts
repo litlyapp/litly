@@ -185,7 +185,8 @@ ${html}`,
   function buildNaive(date: string | null | undefined, timeDisplay: string | null | undefined): string | null {
     if (!date) return null;
     if (!timeDisplay) return `${date}T00:00:00`;
-    const t = timeDisplay.trim().toLowerCase();
+    // Normalize AP-style "7 p.m." / "7 A.M." (periods) → "7 pm" so the patterns below match
+    const t = timeDisplay.trim().toLowerCase().replace(/\./g, "");
     const already = t.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
     if (already) return `${date}T${already[1].padStart(2,"0")}:${already[2]}:00`;
     const twelve = t.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/);
@@ -202,7 +203,10 @@ ${html}`,
 
   const dateStr = extracted.date as string | null;
   const tz = (extracted.timezone as string | null) || "America/New_York";
-  const naiveStart = buildNaive(dateStr, extracted.start_time_display as string | null);
+  // If we have a date but the start time won't parse (e.g. "noon"), still import
+  // at midnight for review rather than dropping the whole event over a time quirk.
+  const naiveStart = buildNaive(dateStr, extracted.start_time_display as string | null)
+    ?? (dateStr ? `${dateStr}T00:00:00` : null);
   const naiveEnd   = buildNaive(dateStr, extracted.end_time_display as string | null);
   const isoDateTime = naiveStart ? wallClockToUtc(naiveStart, tz) : null;
   const isoEndTime  = naiveEnd   ? wallClockToUtc(naiveEnd,   tz) : null;
