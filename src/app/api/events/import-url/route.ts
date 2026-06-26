@@ -96,7 +96,20 @@ export async function POST(request: Request) {
     // Trim to 50k chars — Claude doesn't need the full DOM
     html = html.slice(0, 50000);
   } catch (err) {
-    return NextResponse.json({ error: `Could not fetch URL: ${err}` }, { status: 422 });
+    const msg = err instanceof Error ? err.message : String(err);
+    // Some sites (often behind Cloudflare) block our server's datacenter IP with
+    // a 403/401 — nothing the organizer can fix, so point them to manual entry
+    // rather than showing a raw HTTP error.
+    if (/HTTP 40(1|3)/.test(msg)) {
+      return NextResponse.json(
+        { error: "This site blocked our server from reading the page (403). Please enter the event details manually below." },
+        { status: 422 }
+      );
+    }
+    return NextResponse.json(
+      { error: "Couldn't reach that page. Double-check the link, or enter the event details manually below." },
+      { status: 422 }
+    );
   }
 
   // Extract event data via Claude Haiku
