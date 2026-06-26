@@ -218,7 +218,7 @@ ${html}`,
       lng: coords?.lng ?? null,
       virtual_url: (extracted.virtual_url as string) || (extracted.event_type !== "virtual" ? url : null),
       ticket_url: (extracted.ticket_url as string) ?? null,
-      source_url: isOwnSite ? null : url,
+      source_url: isOwnSite ? null : (() => { try { const u = new URL(url); return `${u.protocol}//${u.hostname}`; } catch { return url; } })(),
       source_name: isOwnSite ? null : importHost || null,
       is_imported: true,
       banner_url: await (async () => {
