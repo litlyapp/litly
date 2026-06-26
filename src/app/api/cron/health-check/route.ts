@@ -167,28 +167,10 @@ export async function GET(req: Request) {
     );
   }
 
-  // 8. Newsletter crawler activity: at least one of the 4 crawl sources should
-  // have produced a pending_import in the last 48 hours. If none have, the
-  // crawler has silently stalled (broken link pattern, site redesign, etc.).
-  const CRAWLER_EMAILS = [
-    "crawler@pw.org",
-    "crawler@poets.org",
-    "crawler@literary-arts.org",
-    "crawler@nationalbook.org",
-  ];
+  // (The newsletter-crawler activity check was removed when the crawl-calendars
+  // cron was retired — events are now sourced via the dashboard URL importer and
+  // forwarded newsletters.) `fortyEightHoursAgo` is still used by the feed check.
   const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-  const { count: crawlerCount, error: crawlerError } = await supabase
-    .from("pending_imports")
-    .select("id", { count: "exact", head: true })
-    .in("source_email", CRAWLER_EMAILS)
-    .gte("created_at", fortyEightHoursAgo);
-  if (crawlerError) {
-    issues.push(`Failed to check crawler activity: ${crawlerError.message}`);
-  } else if ((crawlerCount ?? 0) === 0) {
-    issues.push(
-      "Newsletter crawler produced no new queue items in the last 48 hours — crawl-calendars cron may have stalled or all source sites may have changed their markup"
-    );
-  }
 
   // 9. Org feed sync health: flag any org that has a feed URL configured but
   // hasn't had a successful sync in the last 48 hours.

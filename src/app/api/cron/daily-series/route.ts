@@ -18,6 +18,46 @@ export async function GET(req: Request) {
 
   const now = new Date().toISOString();
 
+  // Retire cancelled events whose date has passed (folded in from the former
+  // standalone cleanup-cancelled cron). Runs before the series work so it
+  // happens even when there are no recurring series to process. Cancelled
+  // events are already hidden everywhere public; this stops them lingering in
+  // the DB and on org dashboards. Past *non-cancelled* events are kept.
+  let deletedCancelled = 0;
+  {
+    const nowDate = new Date();
+    const { data: cancelled } = await supabase
+      .from("events")
+      .select("id, date_time, end_time, parent_event_id")
+      .eq("is_cancelled", true)
+      .lt("date_time", now);
+    const passedIds = (cancelled ?? [])
+      .filter((e) => new Date(e.end_time ?? e.date_time) < nowDate)
+      .map((e) => e.id);
+    if (passedIds.length > 0) {
+      // Never delete a row still referenced as a parent by an existing event
+      // (a cancelled series parent whose future occurrences haven't passed);
+      // it clears on a later run once childless.
+      const { data: childRefs } = await supabase
+        .from("events")
+        .select("parent_event_id")
+        .in("parent_event_id", passedIds);
+      const stillParent = new Set((childRefs ?? []).map((c) => c.parent_event_id));
+      const deletable = passedIds.filter((id) => !stillParent.has(id));
+      if (deletable.length > 0) {
+        // Clear dependent rows first to avoid foreign-key violations
+        await supabase.from("rsvps").delete().in("event_id", deletable);
+        await supabase.from("saved_events").delete().in("event_id", deletable);
+        const { data: deleted } = await supabase
+          .from("events")
+          .delete()
+          .in("id", deletable)
+          .select("id");
+        deletedCancelled = deleted?.length ?? 0;
+      }
+    }
+  }
+
   // Find all ongoing parent events with a recurrence rule
   const { data: parents, error } = await supabase
     .from("events")
@@ -31,7 +71,7 @@ export async function GET(req: Request) {
   }
 
   if (!parents || parents.length === 0) {
-    return NextResponse.json({ ok: true, processed: 0, added: 0 });
+    return NextResponse.json({ ok: true, processed: 0, added: 0, deletedCancelled });
   }
 
   let totalAdded = 0;
@@ -126,5 +166,5 @@ export async function GET(req: Request) {
     totalAdded += added;
   }
 
-  return NextResponse.json({ ok: true, processed: parents.length, added: totalAdded });
+  return NextResponse.json({ ok: true, processed: parents.length, added: totalAdded, deletedCancelled });
 }
