@@ -111,7 +111,7 @@ export async function POST(request: Request) {
 Fields:
 - title: string (event name)
 - description: string | null (full event description, plain text)
-- date: string | null (date only, YYYY-MM-DD format, e.g. "2026-08-15")
+- date: string | null (the event's primary start date in YYYY-MM-DD format, e.g. "2026-08-15" — use the main event date, usually labeled "Event Date" or "Date"; ignore secondary dates such as submission, ticket-sale, RSVP, or announcement deadlines mentioned in the description)
 - start_time_display: string | null (time exactly as shown on the page, e.g. "6:00 PM" or "6pm" or "18:00" — copy verbatim, do NOT convert or adjust)
 - end_time_display: string | null (end time exactly as shown on the page, same rule)
 - timezone: string | null (IANA timezone, e.g. "America/New_York" — infer from the event location or any timezone label shown on the page)
@@ -188,6 +188,16 @@ ${html}`,
   const isoDateTime = naiveStart ? wallClockToUtc(naiveStart, tz) : null;
   const isoEndTime  = naiveEnd   ? wallClockToUtc(naiveEnd,   tz) : null;
   console.log("[import-url] times:", { naiveStart, naiveEnd, isoDateTime, isoEndTime, tz });
+
+  // date_time is NOT NULL on events. If the page exposed no readable date (or
+  // buried it among several secondary dates), fail with a clear message instead
+  // of letting the constraint surface as a raw Postgres error.
+  if (!isoDateTime) {
+    return NextResponse.json(
+      { error: "Couldn't find the event date on that page. Please enter the event details manually below." },
+      { status: 422 }
+    );
+  }
 
   // Map extracted genre keywords to litly's fixed genre list
   const GENRE_MAP: Record<string, string> = {
