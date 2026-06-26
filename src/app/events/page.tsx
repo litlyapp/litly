@@ -38,6 +38,14 @@ export default async function EventsPage({
     ? `/events/calendar${calMonth ? `?month=${calMonth}` : ""}`
     : "/events";
 
+  // The "orgs you follow" highlight belongs only on the default, unfiltered
+  // events page. As soon as any search/filter is active, hide it — followed-org
+  // events that match still appear in the main results below (same query).
+  const hasActiveFilters = !!(
+    params.q || params.genre || params.type || params.from ||
+    params.to || params.organizer || params.location
+  );
+
   // Fetch all organizer profiles for the dropdown
   const { data: organizers } = await supabase
     .from("organizer_profiles")
@@ -107,7 +115,7 @@ export default async function EventsPage({
     isOrganizer = !!profileResult.data;
 
     const followedOrgIds = (followsResult.data ?? []).map((f) => f.organizer_id);
-    if (followedOrgIds.length > 0) {
+    if (followedOrgIds.length > 0 && !hasActiveFilters) {
       const { data: followingRaw } = await supabase
         .from("events")
         .select(`
@@ -198,8 +206,8 @@ export default async function EventsPage({
 
         {/* Event grid */}
         <div className="flex-1">
-          {/* Following feed — signed-in users following at least one org */}
-          {followingEvents.length > 0 && (
+          {/* Following feed — signed-in users following ≥1 org, only on the unfiltered page */}
+          {!hasActiveFilters && followingEvents.length > 0 && (
             <div className="mb-10">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="font-serif text-xl text-cream">Upcoming from orgs you follow</h2>
