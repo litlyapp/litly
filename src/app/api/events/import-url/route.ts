@@ -138,6 +138,7 @@ ${html}`,
     const raw = message.content[0].type === "text" ? message.content[0].text : "";
     const text = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
     extracted = JSON.parse(text);
+    console.log("[import-url] extracted:", JSON.stringify({ date: extracted.date, start_time_display: extracted.start_time_display, end_time_display: extracted.end_time_display, timezone: extracted.timezone }));
   } catch {
     return NextResponse.json({ error: "Failed to parse extracted event data" }, { status: 500 });
   }
