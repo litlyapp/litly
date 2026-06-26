@@ -143,15 +143,30 @@ ${html}`,
     return NextResponse.json({ error: "Failed to parse extracted event data" }, { status: 500 });
   }
 
-  // Convert date + display time string → ISO 8601 local datetime (no offset)
-  function buildIso(date: string | null | undefined, timeDisplay: string | null | undefined): string | null {
+  // Convert a wall-clock "YYYY-MM-DDTHH:MM:SS" string in `timeZone` to a UTC ISO string.
+  // Supabase's timestamptz column treats naive strings as UTC, so we must convert first.
+  function wallClockToUtc(naive: string, timeZone: string): string {
+    // Parse the naive string as if it were UTC, then determine the actual TZ offset at that instant
+    const naiveAsUtc = new Date(`${naive}Z`);
+    const dtf = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      hourCycle: "h23",
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", second: "2-digit",
+    });
+    const parts = dtf.formatToParts(naiveAsUtc).reduce<Record<string, string>>((acc, p) => { acc[p.type] = p.value; return acc; }, {});
+    const asUtcMs = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day), Number(parts.hour), Number(parts.minute), Number(parts.second));
+    const offsetMs = asUtcMs - naiveAsUtc.getTime();
+    return new Date(naiveAsUtc.getTime() - offsetMs).toISOString();
+  }
+
+  // Parse display time string → naive "YYYY-MM-DDTHH:MM:SS" wall-clock string
+  function buildNaive(date: string | null | undefined, timeDisplay: string | null | undefined): string | null {
     if (!date) return null;
     if (!timeDisplay) return `${date}T00:00:00`;
     const t = timeDisplay.trim().toLowerCase();
-    // Already HH:MM or HH:MM:SS
     const already = t.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
     if (already) return `${date}T${already[1].padStart(2,"0")}:${already[2]}:00`;
-    // 12-hour: "6:00 pm", "6pm", "6:30am"
     const twelve = t.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/);
     if (twelve) {
       let h = parseInt(twelve[1], 10);
@@ -165,8 +180,12 @@ ${html}`,
   }
 
   const dateStr = extracted.date as string | null;
-  const isoDateTime = buildIso(dateStr, extracted.start_time_display as string | null);
-  const isoEndTime = buildIso(dateStr, extracted.end_time_display as string | null);
+  const tz = (extracted.timezone as string | null) || "America/New_York";
+  const naiveStart = buildNaive(dateStr, extracted.start_time_display as string | null);
+  const naiveEnd   = buildNaive(dateStr, extracted.end_time_display as string | null);
+  const isoDateTime = naiveStart ? wallClockToUtc(naiveStart, tz) : null;
+  const isoEndTime  = naiveEnd   ? wallClockToUtc(naiveEnd,   tz) : null;
+  console.log("[import-url] times:", { naiveStart, naiveEnd, isoDateTime, isoEndTime, tz });
 
   // Geocode if in-person
   let coords: { lat: number; lng: number } | null = null;
