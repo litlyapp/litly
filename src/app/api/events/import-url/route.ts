@@ -183,8 +183,13 @@ ${html}`,
       country: (extracted.country as string) ?? null,
       lat: coords?.lat ?? null,
       lng: coords?.lng ?? null,
-      virtual_url: (extracted.virtual_url as string) ?? null,
+      virtual_url: (extracted.virtual_url as string) || (extracted.event_type !== "virtual" ? url : null),
       ticket_url: (extracted.ticket_url as string) ?? null,
+      source_url: url,
+      source_name: (() => {
+        try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return null; }
+      })(),
+      is_imported: true,
       banner_url: await (async () => {
         const raw = extracted.banner_url as string | null | undefined;
         if (!raw || !/^https:\/\//i.test(raw)) return null;
