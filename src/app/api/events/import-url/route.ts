@@ -202,8 +202,9 @@ ${html}`,
     slam: "slam", "poetry slam": "slam",
   };
   const rawGenres = Array.isArray(extracted.genres) ? (extracted.genres as string[]) : [];
+  const titleStr = (extracted.title as string) ?? "";
   const mappedGenres = [...new Set(
-    rawGenres.flatMap((g) => {
+    [...rawGenres, titleStr].flatMap((g) => {
       const lower = g.toLowerCase();
       return Object.entries(GENRE_MAP)
         .filter(([key]) => lower.includes(key))
