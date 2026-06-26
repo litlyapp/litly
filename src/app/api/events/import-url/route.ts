@@ -120,6 +120,7 @@ Fields:
 - address: string | null (street address only, no city/state)
 - city: string | null
 - state: string | null (2-letter US state code if US)
+- zip: string | null (zip / postal code, exactly as shown — copy verbatim, do NOT guess)
 - country: string | null
 - ticket_url: string | null (URL to buy tickets or RSVP)
 - virtual_url: string | null (URL to join virtual event)
@@ -215,7 +216,7 @@ ${html}`,
   // Geocode if in-person
   let coords: { lat: number; lng: number } | null = null;
   if (extracted.event_type !== "virtual") {
-    const query = [extracted.address, extracted.location_name, extracted.city, extracted.state, extracted.country]
+    const query = [extracted.address, extracted.location_name, extracted.city, extracted.state, extracted.zip, extracted.country]
       .filter(Boolean)
       .join(", ");
     if (query) coords = await geocode(query);
@@ -238,6 +239,7 @@ ${html}`,
       address: (extracted.address as string) ?? null,
       city: (extracted.city as string) ?? null,
       state: (extracted.state as string) ?? null,
+      zip_code: (extracted.zip as string) ?? null,
       country: (extracted.country as string) ?? null,
       lat: coords?.lat ?? null,
       lng: coords?.lng ?? null,
