@@ -24,7 +24,8 @@ export async function GET(req: Request) {
   // events are already hidden everywhere public; this stops them lingering in
   // the DB and on org dashboards. Past *non-cancelled* events are kept.
   let deletedCancelled = 0;
-  {
+  // Isolated so a cleanup failure can never abort the recurring-series top-up below.
+  try {
     const nowDate = new Date();
     const { data: cancelled } = await supabase
       .from("events")
@@ -56,6 +57,8 @@ export async function GET(req: Request) {
         deletedCancelled = deleted?.length ?? 0;
       }
     }
+  } catch (cleanupErr) {
+    console.error("daily-series: cleanup-cancelled step failed (series top-up still proceeds):", cleanupErr);
   }
 
   // Find all ongoing parent events with a recurrence rule
