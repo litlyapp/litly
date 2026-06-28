@@ -37,7 +37,7 @@ export async function generateMetadata({
   const supabase = await createClient();
   const { data: event } = await supabase
     .from("events")
-    .select("title, description, banner_url, location_name, city, state")
+    .select("title, description, banner_url, location_name, city, state, date_time")
     .eq("id", id)
     .single();
 
@@ -54,8 +54,14 @@ export async function generateMetadata({
     ? [{ url: event.banner_url, width: 1200, height: 630, alt: event.title }]
     : [{ url: "https://thelitlyapp.com/icons/icon-192x192.png", width: 192, height: 192, alt: "litly" }];
 
+  const datePart = event.date_time
+    ? new Date(event.date_time).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    : null;
+  const titleSuffix = [event.city, datePart].filter(Boolean).join(" · ");
+  const pageTitle = titleSuffix ? `${event.title} · ${titleSuffix} — litly` : `${event.title} — litly`;
+
   return {
-    title: `${event.title} — litly`,
+    title: pageTitle,
     description,
     alternates: {
       canonical: `https://thelitlyapp.com/events/${id}`,
@@ -247,8 +253,54 @@ export default async function EventDetailPage({
 
   const isPast = new Date(event.date_time) < new Date();
 
+  const jsonLd: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    name: event.title,
+    startDate: event.date_time,
+    ...(event.end_time ? { endDate: event.end_time } : {}),
+    ...(event.description ? { description: stripHtml(event.description) } : {}),
+    url: `https://thelitlyapp.com/events/${event.id}`,
+    ...(event.banner_url ? { image: event.banner_url } : {}),
+    eventStatus: ev.is_cancelled
+      ? "https://schema.org/EventCancelled"
+      : "https://schema.org/EventScheduled",
+    eventAttendanceMode:
+      event.event_type === "virtual"
+        ? "https://schema.org/OnlineEventAttendanceMode"
+        : "https://schema.org/OfflineEventAttendanceMode",
+    ...(event.event_type !== "virtual" && event.location_name
+      ? {
+          location: {
+            "@type": "Place",
+            name: event.location_name,
+            ...(event.address || event.city || event.state
+              ? {
+                  address: {
+                    "@type": "PostalAddress",
+                    ...(event.address ? { streetAddress: event.address } : {}),
+                    ...(event.city ? { addressLocality: event.city } : {}),
+                    ...(event.state ? { addressRegion: event.state } : {}),
+                    ...(event.country ? { addressCountry: event.country } : {}),
+                  },
+                }
+              : {}),
+          },
+        }
+      : event.event_type === "virtual" && event.virtual_url && /^https?:\/\//.test(event.virtual_url)
+      ? { location: { "@type": "VirtualLocation", url: event.virtual_url } }
+      : {}),
+    ...(organizer
+      ? { organizer: { "@type": "Organization", name: organizer.name, url: `https://thelitlyapp.com/organizers/${organizer.id}` } }
+      : {}),
+  };
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <EventViewTracker eventId={event.id} />
 
       {/* Draft banner — only org members can see this page */}
