@@ -103,7 +103,7 @@ export default async function HomePage() {
             <span className="text-orange italic">literary moment.</span>
           </h1>
           <p className="text-cream-muted text-lg md:text-xl max-w-lg mx-auto mb-2">
-            Readings, open mics, craft talks, and more —<br className="hidden sm:block" />
+            Readings, open mics, workshops, and more —<br className="hidden sm:block" />
             all in one place.
           </p>
           <div className="mb-10" />
