@@ -71,7 +71,7 @@ export default async function EventMapPage({
       <div className="mb-6">
         <h1 className="font-serif text-4xl text-cream mb-1">Event map</h1>
         <p className="text-cream-muted mb-3">
-          {mappedCount} mapped {mappedCount === 1 ? "event" : "events"} shown
+          {mappedCount} in-person {mappedCount === 1 ? "event" : "events"} shown
           {virtualCount > 0 && (
             <span className="text-cream-muted/70">
               {" "}· {virtualCount} virtual {virtualCount === 1 ? "event" : "events"} hidden
