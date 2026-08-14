@@ -53,13 +53,13 @@ export default async function EventMapPage({
   });
 
   // Only in-person events with coordinates can be placed on the map.
-  const mappableEvents = dedupedEvents.filter(
-    (e) => e.event_type === "in_person" && e.lat != null && e.lng != null
-  );
+  const inPersonEvents = dedupedEvents.filter((e) => e.event_type === "in_person");
+  const mappableEvents = inPersonEvents.filter((e) => e.lat != null && e.lng != null);
 
   const totalMatching = dedupedEvents.length;
   const mappedCount = mappableEvents.length;
-  const hiddenCount = totalMatching - mappedCount;
+  const virtualCount = totalMatching - inPersonEvents.length;
+  const ungeocodedCount = inPersonEvents.length - mappedCount;
 
   const lat = params.lat ? Number(params.lat) : null;
   const lng = params.lng ? Number(params.lng) : null;
@@ -72,9 +72,14 @@ export default async function EventMapPage({
         <h1 className="font-serif text-4xl text-cream mb-1">Event map</h1>
         <p className="text-cream-muted mb-3">
           {mappedCount} mapped {mappedCount === 1 ? "event" : "events"} shown
-          {hiddenCount > 0 && (
+          {virtualCount > 0 && (
             <span className="text-cream-muted/70">
-              {" "}· {hiddenCount} virtual {hiddenCount === 1 ? "event" : "events"} hidden
+              {" "}· {virtualCount} virtual {virtualCount === 1 ? "event" : "events"} hidden
+            </span>
+          )}
+          {ungeocodedCount > 0 && (
+            <span className="text-cream-muted/70">
+              {" "}· {ungeocodedCount} {ungeocodedCount === 1 ? "event" : "events"} missing a location
             </span>
           )}
         </p>
