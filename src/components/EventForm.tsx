@@ -928,7 +928,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         <label className={labelClass}>Event title *</label>
         <input
           type="text"
-          placeholder="e.g. Friday Night Readings at The Strand"
+          placeholder="e.g. Friday Night Readings at Haw River in the Round"
           value={form.title}
           onChange={(e) => set("title", e.target.value)}
           required
@@ -975,9 +975,6 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
             );
           })}
         </div>
-        {genres.length === 0 && (
-          <p className="text-cream-muted/60 text-xs mt-1">Select at least one.</p>
-        )}
       </div>
 
       {/* Event type */}
