@@ -954,7 +954,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       {/* Genre */}
       <div>
         <label className={labelClass}>
-          Genre * <span className="normal-case tracking-normal text-cream-muted/60">— select all that apply</span>
+          Genre * <span className="normal-case tracking-normal text-cream-muted/60">(select all that apply)</span>
         </label>
         <div className="flex flex-wrap gap-2">
           {GENRES.map((g) => {
