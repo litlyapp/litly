@@ -1137,7 +1137,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
             <label className={labelClass}>
               Address *{" "}
               <span className="text-cream-muted/60 normal-case tracking-normal">
-                — used to place a pin on the map
+                (used to place a pin on the map)
               </span>
             </label>
             <div className="relative">
