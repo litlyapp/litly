@@ -1349,8 +1349,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         <div>
           <label className={labelClass}>Source attribution</label>
           <p className="text-cream-muted/60 text-xs -mt-1 mb-3">
-            Credit the org that originally posted this event. Shows as
-            &ldquo;via [name]&rdquo; on cards and adds a link on the event page.
+            Credit the org that originally posted this event.
           </p>
           <input
             type="text"
