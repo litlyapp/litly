@@ -137,7 +137,6 @@ Fields:
 - country: string | null
 - ticket_url: string | null (URL to buy tickets or RSVP)
 - virtual_url: string | null (URL to join virtual event)
-- banner_url: string | null (URL of the main event image if present as an absolute URL)
 - genres: string[] (list of genre/category keywords found anywhere on the page — extract every relevant word or phrase verbatim, e.g. ["Poetry", "Fiction", "Workshop", "Craft Talk", "Open Mic"])
 
 Return ONLY the JSON object, no explanation.
@@ -275,11 +274,10 @@ ${html}`,
       source_url: isOwnSite ? null : (() => { try { const u = new URL(url); return `${u.protocol}//${u.hostname}`; } catch { return url; } })(),
       source_name: isOwnSite ? null : importHost || null,
       is_imported: true,
-      banner_url: await (async () => {
-        const raw = extracted.banner_url as string | null | undefined;
-        if (!raw || !/^https:\/\//i.test(raw)) return null;
-        return (await isSafeUrl(raw)) ? raw : null;
-      })(),
+      // Imported pages' images are external hotlinks that next/image can't
+      // serve (only Supabase storage is in remotePatterns) — the organizer
+      // uploads a banner manually instead, so don't attempt to set one here.
+      banner_url: null,
       open_mic: false,
       rsvp_enabled: false,
       is_published: false,

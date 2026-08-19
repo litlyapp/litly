@@ -873,7 +873,11 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         }
       }
 
+      // refresh() alongside push() forces the destination page (breadcrumb,
+      // edit controls) to render from a fresh server fetch rather than a
+      // client router-cache snapshot that could predate this save
       router.push(`/events/${eventId}`);
+      router.refresh();
     } else {
       // Insert parent event (first occurrence)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -905,11 +909,13 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
           setError(`Event created but some occurrences failed: ${childError.message}`);
           setLoading(false);
           router.push(`/events/${data.id}`);
+          router.refresh();
           return;
         }
       }
 
       router.push(`/events/${data.id}`);
+      router.refresh();
     }
   }
 

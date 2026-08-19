@@ -53,7 +53,7 @@ export default function LandingSearch() {
     >
       <input
         type="text"
-        placeholder="Search readings, open mics…"
+        placeholder="e.g. Haw River in the Round"
         value={q}
         onChange={(e) => setQ(e.target.value)}
         className="flex-1 min-w-0 bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-full px-4 py-3 text-sm focus:outline-none focus:border-orange"

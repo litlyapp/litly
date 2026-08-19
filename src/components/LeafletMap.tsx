@@ -249,6 +249,7 @@ export default function LeafletMap({
           className: "litly-popup",
           closeButton: false,
           maxWidth: 280,
+          maxHeight: 320,
         }).setContent(popupContent);
         marker.bindPopup(popup);
       }
