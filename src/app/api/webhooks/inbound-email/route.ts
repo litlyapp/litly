@@ -18,6 +18,7 @@ const HUMAN_INBOXES = [
   "contact@thelitlyapp.com",
   "support@thelitlyapp.com",
   "privacy@thelitlyapp.com",
+  "admin@thelitlyapp.com",
 ];
 
 function verifyMailgunSignature(timestamp: string, token: string, signature: string): boolean {
