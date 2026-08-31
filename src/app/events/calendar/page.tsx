@@ -91,6 +91,7 @@ export default async function CalendarPage({
     type: params.type,
     location: params.location,
     organizer: params.organizer,
+    organizerQuery: params.organizerQuery,
   };
   query = applyEventFilters(query, filterParams, organizers);
 
@@ -116,6 +117,7 @@ export default async function CalendarPage({
   if (params.type) carry.set("type", params.type);
   if (params.location) carry.set("location", params.location);
   if (params.organizer) carry.set("organizer", params.organizer);
+  if (params.organizerQuery) carry.set("organizerQuery", params.organizerQuery);
 
   const cells: CalendarCell[] = baseCells.map((c) => {
     // Adjacent-month cells render blank — keep grid alignment, show nothing.

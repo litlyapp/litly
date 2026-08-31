@@ -15,6 +15,7 @@ export interface EventFilterParams {
   from?: string;
   to?: string;
   organizer?: string;
+  organizerQuery?: string;
   location?: string;
 }
 
@@ -102,8 +103,14 @@ export function applyEventFilters<Q extends FilterableQuery<Q>>(
     // host org name, or an imported event's source org (claim-your-page funnel)
     const q = params.q.replace(/[,()]/g, " ");
     const ql = q.trim().toLowerCase();
+    // Only real organizer_profiles rows belong in an organizer_id.in.(...)
+    // clause — a source-pseudo id (e.g. "source:malaprops.com") isn't a
+    // valid UUID and would make the whole query error out. Those are
+    // already covered by the source_name.ilike clause below.
     const matchingOrgIds = organizers
-      .filter((o) => o.name.toLowerCase().includes(ql))
+      .filter(
+        (o) => !o.id.startsWith(SOURCE_ORGANIZER_PREFIX) && o.name.toLowerCase().includes(ql)
+      )
       .map((o) => o.id);
     const clauses = [
       `title.ilike.%${q}%`,
@@ -137,6 +144,26 @@ export function applyEventFilters<Q extends FilterableQuery<Q>>(
     const toDate = new Date(params.to);
     toDate.setHours(23, 59, 59, 999);
     query = query.lte("date_time", toDate.toISOString());
+  }
+
+  // Live text filter as the patron types in the Organizer box, before they've
+  // picked an exact suggestion. Once a suggestion IS picked (params.organizer
+  // set), that exact match takes over instead.
+  if (params.organizerQuery && !params.organizer) {
+    const oq = params.organizerQuery.replace(/[,()]/g, " ");
+    const oql = oq.trim().toLowerCase();
+    if (oql) {
+      const matchingOrgIds = organizers
+        .filter(
+          (o) => !o.id.startsWith(SOURCE_ORGANIZER_PREFIX) && o.name.toLowerCase().includes(oql)
+        )
+        .map((o) => o.id);
+      const clauses = [`source_name.ilike.%${oq}%`];
+      if (matchingOrgIds.length) {
+        clauses.push(`organizer_id.in.(${matchingOrgIds.join(",")})`);
+      }
+      query = query.or(clauses.join(","));
+    }
   }
 
   if (params.organizer) {

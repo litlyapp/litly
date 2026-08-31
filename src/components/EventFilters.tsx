@@ -29,6 +29,7 @@ export default function EventFilters({
   const activeGenres = searchParams.getAll("genre");
   const activeType = searchParams.get("type") ?? "all";
   const activeOrganizer = searchParams.get("organizer") ?? "";
+  const activeOrganizerQuery = searchParams.get("organizerQuery") ?? "";
   const activeQ = searchParams.get("q") ?? "";
   const activeLocation = searchParams.get("location") ?? "";
   const activeFrom = searchParams.get("from") ?? "";
@@ -104,6 +105,7 @@ export default function EventFilters({
     activeGenres.length > 0 ||
     activeType !== "all" ||
     activeOrganizer ||
+    activeOrganizerQuery ||
     activeFrom ||
     activeTo;
 
@@ -225,7 +227,15 @@ export default function EventFilters({
       <OrganizerSearch
         organizers={organizers}
         activeId={activeOrganizer}
-        onSelect={(id) => setParam("organizer", id)}
+        activeQuery={activeOrganizerQuery}
+        onSelect={(id) => {
+          const params = new URLSearchParams(searchParams.toString());
+          if (id) params.set("organizer", id);
+          else params.delete("organizer");
+          params.delete("organizerQuery");
+          push(params);
+        }}
+        onQueryChange={(value) => debouncedSetParam("organizerQuery", value)}
       />
 
       {/* Clear */}
@@ -253,38 +263,43 @@ function PinIcon() {
 function OrganizerSearch({
   organizers,
   activeId,
+  activeQuery,
   onSelect,
+  onQueryChange,
 }: {
   organizers: Organizer[];
   activeId: string;
+  activeQuery: string;
   onSelect: (id: string) => void;
+  onQueryChange: (value: string) => void;
 }) {
   const activeName = organizers.find((o) => o.id === activeId)?.name ?? "";
-  const [query, setQuery] = useState(activeName);
+  const [query, setQuery] = useState(activeId ? activeName : activeQuery);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Sync the input to the active organizer when it changes externally (e.g. a
-  // "clear all filters" elsewhere). Adjusting state during render with a
+  // Sync the input when the active selection/query changes externally (e.g.
+  // a "clear all filters" elsewhere). Adjusting state during render with a
   // previous-value tracker is React's recommended pattern over a setState effect.
-  const [prevActiveName, setPrevActiveName] = useState(activeName);
-  if (activeName !== prevActiveName) {
-    setPrevActiveName(activeName);
-    setQuery(activeName);
+  const [prevActiveId, setPrevActiveId] = useState(activeId);
+  const [prevActiveQuery, setPrevActiveQuery] = useState(activeQuery);
+  if (activeId !== prevActiveId || activeQuery !== prevActiveQuery) {
+    setPrevActiveId(activeId);
+    setPrevActiveQuery(activeQuery);
+    setQuery(activeId ? activeName : activeQuery);
   }
 
-  // Close on outside click
+  // Close on outside click. Whatever's been typed keeps filtering results
+  // (it already propagated via onQueryChange) — no snap-back to empty.
   useEffect(() => {
     function handle(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setOpen(false);
-        // If nothing selected, reset input
-        if (!activeId) setQuery("");
       }
     }
     document.addEventListener("mousedown", handle);
     return () => document.removeEventListener("mousedown", handle);
-  }, [activeId]);
+  }, []);
 
   // Match from the start of words only, so typing "l" suggests "litly admin"
   // but not "Third Angle Poets" (substring match on "Angle")
@@ -308,6 +323,7 @@ function OrganizerSearch({
     setQuery("");
     setOpen(false);
     onSelect("");
+    onQueryChange("");
   }
 
   return (
@@ -321,9 +337,13 @@ function OrganizerSearch({
           placeholder="Search organizers…"
           value={query}
           onChange={(e) => {
-            setQuery(e.target.value);
-            setOpen(e.target.value.trim().length > 0);
-            if (!e.target.value) onSelect("");
+            const value = e.target.value;
+            setQuery(value);
+            setOpen(value.trim().length > 0);
+            // Typing after an exact pick releases the lock so the live text
+            // filter (below) takes back over.
+            if (activeId) onSelect("");
+            onQueryChange(value);
           }}
           onFocus={() => setOpen(query.trim().length > 0)}
           className="w-full bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange pr-7"

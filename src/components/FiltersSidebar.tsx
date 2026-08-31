@@ -37,7 +37,7 @@ export default function FiltersSidebar({
     (sp.get("type") && sp.get("type") !== "all" ? 1 : 0) +
     (sp.get("from") ? 1 : 0) +
     (sp.get("to") ? 1 : 0) +
-    (sp.get("organizer") ? 1 : 0);
+    (sp.get("organizer") || sp.get("organizerQuery") ? 1 : 0);
 
   return (
     <aside className="lg:w-64 lg:shrink-0">

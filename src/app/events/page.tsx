@@ -20,6 +20,7 @@ interface SearchParams {
   from?: string;
   to?: string;
   organizer?: string;
+  organizerQuery?: string;
   location?: string;
   ref?: string;
 }
@@ -47,7 +48,7 @@ export default async function EventsPage({
   // events that match still appear in the main results below (same query).
   const hasActiveFilters = !!(
     params.q || params.genre || params.type || params.from ||
-    params.to || params.organizer || params.location
+    params.to || params.organizer || params.organizerQuery || params.location
   );
 
   // Organizer + imported-source options for the dropdown/filter
