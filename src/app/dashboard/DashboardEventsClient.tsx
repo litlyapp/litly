@@ -59,7 +59,11 @@ export default function DashboardEventsClient({
               Not visible to the public — edit and post when ready.
             </p>
           </div>
-          <div className="bg-navy-light border border-cream/10 rounded-2xl overflow-hidden">
+          <ExpandableList
+            initial={10}
+            step={10}
+            className="bg-navy-light border border-cream/10 rounded-2xl overflow-hidden"
+          >
             {draftEvents.map((event, i) => (
               <DashboardEventRow
                 key={event.id}
@@ -72,7 +76,7 @@ export default function DashboardEventsClient({
                 clickCount={0}
               />
             ))}
-          </div>
+          </ExpandableList>
         </section>
       )}
 

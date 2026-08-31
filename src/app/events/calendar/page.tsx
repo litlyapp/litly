@@ -3,7 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import FiltersSidebar from "@/components/FiltersSidebar";
 import ViewToggle from "@/components/ViewToggle";
 import CalendarGrid, { type CalendarCell } from "@/components/CalendarGrid";
-import { applyEventFilters, type EventFilterParams } from "@/lib/events/filterQuery";
+import {
+  applyEventFilters,
+  getOrganizerFilterOptions,
+  type EventFilterParams,
+} from "@/lib/events/filterQuery";
 
 export const dynamic = "force-dynamic";
 
@@ -28,10 +32,7 @@ export default async function CalendarPage({
   const params = await searchParams;
   const supabase = await createClient();
 
-  const { data: organizers } = await supabase
-    .from("organizer_profiles")
-    .select("id, name, avatar_url")
-    .order("name");
+  const organizers = await getOrganizerFilterOptions(supabase);
 
   // Which month to display. "today" is anchored in APP_TZ.
   const todayKey = new Date().toLocaleDateString("en-CA", { timeZone: APP_TZ });
@@ -91,7 +92,7 @@ export default async function CalendarPage({
     location: params.location,
     organizer: params.organizer,
   };
-  query = applyEventFilters(query, filterParams, organizers ?? []);
+  query = applyEventFilters(query, filterParams, organizers);
 
   const { data: events } = await query;
 
@@ -170,7 +171,7 @@ export default async function CalendarPage({
 
       <div className="flex flex-col lg:flex-row gap-8">
         <Suspense fallback={<div className="lg:w-64 lg:shrink-0 text-cream-muted text-sm">Loading filters…</div>}>
-          <FiltersSidebar organizers={organizers ?? []} hideDateRange />
+          <FiltersSidebar organizers={organizers} hideDateRange />
         </Suspense>
 
         <div className="flex-1">

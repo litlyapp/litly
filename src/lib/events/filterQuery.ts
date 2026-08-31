@@ -1,4 +1,6 @@
 import type { Genre, EventType } from "@/types/database";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database";
 
 /**
  * Shared event filter logic used by the events list, the map, and any other
@@ -19,6 +21,55 @@ export interface EventFilterParams {
 export interface OrganizerLite {
   id: string;
   name: string;
+  avatar_url?: string | null;
+}
+
+// Imported events (crawled from an org's calendar feed or drafted via the URL
+// importer) are almost never linked to a real organizer_profiles row — they're
+// attributed to a single shared "Curated by litly" account, with the actual
+// host name living only in the event's free-text `source_name`. Without this,
+// the Organizer filter/typeahead can only ever match real signed-up
+// organizers, so searching for e.g. "Malaprop's" silently finds nothing even
+// though dozens of its events are on the site. We surface distinct
+// `source_name` values as selectable pseudo-organizers, tagged with this
+// prefix so applyEventFilters knows to match on source_name instead of
+// organizer_id.
+export const SOURCE_ORGANIZER_PREFIX = "source:";
+
+/**
+ * Combined list of filter options for the Organizer typeahead: real organizer
+ * profiles plus a pseudo-entry for each distinct imported `source_name` among
+ * upcoming, visible events.
+ */
+export async function getOrganizerFilterOptions(
+  supabase: SupabaseClient<Database>
+): Promise<OrganizerLite[]> {
+  const [{ data: organizers }, { data: sourceRows }] = await Promise.all([
+    supabase.from("organizer_profiles").select("id, name, avatar_url").order("name"),
+    supabase
+      .from("events")
+      .select("source_name")
+      .eq("is_imported", true)
+      .eq("is_cancelled", false)
+      .neq("is_published", false)
+      .gte("date_time", new Date().toISOString())
+      .not("source_name", "is", null),
+  ]);
+
+  const sourceNames = Array.from(
+    new Set(
+      (sourceRows ?? [])
+        .map((r) => r.source_name)
+        .filter((name): name is string => !!name)
+    )
+  ).sort((a, b) => a.localeCompare(b));
+
+  const sourceOptions: OrganizerLite[] = sourceNames.map((name) => ({
+    id: `${SOURCE_ORGANIZER_PREFIX}${name}`,
+    name,
+  }));
+
+  return [...(organizers ?? []), ...sourceOptions];
 }
 
 /** Minimal shape of the Supabase query builder methods we chain. */
@@ -89,7 +140,14 @@ export function applyEventFilters<Q extends FilterableQuery<Q>>(
   }
 
   if (params.organizer) {
-    query = query.eq("organizer_id", params.organizer);
+    if (params.organizer.startsWith(SOURCE_ORGANIZER_PREFIX)) {
+      query = query.eq(
+        "source_name",
+        params.organizer.slice(SOURCE_ORGANIZER_PREFIX.length)
+      );
+    } else {
+      query = query.eq("organizer_id", params.organizer);
+    }
   }
 
   if (params.location) {

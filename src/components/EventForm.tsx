@@ -873,11 +873,14 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         }
       }
 
-      // refresh() alongside push() forces the destination page (breadcrumb,
-      // edit controls) to render from a fresh server fetch rather than a
-      // client router-cache snapshot that could predate this save
-      router.push(`/events/${eventId}`);
+      // refresh() forces the destination page (breadcrumb, edit controls) to
+      // render from a fresh server fetch rather than a client router-cache
+      // snapshot that could predate this save. It must run BEFORE push() —
+      // calling it after push() suppresses the scroll-to-top that push()
+      // would otherwise do, leaving the page scrolled to wherever the edit
+      // form was (a known Next.js router quirk).
       router.refresh();
+      router.push(`/events/${eventId}`);
     } else {
       // Insert parent event (first occurrence)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -908,14 +911,14 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         if (childError) {
           setError(`Event created but some occurrences failed: ${childError.message}`);
           setLoading(false);
-          router.push(`/events/${data.id}`);
           router.refresh();
+          router.push(`/events/${data.id}`);
           return;
         }
       }
 
-      router.push(`/events/${data.id}`);
       router.refresh();
+      router.push(`/events/${data.id}`);
     }
   }
 

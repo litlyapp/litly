@@ -6,7 +6,11 @@ import EventCard from "@/components/EventCard";
 import FiltersSidebar from "@/components/FiltersSidebar";
 import ExpandableGrid from "@/components/ExpandableGrid";
 import { GENRES } from "@/lib/genres";
-import { applyEventFilters } from "@/lib/events/filterQuery";
+import {
+  applyEventFilters,
+  getOrganizerFilterOptions,
+  SOURCE_ORGANIZER_PREFIX,
+} from "@/lib/events/filterQuery";
 import ViewToggle from "@/components/ViewToggle";
 
 interface SearchParams {
@@ -46,11 +50,8 @@ export default async function EventsPage({
     params.to || params.organizer || params.location
   );
 
-  // Fetch all organizer profiles for the dropdown
-  const { data: organizers } = await supabase
-    .from("organizer_profiles")
-    .select("id, name, avatar_url")
-    .order("name");
+  // Organizer + imported-source options for the dropdown/filter
+  const organizers = await getOrganizerFilterOptions(supabase);
 
   // A single-day view (calendar day-click) needs to match the calendar grid's
   // own per-event-timezone day bucketing, not a UTC day boundary — an evening
@@ -84,7 +85,7 @@ export default async function EventsPage({
     query = query.gte("date_time", dayStart.toISOString()).lt("date_time", dayEnd.toISOString());
   }
 
-  query = applyEventFilters(query, queryParams, organizers ?? []);
+  query = applyEventFilters(query, queryParams, organizers);
 
   const { data: rawEvents } = await query;
 
@@ -199,7 +200,7 @@ export default async function EventsPage({
         {/* Sidebar filters */}
         <Suspense fallback={<div className="lg:w-64 lg:shrink-0 text-cream-muted text-sm">Loading filters…</div>}>
           <FiltersSidebar
-            organizers={organizers ?? []}
+            organizers={organizers}
             clearHref={fromCalendar ? clearHref : undefined}
           />
         </Suspense>
@@ -231,25 +232,40 @@ export default async function EventsPage({
             </div>
           )}
 
-          {/* Organizer profile banner */}
+          {/* Organizer profile banner. Imported events attributed only to a
+              source name (no organizer_profiles row) get a plain summary
+              instead of a profile link — there's no profile page to send them to. */}
           {params.organizer && (() => {
-            const org = (organizers ?? []).find((o) => o.id === params.organizer);
-            const avatarUrl = org?.avatar_url;
+            const org = organizers.find((o) => o.id === params.organizer);
             if (!org) return null;
+            const isSourceOrg = org.id.startsWith(SOURCE_ORGANIZER_PREFIX);
+            const avatarUrl = org.avatar_url;
+            const avatar = avatarUrl ? (
+              <Image src={avatarUrl} alt={org.name} fill className="rounded-full object-cover" />
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-orange/20 flex items-center justify-center text-orange font-sans text-xl">
+                {org.name[0]}
+              </div>
+            );
+
+            if (isSourceOrg) {
+              return (
+                <div className="flex items-center gap-4 bg-navy-light border border-cream/10 rounded-2xl px-5 py-4 mb-6">
+                  <div className="relative w-12 h-12 shrink-0">{avatar}</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-cream font-medium truncate">{org.name}</p>
+                    <p className="text-cream-muted text-xs">Events sourced from this organizer</p>
+                  </div>
+                </div>
+              );
+            }
+
             return (
               <Link
                 href={`/organizers/${org.id}`}
                 className="flex items-center gap-4 bg-navy-light border border-cream/10 rounded-2xl px-5 py-4 mb-6 hover:border-orange/40 transition group"
               >
-                <div className="relative w-12 h-12 shrink-0">
-                  {avatarUrl ? (
-                    <Image src={avatarUrl} alt={org.name} fill className="rounded-full object-cover" />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-orange/20 flex items-center justify-center text-orange font-sans text-xl">
-                      {org.name[0]}
-                    </div>
-                  )}
-                </div>
+                <div className="relative w-12 h-12 shrink-0">{avatar}</div>
                 <div className="flex-1 min-w-0">
                   <p className="text-cream font-medium truncate">{org.name}</p>
                   <p className="text-cream-muted text-xs">View organizer profile</p>

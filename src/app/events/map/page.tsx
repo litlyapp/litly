@@ -3,7 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import EventMap from "@/components/EventMap";
 import FiltersSidebar from "@/components/FiltersSidebar";
 import ViewToggle from "@/components/ViewToggle";
-import { applyEventFilters, type EventFilterParams } from "@/lib/events/filterQuery";
+import {
+  applyEventFilters,
+  getOrganizerFilterOptions,
+  type EventFilterParams,
+} from "@/lib/events/filterQuery";
 
 export const dynamic = "force-dynamic";
 
@@ -21,10 +25,7 @@ export default async function EventMapPage({
   const supabase = await createClient();
 
   // Organizer list powers both the filter sidebar and the keyword search
-  const { data: organizers } = await supabase
-    .from("organizer_profiles")
-    .select("id, name, avatar_url")
-    .order("name");
+  const organizers = await getOrganizerFilterOptions(supabase);
 
   // Fetch the full filtered set (both in-person and virtual) so we can report
   // how many matching events exist vs. how many can actually be plotted.
@@ -38,7 +39,7 @@ export default async function EventMapPage({
     .gte("date_time", new Date().toISOString())
     .order("date_time", { ascending: true });
 
-  query = applyEventFilters(query, params, organizers ?? []);
+  query = applyEventFilters(query, params, organizers);
 
   const { data: events } = await query;
 
@@ -92,7 +93,7 @@ export default async function EventMapPage({
         {/* Sidebar filters — same component as the list view, URL-driven so
             filters carry over between List and Map */}
         <Suspense fallback={<div className="lg:w-64 lg:shrink-0 text-cream-muted text-sm">Loading filters…</div>}>
-          <FiltersSidebar organizers={organizers ?? []} hideType />
+          <FiltersSidebar organizers={organizers} hideType />
         </Suspense>
 
         <div className="flex-1">
