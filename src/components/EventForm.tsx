@@ -203,17 +203,6 @@ interface Props {
   highlightMissingFields?: boolean;
 }
 
-// globals.css makes <body> (not <html>) the real scroll container, so Next's
-// built-in scroll-to-top on navigation — which only resets
-// document.documentElement.scrollTop — never fires. Reset it ourselves after
-// navigating to the saved event, or the destination page renders scrolled to
-// wherever the edit form was, hiding the breadcrumb behind the sticky nav.
-function scrollBodyToTop() {
-  setTimeout(() => {
-    document.body.scrollTop = 0;
-  }, 0);
-}
-
 // Strip suite/apt/unit suffixes before geocoding — Nominatim returns nothing
 // for "123 Main St Suite 200". Covers addresses typed with the unit inline.
 function streetForGeocode(address: string): string {
@@ -886,13 +875,10 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
 
       // refresh() forces the destination page (breadcrumb, edit controls) to
       // render from a fresh server fetch rather than a client router-cache
-      // snapshot that could predate this save. It must run BEFORE push() —
-      // calling it after push() suppresses the scroll-to-top that push()
-      // would otherwise do, leaving the page scrolled to wherever the edit
-      // form was (a known Next.js router quirk).
+      // snapshot that could predate this save. Scroll reset back to the top
+      // is handled globally by ScrollRestoration in the root layout.
       router.refresh();
       router.push(`/events/${eventId}`);
-      scrollBodyToTop();
     } else {
       // Insert parent event (first occurrence)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -925,14 +911,12 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
           setLoading(false);
           router.refresh();
           router.push(`/events/${data.id}`);
-          scrollBodyToTop();
           return;
         }
       }
 
       router.refresh();
       router.push(`/events/${data.id}`);
-      scrollBodyToTop();
     }
   }
 

@@ -3,6 +3,7 @@ import "./globals.css";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import { Analytics } from "@vercel/analytics/next";
+import ScrollRestoration from "@/components/ScrollRestoration";
 
 export const metadata: Metadata = {
   title: "litly — literary event locator",
@@ -41,6 +42,7 @@ export default function RootLayout({
   return (
     <html lang="en" data-font="hybrid" className="h-full antialiased">
       <body className="min-h-full flex flex-col bg-navy text-cream font-sans">
+        <ScrollRestoration />
         <Nav />
         <main className="flex-1">{children}</main>
         <Footer />
