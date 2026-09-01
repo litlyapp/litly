@@ -203,6 +203,17 @@ interface Props {
   highlightMissingFields?: boolean;
 }
 
+// globals.css makes <body> (not <html>) the real scroll container, so Next's
+// built-in scroll-to-top on navigation — which only resets
+// document.documentElement.scrollTop — never fires. Reset it ourselves after
+// navigating to the saved event, or the destination page renders scrolled to
+// wherever the edit form was, hiding the breadcrumb behind the sticky nav.
+function scrollBodyToTop() {
+  setTimeout(() => {
+    document.body.scrollTop = 0;
+  }, 0);
+}
+
 // Strip suite/apt/unit suffixes before geocoding — Nominatim returns nothing
 // for "123 Main St Suite 200". Covers addresses typed with the unit inline.
 function streetForGeocode(address: string): string {
@@ -881,6 +892,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       // form was (a known Next.js router quirk).
       router.refresh();
       router.push(`/events/${eventId}`);
+      scrollBodyToTop();
     } else {
       // Insert parent event (first occurrence)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -913,12 +925,14 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
           setLoading(false);
           router.refresh();
           router.push(`/events/${data.id}`);
+          scrollBodyToTop();
           return;
         }
       }
 
       router.refresh();
       router.push(`/events/${data.id}`);
+      scrollBodyToTop();
     }
   }
 
