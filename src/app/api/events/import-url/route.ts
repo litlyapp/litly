@@ -2,8 +2,13 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { isSafeUrl } from "@/lib/safeUrl";
+import { CURATED_ORG_ID } from "@/lib/curatedOrg";
 
 const anthropic = new Anthropic();
+
+// Orgs can always add events manually for free — this cap only limits the
+// URL-import convenience feature. litly's own curated-listings org is exempt.
+const MONTHLY_IMPORT_LIMIT = 50;
 
 async function geocode(query: string): Promise<{ lat: number; lng: number } | null> {
   try {
@@ -37,6 +42,25 @@ export async function POST(request: Request) {
     .eq("user_id", user.id)
     .maybeSingle();
   if (!membership) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+
+  // Enforce the monthly URL-import cap before doing any expensive work —
+  // manual entry stays unlimited, this only gates the AI-assisted shortcut.
+  if (organizerId !== CURATED_ORG_ID) {
+    const { data: usageResult, error: usageError } = await supabase.rpc("increment_import_usage", {
+      p_org_id: organizerId,
+      p_limit: MONTHLY_IMPORT_LIMIT,
+    });
+    if (usageError) {
+      console.error("[import-url] usage check failed:", usageError);
+    } else if (usageResult === -1) {
+      return NextResponse.json(
+        {
+          error: `This org has used its ${MONTHLY_IMPORT_LIMIT} free URL imports for this month. You can still add events manually below — higher limits are coming as a paid option.`,
+        },
+        { status: 429 }
+      );
+    }
+  }
 
   const { data: orgProfile } = await supabase
     .from("organizer_profiles")

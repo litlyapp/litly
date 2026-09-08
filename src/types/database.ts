@@ -357,7 +357,12 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      increment_import_usage: {
+        Args: { p_org_id: string; p_limit: number };
+        Returns: number;
+      };
+    };
     Enums: {
       genre: Genre;
       user_role: UserRole;
