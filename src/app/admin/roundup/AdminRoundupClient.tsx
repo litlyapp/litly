@@ -22,6 +22,26 @@ interface RoundupEvent {
 const VIRTUAL = "__virtual__";
 const STATE_PREFIX = "state:";
 
+const STATE_ABBREVIATIONS: Record<string, string> = {
+  AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas", CA: "California",
+  CO: "Colorado", CT: "Connecticut", DE: "Delaware", DC: "District of Columbia",
+  FL: "Florida", GA: "Georgia", HI: "Hawaii", ID: "Idaho", IL: "Illinois",
+  IN: "Indiana", IA: "Iowa", KS: "Kansas", KY: "Kentucky", LA: "Louisiana",
+  ME: "Maine", MD: "Maryland", MA: "Massachusetts", MI: "Michigan",
+  MN: "Minnesota", MS: "Mississippi", MO: "Missouri", MT: "Montana",
+  NE: "Nebraska", NV: "Nevada", NH: "New Hampshire", NJ: "New Jersey",
+  NM: "New Mexico", NY: "New York", NC: "North Carolina", ND: "North Dakota",
+  OH: "Ohio", OK: "Oklahoma", OR: "Oregon", PA: "Pennsylvania",
+  RI: "Rhode Island", SC: "South Carolina", SD: "South Dakota",
+  TN: "Tennessee", TX: "Texas", UT: "Utah", VT: "Vermont", VA: "Virginia",
+  WA: "Washington", WV: "West Virginia", WI: "Wisconsin", WY: "Wyoming",
+};
+
+function normalizeState(state: string | null): string | null {
+  if (!state) return state;
+  return STATE_ABBREVIATIONS[state.trim().toUpperCase()] ?? state;
+}
+
 function hostName(event: RoundupEvent): string | null {
   if (event.is_imported && event.source_name) return event.source_name;
   const org = Array.isArray(event.organizer) ? event.organizer[0] : event.organizer;
@@ -129,7 +149,8 @@ export default function AdminRoundupClient() {
     const counts = new Map<string, number>();
     for (const event of events) {
       if (event.event_type === "in_person" && event.city) {
-        const key = event.state ? `${event.city}, ${event.state}` : event.city;
+        const state = normalizeState(event.state);
+        const key = state ? `${event.city}, ${state}` : event.city;
         counts.set(key, (counts.get(key) ?? 0) + 1);
       }
     }
@@ -139,8 +160,9 @@ export default function AdminRoundupClient() {
   const states = useMemo(() => {
     const counts = new Map<string, number>();
     for (const event of events) {
-      if (event.event_type === "in_person" && event.state) {
-        counts.set(event.state, (counts.get(event.state) ?? 0) + 1);
+      const state = normalizeState(event.state);
+      if (event.event_type === "in_person" && state) {
+        counts.set(state, (counts.get(state) ?? 0) + 1);
       }
     }
     return [...counts.entries()].sort((a, b) => b[1] - a[1]);
@@ -157,10 +179,11 @@ export default function AdminRoundupClient() {
     if (selected === VIRTUAL) return event.event_type === "virtual";
     if (!selected) return false;
     if (event.event_type !== "in_person") return false;
+    const state = normalizeState(event.state);
     if (selected.startsWith(STATE_PREFIX)) {
-      return event.state === selected.slice(STATE_PREFIX.length);
+      return state === selected.slice(STATE_PREFIX.length);
     }
-    const key = event.state ? `${event.city}, ${event.state}` : event.city ?? "";
+    const key = state ? `${event.city}, ${state}` : event.city ?? "";
     return key === selected;
   });
 
