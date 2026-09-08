@@ -1,4 +1,3 @@
-import Anthropic from "@anthropic-ai/sdk";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isSafeUrl } from "@/lib/safeUrl";
 
@@ -176,72 +175,4 @@ export async function applyKnownVenue(
     country: event.country ?? venue.country,
     venue_filled_from: "previous events from this source",
   };
-}
-
-// Second extraction pass: when an event is missing venue or a confirmed time
-// but links to its own page, fetch that page and fill ONLY the gaps.
-export async function enrichFromLink(
-  anthropic: Anthropic,
-  event: ParsedImportEvent
-): Promise<ParsedImportEvent> {
-  const needsVenue = missingVenue(event);
-  const needsTime = !event.date_time || event.time_confirmed === false;
-  if (!needsVenue && !needsTime) return event;
-
-  const url = event.source_url || event.ticket_url;
-  if (!url || !/^https?:\/\//.test(url)) return event;
-
-  const pageText = await fetchPageText(url, 8000);
-  if (!pageText) return event;
-
-  try {
-    const message = await anthropic.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 512,
-      messages: [
-        {
-          role: "user",
-          content: `Extract ONLY the venue and start time for this event from its webpage. Return ONLY a JSON object:
-{
-  "location_name": "venue name or null",
-  "address": "street address or null",
-  "city": "city or null",
-  "state": "US state 2-letter code or null",
-  "zip": "zip / postal code or null",
-  "country": "country or null",
-  "date_time": "local wall-clock ISO 8601 WITHOUT timezone offset (e.g. 2026-07-15T19:00:00) or null",
-  "time_confirmed": "true only if a start time is explicitly stated"
-}
-Do not guess fields that are not stated on the page. Current year is 2026.
-
-Event title: ${event.title ?? ""}
-
-Webpage content:
-${pageText}`,
-        },
-      ],
-    });
-    const content = message.content[0];
-    if (content.type !== "text") return event;
-    const jsonMatch = content.text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return event;
-    const found = JSON.parse(jsonMatch[0]);
-
-    const enriched = { ...event };
-    if (needsVenue) {
-      enriched.location_name = event.location_name ?? found.location_name ?? null;
-      enriched.address = event.address ?? found.address ?? null;
-      enriched.city = event.city ?? found.city ?? null;
-      enriched.state = event.state ?? found.state ?? null;
-      enriched.zip = event.zip ?? found.zip ?? null;
-      enriched.country = event.country ?? found.country ?? null;
-    }
-    if (needsTime && found.date_time && found.time_confirmed === true) {
-      enriched.date_time = found.date_time;
-      enriched.time_confirmed = true;
-    }
-    return enriched;
-  } catch {
-    return event;
-  }
 }

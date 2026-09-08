@@ -1,19 +1,11 @@
 import { NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
-import { createClient } from "@supabase/supabase-js";
 import { createHmac } from "crypto";
-import { stripHtml, applyKnownVenue, enrichFromLink, TIME_RULES } from "@/lib/importParsing";
 import { LITLY_INBOX } from "@/lib/email";
 
-// Parsing + per-event link enrichment can exceed Vercel's default timeout
-export const maxDuration = 60;
-
 const CONFIRMATION_FORWARD_TO = LITLY_INBOX;
-const CONFIRMATION_PATTERN = /confirm|verify|activate|subscri|welcome|opt.?in/i;
 
-// Human-facing inboxes: real correspondence, not newsletters to crawl. Mail to
-// these is forwarded straight to the personal inbox and never run through the
-// event parser. The catch-all route still feeds everything else to the crawler.
+// Human-facing inboxes: real correspondence, not newsletters. Mail to these is
+// forwarded straight to the personal inbox under its own address label.
 const HUMAN_INBOXES = [
   "contact@thelitlyapp.com",
   "support@thelitlyapp.com",
@@ -69,13 +61,6 @@ async function forwardToGmail(
 }
 
 export async function POST(request: Request) {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
   try {
     const formData = await request.formData();
 
@@ -92,10 +77,6 @@ export async function POST(request: Request) {
     const bodyPlain = formData.get("body-plain")?.toString() ?? "";
     const bodyHtml = formData.get("body-html")?.toString() ?? "";
 
-    // Strip markup before any length budgeting — raw HTML newsletters can
-    // burn the whole slice on tags before reaching event text
-    const body = bodyPlain || stripHtml(bodyHtml);
-
     // Ignore litly's own outbound mail (RSVP confirmations, digests, alerts)
     // looping back in via the catch-all — e.g. when an admin@thelitlyapp.com
     // account RSVPs to an event
@@ -103,8 +84,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, skipped: "self-sent email" });
     }
 
-    // Human-addressed mail (contact/support/privacy) is correspondence, not a
-    // newsletter to crawl — forward to the litly inbox and skip parsing.
+    // Human-addressed mail (contact/support/privacy/admin) is correspondence —
+    // forward to the litly inbox under its own address label.
     const recipient = (formData.get("recipient")?.toString() ?? "").toLowerCase();
     const humanInbox = HUMAN_INBOXES.find((addr) => recipient.includes(addr));
     if (humanInbox) {
@@ -112,131 +93,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, forwarded: humanInbox });
     }
 
-    // Forward confirmation/verification emails to personal inbox
-    if (CONFIRMATION_PATTERN.test(subject)) {
-      await forwardToGmail(from, subject, bodyPlain, bodyHtml);
-    }
-
-    // If body is empty or very short, use subject as content
-    const emailContent = body.trim().length > 10 ? body : `Subject: ${subject}`;
-
-    if (!emailContent.trim()) {
-      return NextResponse.json({ ok: true, skipped: "empty body" });
-    }
-
-    // Parse with Claude Haiku
-    const message = await anthropic.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 4096,
-      messages: [
-        {
-          role: "user",
-          content: `You are a literary event extractor for litly, a platform for literary events.
-
-Extract ALL events from this email that relate to books, poetry, fiction, nonfiction, writing, authors, readings, open mics, craft talks, book releases, or literary arts.
-
-Rules:
-- INCLUDE if the email mentions: readings, book releases, open mics, author events, poetry, fiction, writing workshops, craft talks, literary festivals, or bookstore events.
-- IGNORE only if the email is clearly spam, a generic store sale, a non-literary event (sports, food, music with no literary connection), or completely unrelated to books/writing/authors.
-- When in doubt, INCLUDE with null fields rather than ignore. The curator will fill in missing details.
-
-Return a JSON array of event objects. Each object:
-{
-  "title": "Event title — use email subject if no better title found",
-  "description": "string or null",
-  "genre": ["array of applicable: poetry, fiction, nonfiction, translation, ya, craft_talk, open_mic, workshop, in_conversation, slam, other (use other only when clearly literary but nothing else fits)"],
-  "event_type": "in_person or virtual (default to in_person if unclear)",
-  "date_time": "ISO 8601 or null",
-  "end_time": "ISO 8601 or null",
-  "time_confirmed": "true only if the email explicitly states a start time, false otherwise",
-  "timezone": "IANA timezone implied by the event location (e.g. America/New_York) or null",
-  "location_name": "string or null",
-  "address": "string or null",
-  "city": "string or null",
-  "state": "string or null",
-  "country": "string or null",
-  "virtual_url": "string or null",
-  "ticket_url": "string or null",
-  "source_url": "link to the event's own webpage if the email contains one, or null",
-  "source_name": "name of the sender org or newsletter",
-  "ignore": false
-}
-
-${TIME_RULES}
-If truly no literary event can be identified, return [].
-Return ONLY a valid JSON array, no other text.
-
-Email subject: ${subject}
-Email from: ${from}
-
-Email body:
-${emailContent.slice(0, 12000)}`,
-        },
-      ],
-    });
-
-    const content = message.content[0];
-    if (content.type !== "text") {
-      throw new Error("Unexpected response type");
-    }
-
-    const jsonMatch = content.text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) {
-      // No events found — still log the email
-      await supabase.from("pending_imports").insert({
-        source_email: from,
-        source_subject: subject,
-        raw_body: body.slice(0, 10000),
-        parsed_data: null,
-        status: "pending",
-      });
-      return NextResponse.json({ ok: true, events: 0 });
-    }
-
-    let events: Record<string, unknown>[];
-    try {
-      events = JSON.parse(jsonMatch[0]);
-    } catch (e) {
-      console.warn("[inbound-email] invalid JSON from parser:", e);
-      await supabase.from("pending_imports").insert({
-        source_email: from,
-        source_subject: subject,
-        raw_body: body.slice(0, 10000),
-        parsed_data: null,
-        status: "pending",
-      });
-      return NextResponse.json({ ok: true, events: 0 });
-    }
-    const validEvents = events.filter((e: { ignore?: boolean }) => !e.ignore);
-
-    // Fill gaps so queue items arrive approve-ready: first from this source's
-    // past venues, then (capped, best-effort) from the event's own webpage
-    let enrichmentBudget = 3;
-    for (let i = 0; i < validEvents.length; i++) {
-      let event = await applyKnownVenue(supabase, validEvents[i], validEvents[i].source_name as string | null | undefined);
-      const sparse =
-        ((event.event_type ?? "in_person") === "in_person" && (!event.address || !event.city)) ||
-        !event.date_time ||
-        event.time_confirmed === false;
-      if (sparse && enrichmentBudget > 0) {
-        enrichmentBudget--;
-        event = await enrichFromLink(anthropic, event);
-      }
-      validEvents[i] = event;
-    }
-
-    // Insert each parsed event as a separate pending import
-    for (const event of validEvents) {
-      await supabase.from("pending_imports").insert({
-        source_email: from,
-        source_subject: subject,
-        raw_body: body.slice(0, 10000),
-        parsed_data: event,
-        status: "pending",
-      });
-    }
-
-    return NextResponse.json({ ok: true, events: validEvents.length });
+    // Everything else (newsletters, event announcements, confirmation mail)
+    // forwards to the litly inbox for manual review — no auto-parsing.
+    await forwardToGmail(from, subject, bodyPlain, bodyHtml);
+    return NextResponse.json({ ok: true, forwarded: "newsletters@thelitlyapp.com" });
   } catch (error) {
     console.error("Inbound email webhook error:", error);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
