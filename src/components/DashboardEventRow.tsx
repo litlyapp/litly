@@ -51,15 +51,20 @@ export default function DashboardEventRow({ event, divider, isPast, isDraft, rsv
     setDeleting(true);
     setDeleteError(null);
 
-    const res = await fetch(`/api/events/${event.id}`, { method: "DELETE" });
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      setDeleteError(body.error ?? "Failed to delete draft.");
-      setDeleting(false);
-      return;
-    }
+    try {
+      const res = await fetch(`/api/events/${event.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setDeleteError(body.error ?? "Failed to delete draft.");
+        return;
+      }
 
-    startTransition(() => router.refresh());
+      startTransition(() => router.refresh());
+    } catch {
+      setDeleteError("Failed to delete draft. Check your connection and try again.");
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
