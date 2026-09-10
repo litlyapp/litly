@@ -22,6 +22,15 @@ const STOPWORDS = new Set([
   "by", "from", "into", "onto", "off", "out", "as", "is", "are", "was", "were", "be", "been",
   "this", "that", "these", "those", "it", "its", "we", "you", "your", "our", "their", "his",
   "her", "they", "via", "vs", "w",
+  // Literary-event-type words so common on litly (book signing, author reading,
+  // book launch, etc.) that sharing just one of these doesn't mean two titles
+  // are about the same event.
+  "book", "books", "signing", "signings", "reading", "readings", "author", "authors",
+  "presents", "present", "presenting", "event", "events", "launch", "launches", "launching",
+  "release", "releases", "releasing", "talk", "talks", "discussion", "panel", "workshop",
+  "class", "session", "meet", "greet", "celebration", "celebrating", "series", "club",
+  "tour", "visit", "visits", "appearance", "appearances", "party", "chat", "conversation",
+  "new", "featuring", "feat",
 ]);
 
 // True when the titles share at least one meaningful (non-stopword) word
