@@ -5,6 +5,21 @@ import type { RecurrenceRule } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
+// Supabase queries occasionally hit a brief, transient blip (a few-second
+// timeout unrelated to any real outage). One retry after a short delay
+// absorbs those without masking a genuine sustained failure, which will
+// fail the retry too.
+async function withRetry<T extends { error: { message: string } | null }>(
+  fn: () => PromiseLike<T>
+): Promise<T> {
+  const result = await fn();
+  if (result.error) {
+    await new Promise((r) => setTimeout(r, 2000));
+    return fn();
+  }
+  return result;
+}
+
 export async function GET(req: Request) {
   const auth = req.headers.get("authorization");
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -62,11 +77,13 @@ export async function GET(req: Request) {
   }
 
   // Find all ongoing parent events with a recurrence rule
-  const { data: parents, error } = await supabase
-    .from("events")
-    .select("id, organizer_id, date_time, end_time, recurrence_rule, series_end_date, is_cancelled, title, description, genre, event_type, location_name, address, city, state, country, lat, lng, virtual_url, open_mic, featured_readers, rsvp_enabled, banner_url, ticket_url, ticket_type, is_imported, source_url, source_name")
-    .eq("is_ongoing", true)
-    .not("recurrence_rule", "is", null);
+  const { data: parents, error } = await withRetry(() =>
+    supabase
+      .from("events")
+      .select("id, organizer_id, date_time, end_time, recurrence_rule, series_end_date, is_cancelled, title, description, genre, event_type, location_name, address, city, state, country, lat, lng, virtual_url, open_mic, featured_readers, rsvp_enabled, banner_url, ticket_url, ticket_type, is_imported, source_url, source_name")
+      .eq("is_ongoing", true)
+      .not("recurrence_rule", "is", null)
+  );
 
   if (error) {
     console.error("daily-series cron error:", error);
@@ -86,12 +103,14 @@ export async function GET(req: Request) {
     const seriesEndDate = parent.series_end_date ? new Date(parent.series_end_date + "T23:59:59") : null;
 
     // Count upcoming non-cancelled occurrences in this series
-    const { count: upcomingCount, error: countError } = await supabase
-      .from("events")
-      .select("id", { count: "exact", head: true })
-      .eq("parent_event_id", parent.id)
-      .eq("is_cancelled", false)
-      .gte("date_time", now);
+    const { count: upcomingCount, error: countError } = await withRetry(() =>
+      supabase
+        .from("events")
+        .select("id", { count: "exact", head: true })
+        .eq("parent_event_id", parent.id)
+        .eq("is_cancelled", false)
+        .gte("date_time", now)
+    );
 
     if (countError) {
       console.error(`Failed to count occurrences for series ${parent.id}:`, countError.message);

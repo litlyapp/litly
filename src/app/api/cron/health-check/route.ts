@@ -7,6 +7,21 @@ export const dynamic = "force-dynamic";
 
 const ALERT_EMAIL = "knuth.cdgo@gmail.com";
 
+// Supabase queries occasionally hit a brief, transient blip (a few-second
+// timeout unrelated to any real outage). One retry after a short delay
+// absorbs those without masking a genuine sustained failure, which will
+// fail the retry too.
+async function withRetry<T extends { error: { message: string } | null }>(
+  fn: () => PromiseLike<T>
+): Promise<T> {
+  const result = await fn();
+  if (result.error) {
+    await new Promise((r) => setTimeout(r, 2000));
+    return fn();
+  }
+  return result;
+}
+
 function distanceMiles(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 3958.8;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -46,7 +61,9 @@ export async function GET(req: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  const { error: dbError } = await supabase.from("events").select("id", { count: "exact", head: true });
+  const { error: dbError } = await withRetry(() =>
+    supabase.from("events").select("id", { count: "exact", head: true })
+  );
   if (dbError) issues.push(`Supabase query failed: ${dbError.message}`);
 
   // 3. Mailgun domain reachable with current API key
@@ -74,12 +91,14 @@ export async function GET(req: Request) {
   }
 
   // 5. Recurring event series running low (daily-series cron may have stalled)
-  const { data: ongoingSeries, error: seriesError } = await supabase
-    .from("events")
-    .select("id, title, series_end_date")
-    .eq("is_ongoing", true)
-    .eq("is_cancelled", false)
-    .not("recurrence_rule", "is", null);
+  const { data: ongoingSeries, error: seriesError } = await withRetry(() =>
+    supabase
+      .from("events")
+      .select("id, title, series_end_date")
+      .eq("is_ongoing", true)
+      .eq("is_cancelled", false)
+      .not("recurrence_rule", "is", null)
+  );
 
   if (seriesError) {
     issues.push(`Failed to check recurring series: ${seriesError.message}`);
@@ -88,12 +107,14 @@ export async function GET(req: Request) {
     for (const series of ongoingSeries ?? []) {
       // A series past its end date legitimately winds down — not a stall
       if (series.series_end_date && new Date(series.series_end_date + "T23:59:59") < new Date()) continue;
-      const { count, error: countError } = await supabase
-        .from("events")
-        .select("id", { count: "exact", head: true })
-        .eq("parent_event_id", series.id)
-        .eq("is_cancelled", false)
-        .gte("date_time", now);
+      const { count, error: countError } = await withRetry(() =>
+        supabase
+          .from("events")
+          .select("id", { count: "exact", head: true })
+          .eq("parent_event_id", series.id)
+          .eq("is_cancelled", false)
+          .gte("date_time", now)
+      );
 
       if (countError) {
         issues.push(`Failed to count occurrences for "${series.title}": ${countError.message}`);
@@ -153,12 +174,14 @@ export async function GET(req: Request) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
-  const { count: upcomingCount, error: upcomingError } = await anonSupabase
-    .from("events")
-    .select("id", { count: "exact", head: true })
-    .eq("is_cancelled", false)
-    .neq("is_published", false)
-    .gte("date_time", new Date().toISOString());
+  const { count: upcomingCount, error: upcomingError } = await withRetry(() =>
+    anonSupabase
+      .from("events")
+      .select("id", { count: "exact", head: true })
+      .eq("is_cancelled", false)
+      .neq("is_published", false)
+      .gte("date_time", new Date().toISOString())
+  );
   if (upcomingError) {
     issues.push(`Failed to count upcoming events: ${upcomingError.message}`);
   } else if ((upcomingCount ?? 0) === 0) {
@@ -174,13 +197,15 @@ export async function GET(req: Request) {
 
   // 9. Org feed sync health: flag any org that has a feed URL configured but
   // hasn't had a successful sync in the last 48 hours.
-  const { data: staleFeeds, error: feedsError } = await supabase
-    .from("organizer_profiles")
-    .select("name, calendar_feed_last_synced_at, calendar_feed_last_status, calendar_feed_last_error")
-    .not("calendar_feed_url", "is", null)
-    .or(
-      `calendar_feed_last_synced_at.is.null,calendar_feed_last_synced_at.lt.${fortyEightHoursAgo},calendar_feed_last_status.eq.error`
-    );
+  const { data: staleFeeds, error: feedsError } = await withRetry(() =>
+    supabase
+      .from("organizer_profiles")
+      .select("name, calendar_feed_last_synced_at, calendar_feed_last_status, calendar_feed_last_error")
+      .not("calendar_feed_url", "is", null)
+      .or(
+        `calendar_feed_last_synced_at.is.null,calendar_feed_last_synced_at.lt.${fortyEightHoursAgo},calendar_feed_last_status.eq.error`
+      )
+  );
   if (feedsError) {
     issues.push(`Failed to check org feed sync status: ${feedsError.message}`);
   } else {
