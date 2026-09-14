@@ -325,6 +325,54 @@ ${html}`,
     description = `${description}\n\n(via ${sourceName})`;
   }
 
+  // Litly's curated account should never duplicate an org that already
+  // manages its own account/listings on litly — bail out with a clear error
+  // instead of creating a redundant draft.
+  if (organizerId === CURATED_ORG_ID) {
+    const candidateNames = [sourceName, extracted.location_name as string | null].filter(Boolean) as string[];
+    if (candidateNames.length) {
+      const { data: otherOrgs } = await supabase
+        .from("organizer_profiles")
+        .select("id, name")
+        .neq("id", CURATED_ORG_ID);
+      const workingOrg = (otherOrgs ?? []).find((o) => {
+        const a = o.name.toLowerCase().trim();
+        return candidateNames.some((c) => {
+          const b = c.toLowerCase().trim();
+          return a === b || a.includes(b) || b.includes(a);
+        });
+      });
+      if (workingOrg) {
+        const dayStart = isoDateTime.slice(0, 10);
+        const { data: theirEvents } = await supabase
+          .from("events")
+          .select("id, title")
+          .eq("organizer_id", workingOrg.id)
+          .gte("date_time", `${dayStart}T00:00:00`)
+          .lt("date_time", `${dayStart}T23:59:59`);
+        const normTitle = (t: string) =>
+          t.toLowerCase()
+            .replace(/["'"'.,!?:;()&]/g, "")
+            .replace(/\bwith\b|\bfeaturing\b|\bft\b|\bpresents?\b|\bdiscusses?\b|\blaunches?\b|\bin conversation\b/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+        const nd = normTitle(titleStr);
+        const dup = (theirEvents ?? []).find((e) => {
+          const nt = normTitle(e.title);
+          return nd.length && nt.length && (nt.includes(nd.slice(0, 12)) || nd.includes(nt.slice(0, 12)) || nd === nt);
+        });
+        if (dup) {
+          return NextResponse.json(
+            {
+              error: `${workingOrg.name} already manages their own listings on litly and appears to have already posted this event ("${dup.title}"). Skip importing it here to avoid a duplicate.`,
+            },
+            { status: 409 }
+          );
+        }
+      }
+    }
+  }
+
   // Insert as unpublished draft
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: inserted, error: insertError } = await (supabase as any)
