@@ -146,7 +146,7 @@ export async function POST(request: Request) {
         content: `Extract event information from this HTML and return a JSON object with these exact fields. Use null for any field you cannot determine with confidence.
 
 Fields:
-- title: string (event name)
+- title: string (event name; if the event centers on a specific book, wrap that book's title in quotation marks the way a reader would expect to see it in print, e.g. Jane Doe Presents "My New Book" — do not quote anything that isn't a book title)
 - description: string | null (full event description, plain text)
 - date: string | null (the event's primary start date in YYYY-MM-DD format, e.g. "2026-08-15" — use the main event date, usually labeled "Event Date" or "Date"; ignore secondary dates such as submission, ticket-sale, RSVP, or announcement deadlines mentioned in the description)
 - start_time_display: string | null (time exactly as shown on the page, e.g. "6:00 PM" or "6pm" or "18:00" — copy verbatim, do NOT convert or adjust)
@@ -154,7 +154,7 @@ Fields:
 - timezone: string | null (IANA timezone, e.g. "America/New_York" — infer from the event location or any timezone label shown on the page)
 - event_type: "in_person" | "virtual" (default to "in_person" if unclear)
 - location_name: string | null (venue name)
-- address: string | null (street address only, no city/state)
+- address: string | null (street address only — do NOT include city, state, or zip; those go in their own fields below)
 - city: string | null
 - state: string | null (2-letter US state code if US)
 - zip: string | null (zip / postal code, exactly as shown — copy verbatim, do NOT guess)
@@ -162,6 +162,7 @@ Fields:
 - ticket_url: string | null (URL to buy tickets or RSVP)
 - virtual_url: string | null (URL to join virtual event)
 - genres: string[] (list of genre/category keywords found anywhere on the page — extract every relevant word or phrase verbatim, e.g. ["Poetry", "Fiction", "Workshop", "Craft Talk", "Open Mic"])
+- source_name: string | null (the name of the organization, bookstore, or venue that publishes this page — read it from a logo, header, footer, or copyright line, e.g. "Malaprop's Bookstore/Cafe"; do NOT just return the domain name)
 
 Return ONLY the JSON object, no explanation.
 
@@ -273,6 +274,13 @@ ${html}`,
       const escaped = part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       cleaned = cleaned.replace(new RegExp(`,?\\s*\\b${escaped}\\b`, "gi"), "");
     }
+    // Fallback for cases where Claude's city/state/zip fields don't exactly
+    // match the text in the address (e.g. spelled-out state name) — strip a
+    // trailing "..., City, ST 12345" / "..., ST 12345" / "..., 12345" tail.
+    cleaned = cleaned
+      .replace(/,\s*[A-Za-z .]+,\s*[A-Z]{2}\s*\d{5}(-\d{4})?\s*$/, "")
+      .replace(/,\s*[A-Z]{2}\s*\d{5}(-\d{4})?\s*$/, "")
+      .replace(/,\s*\d{5}(-\d{4})?\s*$/, "");
     return cleaned.replace(/,\s*,/g, ",").replace(/,\s*$/, "").trim() || null;
   }
   const cleanedAddress = cleanStreetAddress(
@@ -291,6 +299,18 @@ ${html}`,
     if (query) coords = await geocode(query);
   }
 
+  // Source attribution always points at the org's homepage, not the specific
+  // event page, and uses the org's actual name rather than its bare domain.
+  const sourceName = isOwnSite ? null : ((extracted.source_name as string)?.trim() || importHost || null);
+  const sourceUrl = isOwnSite ? null : (() => { try { const u = new URL(url); return `${u.protocol}//${u.hostname}`; } catch { return url; } })();
+
+  // When litly's own curated account imports someone else's event, credit
+  // the source in the description itself so it survives on the public page.
+  let description = (extracted.description as string) ?? null;
+  if (description && sourceName && organizerId === CURATED_ORG_ID) {
+    description = `${description}\n\n(via ${sourceName})`;
+  }
+
   // Insert as unpublished draft
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: inserted, error: insertError } = await (supabase as any)
@@ -298,7 +318,7 @@ ${html}`,
     .insert({
       organizer_id: organizerId,
       title: (extracted.title as string) || "Untitled event",
-      description: (extracted.description as string) ?? null,
+      description,
       genre: mappedGenres,
       event_type: ((extracted.event_type as string) === "virtual" ? "virtual" : "in_person"),
       date_time: isoDateTime,
@@ -314,15 +334,15 @@ ${html}`,
       lng: coords?.lng ?? null,
       virtual_url: (extracted.virtual_url as string) || url,
       ticket_url: (extracted.ticket_url as string) ?? null,
-      source_url: isOwnSite ? null : (() => { try { const u = new URL(url); return `${u.protocol}//${u.hostname}`; } catch { return url; } })(),
-      source_name: isOwnSite ? null : importHost || null,
+      source_url: sourceUrl,
+      source_name: sourceName,
       is_imported: true,
       // Imported pages' images are external hotlinks that next/image can't
       // serve (only Supabase storage is in remotePatterns) — the organizer
       // uploads a banner manually instead, so don't attempt to set one here.
       banner_url: null,
       open_mic: false,
-      rsvp_enabled: false,
+      rsvp_enabled: true,
       is_published: false,
     })
     .select("id")
