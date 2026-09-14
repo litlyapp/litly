@@ -263,10 +263,29 @@ ${html}`,
     })
   )];
 
+  // Claude sometimes ignores the "street only" instruction and folds city/state/zip
+  // into the address field too, duplicating what's already in their own columns.
+  // Strip those back out so the address field holds just the street line.
+  function cleanStreetAddress(address: string | null, city: string | null, state: string | null, zip: string | null): string | null {
+    if (!address) return address;
+    let cleaned = address;
+    for (const part of [city, state, zip].filter(Boolean) as string[]) {
+      const escaped = part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      cleaned = cleaned.replace(new RegExp(`,?\\s*\\b${escaped}\\b`, "gi"), "");
+    }
+    return cleaned.replace(/,\s*,/g, ",").replace(/,\s*$/, "").trim() || null;
+  }
+  const cleanedAddress = cleanStreetAddress(
+    extracted.address as string | null,
+    extracted.city as string | null,
+    extracted.state as string | null,
+    extracted.zip as string | null
+  );
+
   // Geocode if in-person
   let coords: { lat: number; lng: number } | null = null;
   if (extracted.event_type !== "virtual") {
-    const query = [extracted.address, extracted.location_name, extracted.city, extracted.state, extracted.zip, extracted.country]
+    const query = [cleanedAddress, extracted.location_name, extracted.city, extracted.state, extracted.zip, extracted.country]
       .filter(Boolean)
       .join(", ");
     if (query) coords = await geocode(query);
@@ -286,7 +305,7 @@ ${html}`,
       timezone: (extracted.timezone as string) ?? null,
       end_time: isoEndTime,
       location_name: (extracted.location_name as string) ?? null,
-      address: (extracted.address as string) ?? null,
+      address: cleanedAddress,
       city: (extracted.city as string) ?? null,
       state: (extracted.state as string) ?? null,
       zip_code: (extracted.zip as string) ?? null,
