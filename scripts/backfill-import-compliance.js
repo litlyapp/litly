@@ -176,7 +176,7 @@ async function main() {
 
     // 6. Featured readers/bios
     if (pageText && !row.featured_readers?.length) {
-      const found = await askHaiku(`Extract every author, poet, or speaker appearing at this literary event from its webpage. For each, return their name, a link to their site/publisher/social media if the page links one (else null), and their bio exactly as written on the page if shown near their name (else null). Return ONLY {"featured_readers": [{"name": "...", "url": "..." | null, "bio": "..." | null}]}. Return {"featured_readers": []} if no readers are named.\n\n${pageText}`);
+      const found = await askHaiku(`Extract ONLY the author(s), poet(s), or reader(s) whose own book or work is being presented at this literary event, from its webpage. Do NOT include a moderator, interviewer, host, or "in conversation with" partner who is only there to discuss someone else's book — include them only if they are also presenting their own book/work at this same event. For each qualifying person, return their name, a link to their site/publisher/social media if the page links one (else null), and their bio exactly as written on the page if shown near their name (else null). Return ONLY {"featured_readers": [{"name": "...", "url": "..." | null, "bio": "..." | null}]}. Return {"featured_readers": []} if no qualifying readers are named.\n\n${pageText}`);
       const readers = (found?.featured_readers ?? [])
         .filter((r) => r?.name?.trim())
         .map((r) => ({ name: r.name.trim(), url: r.url?.trim() || "", bio: r.bio?.trim() || "" }));

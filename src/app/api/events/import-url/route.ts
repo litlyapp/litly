@@ -163,7 +163,7 @@ Fields:
 - virtual_url: string | null (URL to join virtual event)
 - genres: string[] (list of genre/category keywords found anywhere on the page — extract every relevant word or phrase verbatim, e.g. ["Poetry", "Fiction", "Workshop", "Craft Talk", "Open Mic"])
 - source_name: string | null (the name of the organization, bookstore, or venue that publishes this page — read it from a logo, header, footer, or copyright line, e.g. "Malaprop's Bookstore/Cafe"; do NOT just return the domain name)
-- featured_readers: [{ name: string, url: string | null, bio: string | null }] (every author, poet, or speaker appearing at this event, in the order listed on the page. For each: "url" is a link to their personal site, publisher page, or social media if the page links one, otherwise null. "bio" is their bio/description exactly as written on the page if one is shown near their name, otherwise null. Return [] if no readers are named.)
+- featured_readers: [{ name: string, url: string | null, bio: string | null }] (ONLY the author(s), poet(s), or reader(s) whose own book or work is being presented at this event. Do NOT include a moderator, interviewer, host, or "in conversation with" partner who is only there to discuss someone else's book — include them only if they are also presenting their own book/work at this same event. For each included person: "url" is a link to their personal site, publisher page, or social media if the page links one, otherwise null. "bio" is their bio/description exactly as written on the page if one is shown near their name, otherwise null. Return [] if no qualifying readers are named.)
 
 Return ONLY the JSON object, no explanation.
 
