@@ -163,6 +163,7 @@ Fields:
 - virtual_url: string | null (URL to join virtual event)
 - genres: string[] (list of genre/category keywords found anywhere on the page — extract every relevant word or phrase verbatim, e.g. ["Poetry", "Fiction", "Workshop", "Craft Talk", "Open Mic"])
 - source_name: string | null (the name of the organization, bookstore, or venue that publishes this page — read it from a logo, header, footer, or copyright line, e.g. "Malaprop's Bookstore/Cafe"; do NOT just return the domain name)
+- featured_readers: [{ name: string, url: string | null, bio: string | null }] (every author, poet, or speaker appearing at this event, in the order listed on the page. For each: "url" is a link to their personal site, publisher page, or social media if the page links one, otherwise null. "bio" is their bio/description exactly as written on the page if one is shown near their name, otherwise null. Return [] if no readers are named.)
 
 Return ONLY the JSON object, no explanation.
 
@@ -299,6 +300,19 @@ ${html}`,
     if (query) coords = await geocode(query);
   }
 
+  // Normalize extracted readers into the FeaturedReader shape, dropping any
+  // entry Claude returned without a name.
+  const rawReaders = Array.isArray(extracted.featured_readers)
+    ? (extracted.featured_readers as Array<{ name?: string; url?: string | null; bio?: string | null }>)
+    : [];
+  const featuredReaders = rawReaders
+    .filter((r) => r?.name?.trim())
+    .map((r) => ({
+      name: r.name!.trim(),
+      url: r.url?.trim() || "",
+      bio: r.bio?.trim() || "",
+    }));
+
   // Source attribution always points at the org's homepage, not the specific
   // event page, and uses the org's actual name rather than its bare domain.
   const sourceName = isOwnSite ? null : ((extracted.source_name as string)?.trim() || importHost || null);
@@ -336,6 +350,7 @@ ${html}`,
       ticket_url: (extracted.ticket_url as string) ?? null,
       source_url: sourceUrl,
       source_name: sourceName,
+      featured_readers: featuredReaders.length ? featuredReaders : null,
       is_imported: true,
       // Imported pages' images are external hotlinks that next/image can't
       // serve (only Supabase storage is in remotePatterns) — the organizer
