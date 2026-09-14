@@ -129,6 +129,20 @@ async function main() {
       notes.push(`address: ${JSON.stringify(row.address)} → ${JSON.stringify(cleanedAddress)}`);
     }
 
+    // 2b. source_url must be the homepage, never the specific event page
+    if (row.source_url) {
+      try {
+        const u = new URL(row.source_url);
+        if (u.pathname && u.pathname !== "/") {
+          const homepage = `${u.protocol}//${u.hostname}`;
+          patch.source_url = homepage;
+          notes.push(`source_url: ${JSON.stringify(row.source_url)} → ${JSON.stringify(homepage)}`);
+        }
+      } catch {
+        // leave malformed source_url alone
+      }
+    }
+
     // The original scraped page — only recoverable for in-person imports,
     // where virtual_url falls back to the pasted import URL. Virtual events
     // store the actual join link there instead, so there's nothing to refetch.
