@@ -188,15 +188,28 @@ async function main() {
       }
     }
 
-    // 6. Featured readers/bios
-    if (pageText && !row.featured_readers?.length) {
-      const found = await askHaiku(`Extract ONLY the author(s), poet(s), or reader(s) whose own book or work is being presented at this literary event, from its webpage. Do NOT include a moderator, interviewer, host, or "in conversation with" partner who is only there to discuss someone else's book — include them only if they are also presenting their own book/work at this same event. For each qualifying person, return their name, a link to their site/publisher/social media if the page links one (else null), and their bio exactly as written on the page if shown near their name (else null). Return ONLY {"featured_readers": [{"name": "...", "url": "..." | null, "bio": "..." | null}]}. Return {"featured_readers": []} if no qualifying readers are named.\n\n${pageText}`);
-      const readers = (found?.featured_readers ?? [])
-        .filter((r) => r?.name?.trim())
-        .map((r) => ({ name: r.name.trim(), url: r.url?.trim() || "", bio: r.bio?.trim() || "" }));
-      if (readers.length) {
-        patch.featured_readers = readers;
-        notes.push(`featured_readers: added ${readers.length} (${readers.map((r) => r.name).join(", ")})`);
+    // 6. Featured readers/bios — prefer the live page (gets bios + links), but
+    // most of these sites 403 our server, so fall back to inferring names from
+    // the title/description we already stored when the draft was first made.
+    if (!row.featured_readers?.length) {
+      if (pageText) {
+        const found = await askHaiku(`Extract ONLY the author(s), poet(s), or reader(s) whose own book or work is being presented at this literary event, from its webpage. Do NOT include a moderator, interviewer, host, or "in conversation with" partner who is only there to discuss someone else's book — include them only if they are also presenting their own book/work at this same event. For each qualifying person, return their name, a link to their site/publisher/social media if the page links one (else null), and their bio exactly as written on the page if shown near their name (else null). Return ONLY {"featured_readers": [{"name": "...", "url": "..." | null, "bio": "..." | null}]}. Return {"featured_readers": []} if no qualifying readers are named.\n\n${pageText}`);
+        const readers = (found?.featured_readers ?? [])
+          .filter((r) => r?.name?.trim())
+          .map((r) => ({ name: r.name.trim(), url: r.url?.trim() || "", bio: r.bio?.trim() || "" }));
+        if (readers.length) {
+          patch.featured_readers = readers;
+          notes.push(`featured_readers (from page): added ${readers.length} (${readers.map((r) => r.name).join(", ")})`);
+        }
+      } else if (row.title || row.description) {
+        const found = await askHaiku(`This literary event's title and description are given below. Identify ONLY the author(s), poet(s), or reader(s) whose own book or work is being presented — NOT a moderator, interviewer, host, or "in conversation with" partner who is only there to discuss someone else's book (include such a person only if the text also says they're presenting their own work). Only include a name if the text clearly identifies them as a presenting author/reader — do not guess. No bio or URL is available here, so leave those null. Return ONLY {"featured_readers": [{"name": "...", "url": null, "bio": null}]}. Return {"featured_readers": []} if you can't confidently identify any qualifying reader.\n\nTitle: ${row.title}\nDescription: ${row.description || "(none)"}`);
+        const readers = (found?.featured_readers ?? [])
+          .filter((r) => r?.name?.trim())
+          .map((r) => ({ name: r.name.trim(), url: "", bio: "" }));
+        if (readers.length) {
+          patch.featured_readers = readers;
+          notes.push(`featured_readers (inferred from title/description, page blocked): added ${readers.length} (${readers.map((r) => r.name).join(", ")})`);
+        }
       }
     }
 
