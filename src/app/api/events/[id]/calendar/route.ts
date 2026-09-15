@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { stripRichText } from "@/lib/richText";
 
 function toIcsDate(iso: string): string {
   // Emit the true UTC instant with a "Z" suffix so calendar apps display
@@ -60,7 +61,7 @@ export async function GET(
     `DTSTART:${dtStart}`,
     `DTEND:${dtEnd}`,
     `SUMMARY:${escapeIcs(event.title)}`,
-    event.description ? `DESCRIPTION:${escapeIcs(event.description)}` : null,
+    event.description ? `DESCRIPTION:${escapeIcs(stripRichText(event.description))}` : null,
     location ? `LOCATION:${escapeIcs(location)}` : null,
     `URL:https://thelitlyapp.com/events/${event.id}`,
     "END:VEVENT",

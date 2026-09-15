@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { checkContent, checkContentRelaxed } from "@/lib/moderation";
 import DateTimePicker from "./DateTimePicker";
 import BannerUpload from "./BannerUpload";
+import RichTextArea from "./RichTextArea";
 import RecurrenceOptions from "./RecurrenceOptions";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -949,11 +950,11 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       {/* Description */}
       <div>
         <label className={labelClass}>Description</label>
-        <textarea
+        <RichTextArea
           placeholder="Tell readers what to expect…"
           rows={12}
           value={form.description}
-          onChange={(e) => set("description", e.target.value)}
+          onChange={(v) => set("description", v)}
           className={`${inputClass} resize-none`}
         />
       </div>
@@ -1325,10 +1326,10 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
                     />
                   </div>
                   <div>
-                    <textarea
+                    <RichTextArea
                       placeholder="Short bio (optional, 75 words max)"
                       value={reader.bio ?? ""}
-                      onChange={(e) => updateReader(i, "bio", e.target.value)}
+                      onChange={(v) => updateReader(i, "bio", v)}
                       rows={2}
                       className={`${inputClass} resize-none`}
                     />

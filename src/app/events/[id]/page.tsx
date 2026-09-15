@@ -27,6 +27,7 @@ function stripHtml(text: string): string {
     .trim();
 }
 import { CURATED_ORG_ID } from "@/lib/curatedOrg";
+import { renderRichText, stripRichText } from "@/lib/richText";
 
 export async function generateMetadata({
   params,
@@ -45,7 +46,7 @@ export async function generateMetadata({
 
   const location = [event.location_name, event.city, event.state].filter(Boolean).join(", ");
   const description = event.description
-    ? event.description.slice(0, 160)
+    ? stripRichText(event.description).slice(0, 160)
     : location
     ? `A literary event at ${location}.`
     : "A literary event on litly.";
@@ -259,7 +260,7 @@ export default async function EventDetailPage({
     name: event.title,
     startDate: event.date_time,
     ...(event.end_time ? { endDate: event.end_time } : {}),
-    ...(event.description ? { description: stripHtml(event.description) } : {}),
+    ...(event.description ? { description: stripRichText(stripHtml(event.description)) } : {}),
     url: `https://thelitlyapp.com/events/${event.id}`,
     ...(event.banner_url ? { image: event.banner_url } : {}),
     eventStatus: ev.is_cancelled
@@ -415,7 +416,7 @@ export default async function EventDetailPage({
             endTime={event.end_time}
             timeZone={(event as typeof event & { timezone?: string | null }).timezone}
             title={event.title}
-            description={event.description}
+            description={event.description ? stripRichText(event.description) : event.description}
             location={[event.location_name, event.address, event.city, event.state, event.country].filter(Boolean).join(", ")}
           />
 
@@ -520,7 +521,7 @@ export default async function EventDetailPage({
         <div className="bg-navy-light border border-cream/10 rounded-2xl p-8 mb-6">
           <h2 className="font-serif text-xl text-cream mb-4">About this event</h2>
           <p className="text-cream-muted leading-relaxed whitespace-pre-line">
-            {stripHtml(event.description)}
+            {renderRichText(stripHtml(event.description))}
           </p>
         </div>
       )}
@@ -545,7 +546,7 @@ export default async function EventDetailPage({
                   <span className="text-cream font-medium text-sm">{reader.name}</span>
                 )}
                 {reader.bio && (
-                  <p className="text-cream-muted text-sm mt-1 leading-relaxed">{reader.bio}</p>
+                  <p className="text-cream-muted text-sm mt-1 leading-relaxed">{renderRichText(reader.bio)}</p>
                 )}
               </div>
             ))}

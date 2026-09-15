@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { isSafeUrl } from "@/lib/safeUrl";
 import { CURATED_ORG_ID } from "@/lib/curatedOrg";
+import { stripRichText } from "@/lib/richText";
 
 const anthropic = new Anthropic();
 
@@ -147,7 +148,7 @@ export async function POST(request: Request) {
 
 Fields:
 - title: string (event name; if the event centers on a specific book, wrap that book's title in quotation marks the way a reader would expect to see it in print, e.g. Jane Doe Presents "My New Book" — do not quote anything that isn't a book title)
-- description: string | null (full event description, plain text)
+- description: string | null (full event description, plain text — do NOT carry over any bold/italic/markdown/HTML styling from the page, strip it to plain text)
 - date: string | null (the event's primary start date in YYYY-MM-DD format, e.g. "2026-08-15" — use the main event date, usually labeled "Event Date" or "Date"; ignore secondary dates such as submission, ticket-sale, RSVP, or announcement deadlines mentioned in the description)
 - start_time_display: string | null (time exactly as shown on the page, e.g. "6:00 PM" or "6pm" or "18:00" — copy verbatim, do NOT convert or adjust)
 - end_time_display: string | null (end time exactly as shown on the page, same rule)
@@ -163,7 +164,7 @@ Fields:
 - virtual_url: string | null (URL to join virtual event)
 - genres: string[] (list of genre/category keywords found anywhere on the page — extract every relevant word or phrase verbatim, e.g. ["Poetry", "Fiction", "Workshop", "Craft Talk", "Open Mic"])
 - source_name: string | null (the name of the organization, bookstore, or venue that publishes this page — read it from a logo, header, footer, or copyright line, e.g. "Malaprop's Bookstore/Cafe"; do NOT just return the domain name)
-- featured_readers: [{ name: string, url: string | null, bio: string | null }] (ONLY the author(s), poet(s), or reader(s) whose own book or work is being presented at this event. Do NOT include a moderator, interviewer, host, or "in conversation with" partner who is only there to discuss someone else's book — include them only if they are also presenting their own book/work at this same event. For each included person: "url" is a link to their personal site, publisher page, or social media if the page links one, otherwise null. "bio" is their bio/description exactly as written on the page if one is shown near their name, otherwise null. Return [] if no qualifying readers are named.)
+- featured_readers: [{ name: string, url: string | null, bio: string | null }] (ONLY the author(s), poet(s), or reader(s) whose own book or work is being presented at this event. Do NOT include a moderator, interviewer, host, or "in conversation with" partner who is only there to discuss someone else's book — include them only if they are also presenting their own book/work at this same event. For each included person: "url" is a link to their personal site, publisher page, or social media if the page links one, otherwise null. "bio" is their bio/description as plain text if one is shown near their name (strip any bold/italic/markdown/HTML styling from it), otherwise null. Return [] if no qualifying readers are named.)
 
 Return ONLY the JSON object, no explanation.
 
@@ -305,12 +306,16 @@ ${html}`,
   const rawReaders = Array.isArray(extracted.featured_readers)
     ? (extracted.featured_readers as Array<{ name?: string; url?: string | null; bio?: string | null }>)
     : [];
+  // Imports should never carry over bold/italic styling from the source page —
+  // that's something people add deliberately when editing, not something
+  // scraped content should bring with it. Strip defensively in case Claude
+  // ignores the plain-text instruction above.
   const featuredReaders = rawReaders
     .filter((r) => r?.name?.trim())
     .map((r) => ({
       name: r.name!.trim(),
       url: r.url?.trim() || "",
-      bio: r.bio?.trim() || "",
+      bio: stripRichText(r.bio?.trim() || ""),
     }));
 
   // Source attribution always points at the org's homepage, not the specific
@@ -320,7 +325,7 @@ ${html}`,
 
   // When litly's own curated account imports someone else's event, credit
   // the source in the description itself so it survives on the public page.
-  let description = (extracted.description as string) ?? null;
+  let description = extracted.description ? stripRichText(extracted.description as string) : null;
   if (description && sourceName && organizerId === CURATED_ORG_ID) {
     description = `${description}\n\n(via ${sourceName})`;
   }
