@@ -20,7 +20,16 @@ export default function RichTextArea({ value, onChange, placeholder, rows = 6, c
   function toggleMarker(marker: string) {
     const el = ref.current;
     if (!el) return;
-    const { selectionStart: start, selectionEnd: end } = el;
+    const { selectionStart: rawStart, selectionEnd: rawEnd } = el;
+    const rawSelected = value.slice(rawStart, rawEnd);
+    // Trim whitespace off the selection edges so the markers land directly
+    // against real content — a marker with whitespace touching it (e.g.
+    // "* Lars Anderson*") is deliberately NOT treated as emphasis by the
+    // renderer, to avoid misreading a stray literal asterisk elsewhere.
+    const leadingWs = rawSelected.match(/^\s*/)?.[0] ?? "";
+    const trailingWs = rawSelected.length > leadingWs.length ? rawSelected.match(/\s*$/)?.[0] ?? "" : "";
+    const start = rawStart + leadingWs.length;
+    const end = rawEnd - trailingWs.length;
     const selected = value.slice(start, end);
     const m = marker.length;
 
