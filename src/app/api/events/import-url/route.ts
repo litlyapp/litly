@@ -11,6 +11,63 @@ const anthropic = new Anthropic();
 // URL-import convenience feature. litly's own curated-listings org is exempt.
 const MONTHLY_IMPORT_LIMIT = 50;
 
+// Pull the page's og:image (falling back to twitter:image) from the RAW html,
+// before the <head> gets stripped out below for Claude's token budget.
+function extractOgImage(html: string, pageUrl: string): string | null {
+  const headMatch = html.match(/<head[\s\S]*?<\/head>/i);
+  const head = headMatch ? headMatch[0] : html;
+  const metaRegex = /<meta\b[^>]*>/gi;
+  let raw: string | null = null;
+  for (const tag of head.match(metaRegex) ?? []) {
+    const isOg = /property=["']og:image["']/i.test(tag);
+    const isTwitter = /name=["']twitter:image(:src)?["']/i.test(tag);
+    if (!isOg && !isTwitter) continue;
+    const contentMatch = tag.match(/content=["']([^"']+)["']/i);
+    if (!contentMatch) continue;
+    if (isOg) { raw = contentMatch[1]; break; } // prefer og:image, stop as soon as found
+    if (!raw) raw = contentMatch[1]; // keep twitter:image only as a fallback
+  }
+  if (!raw) return null;
+  try {
+    return new URL(raw, pageUrl).href;
+  } catch {
+    return null;
+  }
+}
+
+// Best-effort: download the page's promotional image and re-host it in litly's
+// own storage (next/image can only serve from Supabase's domain, not arbitrary
+// external hosts) so the draft gets a banner without the organizer uploading
+// one by hand. Any failure here just leaves the banner empty, never blocks
+// the import.
+async function fetchAndUploadBanner(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  imageUrl: string
+): Promise<string | null> {
+  try {
+    const res = await fetch(imageUrl, {
+      headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36" },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return null;
+    const mimeType = (res.headers.get("content-type") ?? "").split(";")[0].trim();
+    if (!mimeType.startsWith("image/")) return null;
+    const buffer = Buffer.from(await res.arrayBuffer());
+    if (buffer.byteLength > 5 * 1024 * 1024) return null; // same 5MB cap as manual uploads
+    const ext = mimeType.split("/")[1] === "jpeg" ? "jpg" : mimeType.split("/")[1];
+    const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}-imported.${ext}`;
+    const { data, error } = await supabase.storage
+      .from("event-banners")
+      .upload(path, buffer, { contentType: mimeType, upsert: false });
+    if (error) return null;
+    const { data: urlData } = supabase.storage.from("event-banners").getPublicUrl(data.path);
+    return urlData.publicUrl;
+  } catch {
+    return null;
+  }
+}
+
 async function geocode(query: string): Promise<{ lat: number; lng: number } | null> {
   try {
     const res = await fetch(
@@ -82,6 +139,7 @@ export async function POST(request: Request) {
   // Fetch the page — try with a browser-like UA first; some sites block bots
   const BROWSER_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
   let html: string;
+  let ogImageUrl: string | null = null;
   try {
     let res = await fetch(url, {
       headers: { "User-Agent": BROWSER_UA, "Accept": "text/html,application/xhtml+xml,*/*" },
@@ -99,6 +157,7 @@ export async function POST(request: Request) {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
     }
     html = await res.text();
+    ogImageUrl = extractOgImage(html, url);
     // Strip <head>, <script>, <style> blocks to save token budget for actual content
     html = html
       .replace(/<head[\s\S]*?<\/head>/gi, "")
@@ -301,6 +360,10 @@ ${html}`,
     if (query) coords = await geocode(query);
   }
 
+  // Best-effort: re-host the page's promotional image as this draft's banner
+  // so the organizer doesn't have to upload one by hand.
+  const bannerUrl = ogImageUrl ? await fetchAndUploadBanner(supabase, user.id, ogImageUrl) : null;
+
   // Normalize extracted readers into the FeaturedReader shape, dropping any
   // entry Claude returned without a name.
   const rawReaders = Array.isArray(extracted.featured_readers)
@@ -417,10 +480,9 @@ ${html}`,
       source_name: sourceName,
       featured_readers: featuredReaders.length ? featuredReaders : null,
       is_imported: true,
-      // Imported pages' images are external hotlinks that next/image can't
-      // serve (only Supabase storage is in remotePatterns) — the organizer
-      // uploads a banner manually instead, so don't attempt to set one here.
-      banner_url: null,
+      // Re-hosted copy of the page's own promotional image, if one was found
+      // and successfully downloaded — null falls back to manual upload.
+      banner_url: bannerUrl,
       open_mic: false,
       rsvp_enabled: true,
       is_published: false,
