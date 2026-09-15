@@ -114,14 +114,8 @@ export default function AdminEventsClient() {
         </div>
         <div className="flex gap-3">
           <Link
-            href="/admin/import"
-            className="bg-orange text-cream text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-orange/90 transition"
-          >
-            + Import event
-          </Link>
-          <Link
             href="/events/new"
-            className="border border-cream/20 text-cream text-sm px-5 py-2.5 rounded-full hover:border-cream/40 transition"
+            className="bg-orange text-cream text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-orange/90 transition"
           >
             + Post event
           </Link>
