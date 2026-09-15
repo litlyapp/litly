@@ -167,16 +167,20 @@ async function main() {
       }
     }
 
-    // 4. "(via org)" credit on curated-org descriptions
-    if (
-      row.organizer_id === CURATED_ORG_ID &&
-      row.description &&
-      sourceName &&
-      !row.description.includes(`(via ${sourceName})`) &&
-      !/\(via [^)]+\)\s*$/.test(row.description.trim())
-    ) {
-      patch.description = `${row.description}\n\n(via ${sourceName})`;
-      notes.push(`description: appended "(via ${sourceName})"`);
+    // 4. "(via org)" credit on curated-org descriptions — always bolded
+    if (row.organizer_id === CURATED_ORG_ID && row.description && sourceName) {
+      const trimmed = row.description.trim();
+      const viaBoldRegex = /\*\*\(via [^)]+\)\*\*\s*$/;
+      const viaPlainRegex = /\(via ([^)]+)\)\s*$/;
+      if (!viaBoldRegex.test(trimmed)) {
+        if (viaPlainRegex.test(trimmed)) {
+          patch.description = trimmed.replace(viaPlainRegex, (m) => `**${m}**`);
+          notes.push(`description: bolded existing "(via ...)" note`);
+        } else {
+          patch.description = `${row.description}\n\n**(via ${sourceName})**`;
+          notes.push(`description: appended "**(via ${sourceName})**"`);
+        }
+      }
     }
 
     // 5. Quoted book titles

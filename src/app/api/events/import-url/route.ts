@@ -327,7 +327,7 @@ ${html}`,
   // the source in the description itself so it survives on the public page.
   let description = extracted.description ? stripRichText(extracted.description as string) : null;
   if (description && sourceName && organizerId === CURATED_ORG_ID) {
-    description = `${description}\n\n(via ${sourceName})`;
+    description = `${description}\n\n**(via ${sourceName})**`;
   }
 
   // Litly's curated account should never duplicate an org that already
