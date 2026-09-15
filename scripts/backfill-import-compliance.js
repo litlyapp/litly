@@ -10,6 +10,12 @@ const Anthropic = require("@anthropic-ai/sdk");
 const APPLY = process.argv.includes("--apply");
 const CURATED_ORG_ID = "f5fe9919-c768-49f0-90f6-d109b6c9e2bf";
 
+// Some sources' page branding differs from how litly's curated account
+// should credit them (venue/location_name is untouched either way).
+const CURATED_SOURCE_NAME_OVERRIDES = {
+  "malaprop's bookstore/cafe": "Malaprop's Bookstore",
+};
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -164,6 +170,16 @@ async function main() {
         sourceName = found.source_name.trim();
         patch.source_name = sourceName;
         notes.push(`source_name: ${JSON.stringify(row.source_name)} → ${JSON.stringify(sourceName)}`);
+      }
+    }
+
+    // 3b. Curated-only source-name overrides (e.g. Malaprop's)
+    if (row.organizer_id === CURATED_ORG_ID && sourceName) {
+      const override = CURATED_SOURCE_NAME_OVERRIDES[sourceName.toLowerCase()];
+      if (override && override !== sourceName) {
+        notes.push(`source_name: ${JSON.stringify(sourceName)} → ${JSON.stringify(override)}`);
+        sourceName = override;
+        patch.source_name = sourceName;
       }
     }
 

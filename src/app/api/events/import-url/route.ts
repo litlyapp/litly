@@ -318,9 +318,21 @@ ${html}`,
       bio: stripRichText(r.bio?.trim() || ""),
     }));
 
+  // Some sources' page branding differs from how litly's curated account
+  // should credit them (venue/location_name is untouched either way).
+  const CURATED_SOURCE_NAME_OVERRIDES: Record<string, string> = {
+    "malaprop's bookstore/cafe": "Malaprop's Bookstore",
+  };
+
   // Source attribution always points at the org's homepage, not the specific
   // event page, and uses the org's actual name rather than its bare domain.
-  const sourceName = isOwnSite ? null : ((extracted.source_name as string)?.trim() || importHost || null);
+  const sourceName = isOwnSite ? null : (() => {
+    const raw = (extracted.source_name as string)?.trim() || importHost || null;
+    if (raw && organizerId === CURATED_ORG_ID) {
+      return CURATED_SOURCE_NAME_OVERRIDES[raw.toLowerCase()] ?? raw;
+    }
+    return raw;
+  })();
   const sourceUrl = isOwnSite ? null : (() => { try { const u = new URL(url); return `${u.protocol}//${u.hostname}`; } catch { return url; } })();
 
   // When litly's own curated account imports someone else's event, credit
