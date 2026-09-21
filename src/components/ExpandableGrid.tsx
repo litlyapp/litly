@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useEqualizeCardHeights } from "@/lib/useEqualizeCardHeights";
 
 export default function ExpandableGrid({
   children,
@@ -17,9 +18,12 @@ export default function ExpandableGrid({
   const items = children.slice(0, visible);
   const remaining = children.length - items.length;
 
+  const gridRef = useRef<HTMLDivElement>(null);
+  useEqualizeCardHeights(gridRef, [items.length]);
+
   return (
     <div>
-      <div className={className}>{items}</div>
+      <div ref={gridRef} className={className}>{items}</div>
       {remaining > 0 && (
         <button
           type="button"

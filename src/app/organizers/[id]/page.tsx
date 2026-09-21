@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 import EventCard from "@/components/EventCard";
+import EqualHeightGrid from "@/components/EqualHeightGrid";
 import FollowButton from "@/components/FollowButton";
 
 export default async function OrganizerProfilePage({
@@ -196,11 +197,11 @@ export default async function OrganizerProfilePage({
             <p className="text-cream-muted">No upcoming events posted yet.</p>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <EqualHeightGrid className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {upcomingEvents.map((event) => (
               <EventCard key={event.id} event={event} />
             ))}
-          </div>
+          </EqualHeightGrid>
         )}
       </section>
 
@@ -213,11 +214,11 @@ export default async function OrganizerProfilePage({
               {pastEvents.length}
             </span>
           </h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 opacity-70">
+          <EqualHeightGrid className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 opacity-70">
             {pastEvents.map((event) => (
               <EventCard key={event.id} event={event} />
             ))}
-          </div>
+          </EqualHeightGrid>
         </section>
       )}
     </div>

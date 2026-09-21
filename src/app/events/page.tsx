@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import EventCard from "@/components/EventCard";
 import FiltersSidebar from "@/components/FiltersSidebar";
 import ExpandableGrid from "@/components/ExpandableGrid";
+import EqualHeightGrid from "@/components/EqualHeightGrid";
 import { GENRES } from "@/lib/genres";
 import {
   applyEventFilters,
@@ -220,11 +221,11 @@ export default async function EventsPage({
                   See all →
                 </Link>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <EqualHeightGrid className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {followingEvents.map((event) => (
                   <EventCard key={event.id} event={event} savedEventIds={savedEventIds} />
                 ))}
-              </div>
+              </EqualHeightGrid>
               <div className="mt-8 flex items-center gap-4">
                 <div className="flex-1 h-px bg-cream/10" />
                 <span className="text-cream-muted text-xs uppercase tracking-widest shrink-0">All events</span>

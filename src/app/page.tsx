@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import EventCard from "@/components/EventCard";
+import EqualHeightGrid from "@/components/EqualHeightGrid";
 import LandingSearch from "@/components/LandingSearch";
 import InstallButton from "@/components/InstallButton";
 import { GENRES } from "@/lib/genres";
@@ -146,11 +147,11 @@ export default async function HomePage() {
               See all →
             </Link>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <EqualHeightGrid className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {featuredEvents.map((event) => (
               <EventCard key={event.id} event={event} savedEventIds={savedEventIds} />
             ))}
-          </div>
+          </EqualHeightGrid>
 
           {/* Explore map CTA — mobile only */}
           <div className="md:hidden mt-6">

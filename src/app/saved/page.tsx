@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import EventCard from "@/components/EventCard";
+import EqualHeightGrid from "@/components/EqualHeightGrid";
 import type { Genre, EventType } from "@/types/database";
 
 interface JoinedEvent {
@@ -135,7 +136,7 @@ export default async function SavedPage() {
               {rsvpEvents.length} RSVP{rsvpEvents.length !== 1 ? "s" : ""}
             </span>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <EqualHeightGrid className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {rsvpEvents.map(
               (event) =>
                 event && (
@@ -147,7 +148,7 @@ export default async function SavedPage() {
                   />
                 )
             )}
-          </div>
+          </EqualHeightGrid>
         </section>
       )}
 
@@ -157,7 +158,7 @@ export default async function SavedPage() {
           {rsvpEvents.length > 0 && (
             <h2 className="font-serif text-xl text-cream mb-4">Also saved</h2>
           )}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <EqualHeightGrid className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {savedOnlyEvents.map(
               (event) =>
                 event && (
@@ -169,7 +170,7 @@ export default async function SavedPage() {
                   />
                 )
             )}
-          </div>
+          </EqualHeightGrid>
         </section>
       )}
 
@@ -177,7 +178,7 @@ export default async function SavedPage() {
       {pastEvents.length > 0 && (
         <section className="pt-2 border-t border-cream/10">
           <h2 className="font-serif text-xl text-cream mb-4 mt-8">Past events</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 opacity-70">
+          <EqualHeightGrid className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 opacity-70">
             {pastEvents.map(
               (event) =>
                 event && (
@@ -189,7 +190,7 @@ export default async function SavedPage() {
                   />
                 )
             )}
-          </div>
+          </EqualHeightGrid>
         </section>
       )}
     </div>
