@@ -51,14 +51,13 @@ export default function EventCard({
     <div className="relative bg-navy-light border border-cream/10 rounded-2xl overflow-hidden flex flex-col gap-3 hover:border-cream/25 transition group">
       {/* Banner image */}
       {event.banner_url && (
-        <div className="w-full overflow-hidden">
+        <div className="relative w-full aspect-[2/1] overflow-hidden">
           <Image
             src={event.banner_url}
             alt={event.title}
-            width={0}
-            height={0}
+            fill
             sizes="(max-width: 768px) 100vw, 33vw"
-            className="w-full h-auto max-h-40 object-contain object-top"
+            className="object-contain object-top"
           />
         </div>
       )}
