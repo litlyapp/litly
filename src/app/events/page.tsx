@@ -69,7 +69,7 @@ export default async function EventsPage({
       `
       id, title, description, genre, event_type, date_time, timezone, end_time,
       location_name, address, city, state, country, lat, lng, virtual_url, open_mic, rsvp_enabled, created_at,
-      is_cancelled, parent_event_id, is_imported, source_url, source_name,
+      is_cancelled, parent_event_id, is_imported, source_url, source_name, banner_url,
       organizer:organizer_profiles!events_organizer_id_fkey(id, name, org_type)
     `
     )
@@ -123,7 +123,7 @@ export default async function EventsPage({
         .select(`
           id, title, description, genre, event_type, date_time, timezone, end_time,
           location_name, address, city, state, country, lat, lng, virtual_url, open_mic, rsvp_enabled, created_at,
-          is_cancelled, parent_event_id, is_imported, source_url, source_name,
+          is_cancelled, parent_event_id, is_imported, source_url, source_name, banner_url,
           organizer:organizer_profiles!events_organizer_id_fkey(id, name, org_type)
         `)
         .eq("is_cancelled", false)

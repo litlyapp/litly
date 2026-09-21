@@ -23,7 +23,7 @@ export default async function OrganizerProfilePage({
   const organizer = organizerRaw;
 
   const now = new Date().toISOString();
-  const eventSelect = "id, title, description, genre, event_type, date_time, timezone, end_time, location_name, city, state, country, virtual_url, open_mic, rsvp_enabled, created_at, recurrence_rule, organizer:organizer_profiles!events_organizer_id_fkey(id, name, org_type)";
+  const eventSelect = "id, title, description, genre, event_type, date_time, timezone, end_time, location_name, city, state, country, virtual_url, open_mic, rsvp_enabled, created_at, recurrence_rule, banner_url, organizer:organizer_profiles!events_organizer_id_fkey(id, name, org_type)";
 
   // Fetch all top-level events (parents + one-offs) so recurring series with a
   // past parent date but future children are not silently dropped.

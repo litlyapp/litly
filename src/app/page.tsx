@@ -27,7 +27,7 @@ export default async function HomePage() {
     .select(
       `id, title, description, genre, event_type, date_time, timezone, end_time,
        location_name, address, city, state, country, lat, lng, virtual_url, open_mic, rsvp_enabled, created_at,
-       parent_event_id,
+       parent_event_id, banner_url,
        organizer:organizer_profiles!events_organizer_id_fkey(id, name, org_type)`
     )
     .eq("is_cancelled", false)

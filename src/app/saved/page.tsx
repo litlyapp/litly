@@ -20,6 +20,7 @@ interface JoinedEvent {
   open_mic: boolean;
   rsvp_enabled: boolean;
   created_at: string;
+  banner_url: string | null;
   organizer: { id: string; name: string; org_type: string } | null;
 }
 
@@ -52,7 +53,7 @@ export default async function SavedPage() {
       event_id,
       event:events(
         id, title, description, genre, event_type, date_time, timezone, end_time,
-        location_name, city, state, country, address, lat, lng, virtual_url, open_mic, rsvp_enabled, created_at, is_cancelled,
+        location_name, city, state, country, address, lat, lng, virtual_url, open_mic, rsvp_enabled, created_at, is_cancelled, banner_url,
         organizer:organizer_profiles!events_organizer_id_fkey(id, name, org_type)
       )
     `
@@ -68,7 +69,7 @@ export default async function SavedPage() {
       event_id,
       event:events(
         id, title, description, genre, event_type, date_time, timezone, end_time,
-        location_name, city, state, country, address, lat, lng, virtual_url, open_mic, rsvp_enabled, created_at, is_cancelled,
+        location_name, city, state, country, address, lat, lng, virtual_url, open_mic, rsvp_enabled, created_at, is_cancelled, banner_url,
         organizer:organizer_profiles!events_organizer_id_fkey(id, name, org_type)
       )
     `
