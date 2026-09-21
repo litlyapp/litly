@@ -58,7 +58,7 @@ export default function EventCard({
             width={0}
             height={0}
             sizes="(max-width: 768px) 100vw, 33vw"
-            className="w-full h-full object-contain"
+            className="w-full h-full object-contain object-top"
           />
         </div>
       )}
