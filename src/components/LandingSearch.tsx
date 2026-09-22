@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function LandingSearch() {
   const [q, setQ] = useState("");
@@ -47,37 +48,51 @@ export default function LandingSearch() {
   }
 
   return (
-    <form
-      onSubmit={(e) => handleSubmit(e)}
-      className="flex w-full max-w-xl mx-auto gap-2 px-4"
-    >
-      <input
-        type="text"
-        placeholder="e.g. Haw River in the Round"
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        className="flex-1 min-w-0 bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-full px-4 py-3 text-sm focus:outline-none focus:border-orange"
-      />
-      <button
-        type="button"
-        onClick={handleNearMe}
-        disabled={locating}
-        title="Near me"
-        className="border border-cream/25 text-cream-muted px-3 py-3 rounded-full hover:border-cream/50 hover:text-cream transition shrink-0 disabled:opacity-60"
+    <div>
+      <form
+        onSubmit={(e) => handleSubmit(e)}
+        className="flex w-full max-w-xl mx-auto gap-2 px-4"
       >
-        {locating ? (
-          <span className="text-xs">…</span>
-        ) : (
-          <PinIcon />
-        )}
-      </button>
-      <button
-        type="submit"
-        className="bg-orange text-cream font-semibold px-5 py-3 rounded-full hover:bg-orange/90 transition text-sm shrink-0"
-      >
-        Search
-      </button>
-    </form>
+        <input
+          type="text"
+          placeholder="e.g. Haw River in the Round"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          className="flex-1 min-w-0 bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-full px-4 py-3 text-sm focus:outline-none focus:border-orange"
+        />
+        <button
+          type="submit"
+          className="bg-orange text-cream font-semibold px-5 py-3 rounded-full hover:bg-orange/90 transition text-sm shrink-0"
+        >
+          Search
+        </button>
+      </form>
+
+      <div className="flex flex-wrap justify-center items-center gap-3 mt-6">
+        <Link
+          href="/events/map"
+          className="inline-flex items-center gap-2 border border-cream/25 text-cream px-5 py-2.5 rounded-full text-sm font-medium hover:border-orange hover:text-orange transition"
+        >
+          <MapIcon />
+          Explore the map
+        </Link>
+        <button
+          type="button"
+          onClick={handleNearMe}
+          disabled={locating}
+          className="inline-flex items-center gap-2 border border-cream/25 text-cream-muted px-5 py-2.5 rounded-full text-sm font-medium hover:border-cream/50 hover:text-cream transition disabled:opacity-60"
+        >
+          {locating ? (
+            <span>Locating…</span>
+          ) : (
+            <>
+              <PinIcon />
+              Near me
+            </>
+          )}
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -86,6 +101,14 @@ function PinIcon() {
     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M12 21C12 21 5 13.5 5 8.5a7 7 0 0 1 14 0c0 5-7 12.5-7 12.5z" />
       <circle cx="12" cy="8.5" r="2.5" />
+    </svg>
+  );
+}
+
+function MapIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 0 1 3 16.382V5.618a1 1 0 0 1 1.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0 0 21 18.382V7.618a1 1 0 0 0-.553-.894L15 4m0 13V4m0 0L9 7" />
     </svg>
   );
 }
