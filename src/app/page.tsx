@@ -99,9 +99,9 @@ export default async function HomePage() {
           <p className="text-orange text-sm font-medium tracking-widest uppercase mb-4">
             The literary event locator
           </p>
-          <h1 className="font-serif text-5xl md:text-7xl text-cream leading-tight mb-6">
+          <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl text-cream leading-tight mb-6">
             Find your next<br />
-            <span className="text-orange italic">literary moment.</span>
+            <span className="text-orange italic whitespace-nowrap">literary moment.</span>
           </h1>
           <p className="text-cream-muted text-lg md:text-xl max-w-lg mx-auto mb-2">
             Readings, open mics, workshops, and more —<br className="hidden sm:block" />
