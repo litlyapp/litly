@@ -51,7 +51,7 @@ export default function LandingSearch() {
     <div>
       <form
         onSubmit={(e) => handleSubmit(e)}
-        className="flex w-full max-w-xl mx-auto gap-2 px-4"
+        className="flex w-full gap-2 sm:max-w-xl sm:mx-auto"
       >
         <input
           type="text"

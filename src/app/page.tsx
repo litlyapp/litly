@@ -88,11 +88,11 @@ export default async function HomePage() {
         />
 
         <div className="relative max-w-3xl mx-auto">
-          <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl text-cream leading-tight mb-6">
+          <h1 className="font-serif text-[clamp(2.25rem,12vw,2.75rem)] sm:text-6xl md:text-7xl text-cream leading-tight mb-6">
             Find your next<br />
             <span className="text-orange italic whitespace-nowrap">literary moment.</span>
           </h1>
-          <p className="text-cream-muted text-lg md:text-xl max-w-lg mx-auto mb-2">
+          <p className="text-cream-muted text-base sm:text-lg md:text-xl max-w-lg mx-auto mb-2">
             Readings, open mics, workshops, and more —<br className="hidden sm:block" />
             all in one place.
           </p>
