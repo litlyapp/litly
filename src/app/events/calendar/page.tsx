@@ -45,16 +45,16 @@ export default async function CalendarPage({
     month0 = pm - 1;
   }
 
-  // Build a 6-week (42-day) grid starting on the Monday on/before the 1st.
+  // Build the grid starting on the Sunday on/before the 1st.
   const first = new Date(Date.UTC(year, month0, 1));
-  const mondayOffset = (first.getUTCDay() + 6) % 7;
+  const sundayOffset = first.getUTCDay();
   const gridStart = new Date(first);
-  gridStart.setUTCDate(first.getUTCDate() - mondayOffset);
+  gridStart.setUTCDate(first.getUTCDate() - sundayOffset);
 
   // Only render the weeks this month actually spans (no fixed 6-week grid), so
   // trailing/leading days from adjacent months aren't shown.
   const daysInMonth = new Date(Date.UTC(year, month0 + 1, 0)).getUTCDate();
-  const totalCells = Math.ceil((mondayOffset + daysInMonth) / 7) * 7;
+  const totalCells = Math.ceil((sundayOffset + daysInMonth) / 7) * 7;
   const baseCells: { key: string; day: number; inMonth: boolean }[] = [];
   for (let i = 0; i < totalCells; i++) {
     const d = new Date(gridStart);
