@@ -227,9 +227,17 @@ ${html}`,
   // at midnight for review rather than dropping the whole event over a time quirk.
   const naiveStart = buildNaive(dateStr, extracted.start_time_display as string | null)
     ?? (dateStr ? `${dateStr}T00:00:00` : null);
-  const naiveEnd   = buildNaive(dateStr, extracted.end_time_display as string | null);
+  // No end time on the page → don't let buildNaive default it to midnight.
+  const naiveEnd   = extracted.end_time_display
+    ? buildNaive(dateStr, extracted.end_time_display as string | null)
+    : null;
   const isoDateTime = naiveStart ? wallClockToUtc(naiveStart, tz) : null;
-  const isoEndTime  = naiveEnd   ? wallClockToUtc(naiveEnd,   tz) : null;
+  // Missing end time, or one at/before the start (the "12 AM same-day" quirk),
+  // falls back to start + 1 hour for every import.
+  const parsedEnd   = naiveEnd ? wallClockToUtc(naiveEnd, tz) : null;
+  const isoEndTime  = isoDateTime && (!parsedEnd || parsedEnd <= isoDateTime)
+    ? new Date(new Date(isoDateTime).getTime() + 60 * 60 * 1000).toISOString()
+    : parsedEnd;
   console.log("[import-url] times:", { naiveStart, naiveEnd, isoDateTime, isoEndTime, tz });
 
   // date_time is NOT NULL on events. If the page exposed no readable date (or
@@ -292,10 +300,19 @@ ${html}`,
     extracted.zip as string | null
   );
 
+  // Normalize location fields for every import: zip+4 → 5-digit zip, and a
+  // blank or abbreviated US country → "United States". Non-US countries pass through.
+  const rawZip = (extracted.zip as string | null)?.trim() || null;
+  const zipCode = rawZip?.match(/^(\d{5})-\d{4}$/)?.[1] ?? rawZip;
+  const rawCountry = (extracted.country as string | null)?.trim() || "";
+  const country = /^(|us|usa|u\.s\.?(a\.?)?|united states( of america)?|america)$/i.test(rawCountry)
+    ? "United States"
+    : rawCountry;
+
   // Geocode if in-person
   let coords: { lat: number; lng: number } | null = null;
   if (extracted.event_type !== "virtual") {
-    const query = [cleanedAddress, extracted.location_name, extracted.city, extracted.state, extracted.zip, extracted.country]
+    const query = [cleanedAddress, extracted.location_name, extracted.city, extracted.state, zipCode, country]
       .filter(Boolean)
       .join(", ");
     if (query) coords = await geocode(query);
@@ -407,8 +424,8 @@ ${html}`,
       address: cleanedAddress,
       city: (extracted.city as string) ?? null,
       state: (extracted.state as string) ?? null,
-      zip_code: (extracted.zip as string) ?? null,
-      country: (extracted.country as string) ?? null,
+      zip_code: zipCode,
+      country,
       lat: coords?.lat ?? null,
       lng: coords?.lng ?? null,
       virtual_url: (extracted.virtual_url as string) || url,
