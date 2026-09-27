@@ -38,7 +38,6 @@ const BLOCKED_ALWAYS = [
   // d-word family
   "dick", "dicks", "dickhead", "dickheads", "dickwad", "dickwads",
   "dickweed", "dickweeds",
-  "damn", "damned",
 
   // p-word family
   "pussy", "pussies",
