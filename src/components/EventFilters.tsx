@@ -133,7 +133,7 @@ export default function EventFilters({
         <div className="flex gap-2">
           <input
             type="text"
-            placeholder="City or country…"
+            placeholder="City, state, or country…"
             defaultValue={activeLocation}
             onChange={(e) => debouncedSetParam("location", e.target.value)}
             className="flex-1 bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange"

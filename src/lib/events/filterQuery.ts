@@ -1,6 +1,7 @@
 import type { Genre, EventType } from "@/types/database";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
+import { resolveUsState } from "@/lib/usStates";
 
 /**
  * Shared event filter logic used by the events list, the map, and any other
@@ -178,8 +179,23 @@ export function applyEventFilters<Q extends FilterableQuery<Q>>(
   }
 
   if (params.location) {
-    const loc = params.location.split(",")[0].trim(); // use city portion
-    query = query.or(`city.ilike.%${loc}%,address.ilike.%${loc}%`);
+    const loc = params.location.split(",")[0].replace(/[()]/g, " ").trim(); // use city portion
+    if (loc) {
+      // Events store the state as free text, usually an abbreviation ("NC"),
+      // so a patron typing "north carolina" (or "nc") needs a state match on
+      // both forms. A bare abbreviation only matches the state column —
+      // "%NC%" against city/address would hit "Lincoln", "Francisco", etc.
+      const usState = resolveUsState(loc);
+      const clauses: string[] = [];
+      if (usState) {
+        clauses.push(`state.ilike.${usState.abbr}`, `state.ilike.${usState.name}`);
+      }
+      if (!usState || loc.length > 2) {
+        clauses.push(`city.ilike.%${loc}%`, `address.ilike.%${loc}%`);
+        if (loc.length > 2) clauses.push(`country.ilike.%${loc}%`);
+      }
+      query = query.or(clauses.join(","));
+    }
   }
 
   return query;
