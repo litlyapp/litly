@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 
-// DELETE /api/events/[id] — permanently delete a draft event
+// DELETE /api/events/[id] — permanently delete an event (and, for a series
+// parent, every occurrence). Callers cancel a live upcoming event first so
+// RSVPd patrons get the cancellation email; see lib/events/deleteEvent.
 export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -22,12 +24,11 @@ export async function DELETE(
 
     const { data: event } = await svc
       .from("events")
-      .select("id, is_published, organizer_id")
+      .select("id, is_published, is_cancelled, organizer_id")
       .eq("id", id)
       .maybeSingle();
 
     if (!event) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    if (event.is_published) return NextResponse.json({ error: "Only drafts can be deleted this way" }, { status: 400 });
 
     const { data: membership } = await svc
       .from("org_members")
@@ -37,6 +38,25 @@ export async function DELETE(
       .maybeSingle();
 
     if (!membership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // Drafts are anyone's to discard; published events follow the cancel rule
+    if (event.is_published && membership.role !== "admin") {
+      return NextResponse.json({ error: "Only org admins can delete published events." }, { status: 403 });
+    }
+
+    // Deleting a series parent removes all of its occurrences
+    const { data: children } = await svc
+      .from("events")
+      .select("id")
+      .eq("parent_event_id", id);
+    const ids = [id, ...(children ?? []).map((c) => c.id)];
+
+    // Clear dependent rows first to avoid foreign-key violations
+    await svc.from("rsvps").delete().in("event_id", ids);
+    await svc.from("saved_events").delete().in("event_id", ids);
+    if (ids.length > 1) {
+      const { error: childError } = await svc.from("events").delete().eq("parent_event_id", id);
+      if (childError) return NextResponse.json({ error: childError.message }, { status: 500 });
+    }
 
     const { error, count } = await svc.from("events").delete({ count: "exact" }).eq("id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

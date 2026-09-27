@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { Genre, EventType } from "@/types/database";
 import { GENRE_LABELS } from "@/lib/genres";
 import { formatEventDate, formatEventTime } from "@/lib/formatDate";
+import { deleteEvent } from "@/lib/events/deleteEvent";
 
 interface Props {
   event: {
@@ -50,21 +51,18 @@ export default function DashboardEventRow({ event, divider, isPast, isDraft, rsv
   async function handleDelete() {
     setDeleting(true);
     setDeleteError(null);
-
-    try {
-      const res = await fetch(`/api/events/${event.id}`, { method: "DELETE" });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        setDeleteError(body.error ?? "Failed to delete draft.");
-        return;
-      }
-
-      startTransition(() => router.refresh());
-    } catch {
-      setDeleteError("Failed to delete draft. Check your connection and try again.");
-    } finally {
-      setDeleting(false);
+    // A live, upcoming event is cancelled first so RSVPd patrons are notified
+    const live = !isDraft && !event.is_cancelled && !isPast;
+    const err = await deleteEvent({
+      id: event.id,
+      cancelFirst: live ? (isRecurring ? "series" : "this") : "none",
+    });
+    setDeleting(false);
+    if (err) {
+      setDeleteError(err);
+      return;
     }
+    startTransition(() => router.refresh());
   }
 
   return (
@@ -179,14 +177,12 @@ export default function DashboardEventRow({ event, divider, isPast, isDraft, rsv
             >
               Duplicate
             </Link>
-            {isDraft && (
-              <button
-                onClick={() => setConfirming(true)}
-                className="text-cream-muted text-xs border border-cream/20 rounded-full px-3 py-1.5 hover:text-orange hover:border-orange/40 transition"
-              >
-                Delete
-              </button>
-            )}
+            <button
+              onClick={() => setConfirming(true)}
+              className="text-cream-muted text-xs border border-cream/20 rounded-full px-3 py-1.5 hover:text-orange hover:border-orange/40 transition"
+            >
+              Delete
+            </button>
           </>
         )}
       </div>

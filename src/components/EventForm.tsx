@@ -12,6 +12,7 @@ import type { Genre, EventType, FeaturedReader } from "@/types/database";
 import { GENRES } from "@/lib/genres";
 import { type RecurrenceRule, generateOccurrenceDates, generateNextOccurrence } from "@/lib/recurrence";
 import { formatEventDate } from "@/lib/formatDate";
+import { deleteEvent } from "@/lib/events/deleteEvent";
 
 // Common time zones for the picker, grouped by region
 export const TIME_ZONE_GROUPS: { region: string; zones: { value: string; label: string }[] }[] = [
@@ -195,7 +196,7 @@ interface SeriesContext {
 
 interface Props {
   organizerId: string;
-  initialData?: EventData & { id?: string; is_published?: boolean };
+  initialData?: EventData & { id?: string; is_published?: boolean; is_cancelled?: boolean };
   eventId?: string;
   seriesContext?: SeriesContext;
   /** Admin-only: expose "via [org]" source attribution fields */
@@ -370,6 +371,11 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
   const [cancelling, setCancelling] = useState(false);
 
   const isDraft = isEditing && initialData?.is_published === false;
+  const isCancelled = isEditing && initialData?.is_cancelled === true;
+  const isLive = isEditing && !isDraft && !isCancelled;
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const deleteNoun = isDraft ? "draft" : isParentEvent ? "series" : "event";
   const [publishIntent, setPublishIntent] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
@@ -472,24 +478,22 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
     setReaders((prev) => prev.filter((_, i) => i !== index));
   }
 
-  async function handleDeleteDraft() {
+  async function handleDelete() {
     if (!eventId) return;
-    setCancelling(true);
-    try {
-      const res = await fetch(`/api/events/${eventId}`, { method: "DELETE" });
-      if (!res.ok) {
-        const body = await res.json();
-        setError(body.error ?? "Failed to delete draft.");
-        setCancelling(false);
-        setCancelConfirm(false);
-        return;
-      }
-      window.location.href = "/dashboard";
-    } catch {
-      setError("Network error. Please try again.");
-      setCancelling(false);
-      setCancelConfirm(false);
+    const isUpcoming =
+      new Date(initialData?.end_time ?? initialData?.date_time ?? 0).getTime() >= Date.now();
+    setDeleting(true);
+    const err = await deleteEvent({
+      id: eventId,
+      cancelFirst: isLive && isUpcoming ? (isParentEvent ? "series" : "this") : "none",
+    });
+    if (err) {
+      setError(err);
+      setDeleting(false);
+      setDeleteConfirm(false);
+      return;
     }
+    window.location.href = "/dashboard";
   }
 
   async function handleCancel() {
@@ -1450,46 +1454,13 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
 
       {/* Cancel / delete — only when editing */}
       {isEditing && (
-        <div className="pt-2 border-t border-cream/10">
-          {isDraft ? (
-            // Draft: offer permanent deletion
+        <div className="pt-2 border-t border-cream/10 space-y-3">
+          {/* Live event: cancel keeps the page up, marked cancelled, and notifies RSVPs */}
+          {isLive && (
             !cancelConfirm ? (
               <button
                 type="button"
-                onClick={() => setCancelConfirm(true)}
-                className="w-full py-3 rounded-full border border-orange/40 text-orange text-sm font-medium hover:bg-orange/10 transition"
-              >
-                Delete draft
-              </button>
-            ) : (
-              <div className="bg-orange/10 border border-orange/30 rounded-2xl p-5 space-y-3">
-                <p className="text-cream text-sm font-medium">Delete this draft?</p>
-                <p className="text-cream-muted text-xs">This cannot be undone.</p>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={handleDeleteDraft}
-                    disabled={cancelling}
-                    className="px-5 py-2 rounded-full bg-orange text-cream text-sm font-medium hover:bg-orange/90 transition disabled:opacity-60"
-                  >
-                    {cancelling ? "Deleting…" : "Yes, delete draft"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCancelConfirm(false)}
-                    className="px-5 py-2 rounded-full border border-cream/20 text-cream-muted hover:text-cream hover:border-cream/40 transition text-sm"
-                  >
-                    Keep draft
-                  </button>
-                </div>
-              </div>
-            )
-          ) : (
-            // Live event: cancel (notifies RSVPs)
-            !cancelConfirm ? (
-              <button
-                type="button"
-                onClick={() => setCancelConfirm(true)}
+                onClick={() => { setCancelConfirm(true); setDeleteConfirm(false); }}
                 className="w-full py-3 rounded-full border border-orange/40 text-orange text-sm font-medium hover:bg-orange/10 transition"
               >
                 Cancel this event
@@ -1498,7 +1469,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
               <div className="bg-orange/10 border border-orange/30 rounded-2xl p-5 space-y-3">
                 <p className="text-cream text-sm font-medium">Cancel this event?</p>
                 <p className="text-cream-muted text-xs">
-                  This cannot be undone. All RSVPd patrons will receive a cancellation email.
+                  The event stays listed as cancelled. All RSVPd patrons will receive a cancellation email.
                 </p>
                 <div className="flex gap-3">
                   <button
@@ -1519,6 +1490,47 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
                 </div>
               </div>
             )
+          )}
+
+          {/* Any event: remove it from litly entirely */}
+          {!deleteConfirm ? (
+            <button
+              type="button"
+              onClick={() => { setDeleteConfirm(true); setCancelConfirm(false); }}
+              className={isLive
+                ? "w-full py-2 text-cream-muted text-sm hover:text-orange transition"
+                : "w-full py-3 rounded-full border border-orange/40 text-orange text-sm font-medium hover:bg-orange/10 transition"}
+            >
+              Delete {deleteNoun}
+            </button>
+          ) : (
+            <div className="bg-orange/10 border border-orange/30 rounded-2xl p-5 space-y-3">
+              <p className="text-cream text-sm font-medium">
+                {isParentEvent ? "Delete this entire series?" : `Delete this ${deleteNoun}?`}
+              </p>
+              <p className="text-cream-muted text-xs">
+                {isDraft
+                  ? "This cannot be undone."
+                  : `This permanently removes it from litly, including its RSVPs and saves. This cannot be undone.${isLive ? " Anyone who RSVPd to an upcoming date will get a cancellation email first." : ""}`}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="px-5 py-2 rounded-full bg-orange text-cream text-sm font-medium hover:bg-orange/90 transition disabled:opacity-60"
+                >
+                  {deleting ? "Deleting…" : `Yes, delete ${deleteNoun}`}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirm(false)}
+                  className="px-5 py-2 rounded-full border border-cream/20 text-cream-muted hover:text-cream hover:border-cream/40 transition text-sm"
+                >
+                  Keep {deleteNoun}
+                </button>
+              </div>
+            </div>
           )}
         </div>
       )}
