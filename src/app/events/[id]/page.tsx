@@ -490,8 +490,8 @@ export default async function EventDetailPage({
           </div>
         )}
 
-        {/* Source attribution + confirm reminder */}
-        {ev.source_name && (
+        {/* Source attribution (curated events only) + confirm reminder */}
+        {ev.source_name && organizer?.id === CURATED_ORG_ID && (
           <div className="border-t border-cream/10 pt-4 mt-2 flex items-start justify-between gap-4">
             <div>
               <p className="text-cream-muted/50 text-xs uppercase tracking-wider mb-0.5">Originally posted by</p>
