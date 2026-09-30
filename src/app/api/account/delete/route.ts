@@ -13,10 +13,10 @@ export async function POST() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  // Clean up orgs this user belongs to that would become orphaned (no other
-  // members and no events) once this account is deleted — otherwise a stale
-  // organizer_profiles row with user_id=null is left behind forever and
-  // shows up in organizer search.
+  // Delete orgs this user is the last member of (and their events), per the
+  // privacy policy: deleting an account removes "any organizations left
+  // without other members". Orgs with other members survive —
+  // organizer_profiles.user_id is ON DELETE SET NULL.
   const { data: memberships } = await serviceClient
     .from("org_members")
     .select("org_id")
@@ -31,13 +31,7 @@ export async function POST() {
 
     if ((otherMembers ?? 0) > 0) continue;
 
-    const { count: eventCount } = await serviceClient
-      .from("events")
-      .select("id", { count: "exact", head: true })
-      .eq("organizer_id", org_id);
-
-    if ((eventCount ?? 0) > 0) continue;
-
+    await serviceClient.from("events").delete().eq("organizer_id", org_id);
     await serviceClient.from("organizer_profiles").delete().eq("id", org_id);
   }
 
