@@ -1,6 +1,7 @@
 import type ical from "node-ical";
 import type { Genre, EventType } from "@/types/database";
 import { isSafeUrl, safeFetch } from "@/lib/safeUrl";
+import { stripTracking } from "@/lib/cleanUrl";
 
 export interface ParsedFeedEvent {
   uid: string;
@@ -236,8 +237,8 @@ export function mapToEventRow(parsed: ParsedFeedEvent, opts: MapToEventRowOption
     // UPDATE never touches the column, so a ticket/join link the org added
     // manually on Litly survives the next day's resync instead of getting
     // reset to null.
-    ...(event_type === "virtual" && parsed.url ? { virtual_url: parsed.url } : {}),
-    ...(event_type === "in_person" && parsed.url && !isMeetingLink(parsed.url) ? { ticket_url: parsed.url } : {}),
+    ...(event_type === "virtual" && parsed.url ? { virtual_url: stripTracking(parsed.url) } : {}),
+    ...(event_type === "in_person" && parsed.url && !isMeetingLink(parsed.url) ? { ticket_url: stripTracking(parsed.url) } : {}),
     lat: opts.coords?.lat ?? null,
     lng: opts.coords?.lng ?? null,
     is_imported: true,

@@ -9,7 +9,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const { data: events } = await supabase
     .from("events")
-    .select("id")
+    .select("id, updated_at")
     .eq("is_cancelled", false)
     .neq("is_published", false)
     .gte("date_time", sixMonthsAgo.toISOString())
@@ -23,7 +23,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const eventUrls = (events ?? []).map((e) => ({
     url: `https://thelitlyapp.com/events/${e.id}`,
-    lastModified: now,
+    lastModified: new Date(e.updated_at),
     changeFrequency: "weekly" as const,
     priority: 0.8,
   }));
@@ -66,6 +66,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly",
       priority: 0.6,
     },
+    {
+      url: "https://thelitlyapp.com/support",
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.4,
+    },
+    ...["privacy", "terms"].map((page) => ({
+      url: `https://thelitlyapp.com/${page}`,
+      lastModified: new Date("2026-09-30"), // effective date on the page
+      changeFrequency: "yearly" as const,
+      priority: 0.2,
+    })),
     ...eventUrls,
     ...organizerUrls,
   ];

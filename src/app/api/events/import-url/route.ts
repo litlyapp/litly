@@ -5,6 +5,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { isSafeUrl, safeFetch } from "@/lib/safeUrl";
 import { CURATED_ORG_ID } from "@/lib/curatedOrg";
 import { stripRichText } from "@/lib/richText";
+import { stripTracking } from "@/lib/cleanUrl";
 import type { Genre } from "@/types/database";
 
 const anthropic = new Anthropic();
@@ -333,7 +334,7 @@ ${html}`,
     .filter((r) => r?.name?.trim())
     .map((r) => ({
       name: r.name!.trim(),
-      url: r.url?.trim() || "",
+      url: stripTracking(r.url?.trim() || ""),
       bio: stripRichText(r.bio?.trim() || ""),
     }));
 
@@ -429,8 +430,8 @@ ${html}`,
       country,
       lat: coords?.lat ?? null,
       lng: coords?.lng ?? null,
-      virtual_url: (extracted.virtual_url as string) || url,
-      ticket_url: (extracted.ticket_url as string) ?? null,
+      virtual_url: stripTracking((extracted.virtual_url as string) || url),
+      ticket_url: stripTracking((extracted.ticket_url as string) ?? null),
       source_url: sourceUrl,
       source_name: sourceName,
       featured_readers: featuredReaders.length ? featuredReaders : null,

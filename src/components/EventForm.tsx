@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { checkContent, checkContentRelaxed } from "@/lib/moderation";
+import { stripTracking } from "@/lib/cleanUrl";
 import DateTimePicker from "./DateTimePicker";
 import BannerUpload from "./BannerUpload";
 import RichTextArea from "./RichTextArea";
@@ -597,17 +598,17 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       country: form.event_type === "in_person" ? form.country.trim() || null : null,
       lat: form.event_type === "in_person" ? coords?.lat ?? null : null,
       lng: form.event_type === "in_person" ? coords?.lng ?? null : null,
-      virtual_url: form.virtual_url.trim() || null,
+      virtual_url: stripTracking(form.virtual_url.trim()) || null,
       open_mic: genres.includes("open_mic"),
       featured_readers: readers.filter((r) => r.name.trim()).length
-        ? readers.filter((r) => r.name.trim())
+        ? readers.filter((r) => r.name.trim()).map((r) => ({ ...r, url: stripTracking(r.url) }))
         : null,
       rsvp_enabled: form.rsvp_enabled,
-      ticket_url: form.ticket_url.trim() || null,
+      ticket_url: stripTracking(form.ticket_url.trim()) || null,
       ticket_type: (form.ticket_type === "none" ? "none" : form.ticket_type || null) as "paid" | "free" | "none" | null,
       banner_url: bannerUrl,
       source_name: form.source_name.trim() || null,
-      source_url: form.source_url.trim() || null,
+      source_url: stripTracking(form.source_url.trim()) || null,
       is_imported: !!form.source_name.trim(),
     };
 
