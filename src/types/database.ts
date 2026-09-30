@@ -67,7 +67,7 @@ export type Database = {
       organizer_profiles: {
         Row: {
           id: string;
-          user_id: string;
+          user_id: string | null;
           org_type: OrgType;
           name: string;
           bio: string | null;
@@ -79,11 +79,12 @@ export type Database = {
           calendar_feed_last_synced_at: string | null;
           calendar_feed_last_status: "success" | "error" | null;
           calendar_feed_last_error: string | null;
+          default_banner_url: string | null;
           default_banner_for_all_events: boolean;
         };
         Insert: {
           id?: string;
-          user_id: string;
+          user_id?: string | null;
           org_type: OrgType;
           name: string;
           bio?: string | null;
@@ -95,6 +96,7 @@ export type Database = {
           calendar_feed_last_synced_at?: string | null;
           calendar_feed_last_status?: "success" | "error" | null;
           calendar_feed_last_error?: string | null;
+          default_banner_url?: string | null;
           default_banner_for_all_events?: boolean;
         };
         Update: {
@@ -109,6 +111,7 @@ export type Database = {
           calendar_feed_last_synced_at?: string | null;
           calendar_feed_last_status?: "success" | "error" | null;
           calendar_feed_last_error?: string | null;
+          default_banner_url?: string | null;
           default_banner_for_all_events?: boolean;
         };
         Relationships: [
@@ -134,6 +137,7 @@ export type Database = {
           end_time: string | null;
           location_name: string | null;
           address: string | null;
+          address2: string | null;
           city: string | null;
           state: string | null;
           zip_code: string | null;
@@ -149,7 +153,7 @@ export type Database = {
           source_name: string | null;
           banner_url: string | null;
           ticket_url: string | null;
-          ticket_type: "paid" | "free" | null;
+          ticket_type: "paid" | "free" | "none" | null;
           view_count: number;
           ticket_click_count: number;
           recurrence_rule: RecurrenceRule | null;
@@ -159,6 +163,7 @@ export type Database = {
           series_end_date: string | null;
           is_ongoing: boolean;
           created_at: string;
+          updated_at: string;
           external_uid: string | null;
           feed_source_organizer_id: string | null;
         };
@@ -174,6 +179,7 @@ export type Database = {
           end_time?: string | null;
           location_name?: string | null;
           address?: string | null;
+          address2?: string | null;
           city?: string | null;
           state?: string | null;
           zip_code?: string | null;
@@ -189,7 +195,7 @@ export type Database = {
           source_name?: string | null;
           banner_url?: string | null;
           ticket_url?: string | null;
-          ticket_type?: "paid" | "free" | null;
+          ticket_type?: "paid" | "free" | "none" | null;
           view_count?: number;
           ticket_click_count?: number;
           recurrence_rule?: RecurrenceRule | null;
@@ -208,9 +214,11 @@ export type Database = {
           genre?: Genre[];
           event_type?: EventType;
           date_time?: string;
+          timezone?: string | null;
           end_time?: string | null;
           location_name?: string | null;
           address?: string | null;
+          address2?: string | null;
           city?: string | null;
           state?: string | null;
           zip_code?: string | null;
@@ -226,7 +234,7 @@ export type Database = {
           source_name?: string | null;
           banner_url?: string | null;
           ticket_url?: string | null;
-          ticket_type?: "paid" | "free" | null;
+          ticket_type?: "paid" | "free" | "none" | null;
           recurrence_rule?: RecurrenceRule | null;
           parent_event_id?: string | null;
           is_cancelled?: boolean;
@@ -318,6 +326,7 @@ export type Database = {
           created_at: string;
           expires_at: string;
           accepted_at: string | null;
+          invited_role: OrgRole;
         };
         Insert: {
           id?: string;
@@ -328,6 +337,7 @@ export type Database = {
           created_at?: string;
           expires_at?: string;
           accepted_at?: string | null;
+          invited_role?: OrgRole;
         };
         Update: {
           accepted_at?: string | null;
@@ -361,6 +371,14 @@ export type Database = {
       increment_import_usage: {
         Args: { p_org_id: string; p_limit: number };
         Returns: number;
+      };
+      increment_event_view: {
+        Args: { event_id: string };
+        Returns: undefined;
+      };
+      increment_ticket_click: {
+        Args: { event_id: string };
+        Returns: undefined;
       };
     };
     Enums: {

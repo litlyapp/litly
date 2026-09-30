@@ -1,3 +1,9 @@
+-- ============================================================
+-- HISTORICAL — the original June 2026 base schema. The live database has
+-- since diverged (columns, policies, and functions added in the dashboard).
+-- The current source of truth is supabase/live_schema_snapshot.sql.
+-- ============================================================
+
 -- litly database schema
 -- Run this in the Supabase SQL editor (Dashboard → SQL Editor → New query)
 

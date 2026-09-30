@@ -62,8 +62,9 @@ export default function AvatarUpload({ value, name, onChange }: Props) {
     if (!value) return;
     const path = value.split("/profile-avatars/")[1];
     if (path) {
-      const { error: removeError } = await supabase.storage.from("profile-avatars").remove([path]);
-      if (removeError) { setError("Failed to remove photo."); return; }
+      // Storage only lets the uploader delete the file. A teammate removing
+      // it still clears the reference — the file is just left orphaned.
+      await supabase.storage.from("profile-avatars").remove([path]);
     }
     onChange(null);
   }

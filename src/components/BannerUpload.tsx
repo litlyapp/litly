@@ -67,8 +67,9 @@ export default function BannerUpload({ value, onChange }: Props) {
     if (!value) return;
     const path = value.split("/event-banners/")[1];
     if (path) {
-      const { error: removeError } = await supabase.storage.from("event-banners").remove([path]);
-      if (removeError) { setError("Failed to remove banner."); return; }
+      // Storage only lets the uploader delete the file. A teammate removing
+      // it still clears the reference — the file is just left orphaned.
+      await supabase.storage.from("event-banners").remove([path]);
     }
     onChange(null);
   }
