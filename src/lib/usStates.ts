@@ -27,3 +27,27 @@ export function resolveUsState(text: string): { abbr: string; name: string } | n
   }
   return null;
 }
+
+// States (and DC) that lie entirely in one timezone. Split states — AK, FL,
+// ID, IN, KS, KY, MI, ND, NE, OR, SD, TN, TX — are left out on purpose: their
+// timezone depends on the city, so callers fall back to other signals.
+const SINGLE_TIMEZONE_STATES: Record<string, string> = {
+  CT: "America/New_York", DE: "America/New_York", DC: "America/New_York", GA: "America/New_York",
+  ME: "America/New_York", MD: "America/New_York", MA: "America/New_York", NH: "America/New_York",
+  NJ: "America/New_York", NY: "America/New_York", NC: "America/New_York", OH: "America/New_York",
+  PA: "America/New_York", RI: "America/New_York", SC: "America/New_York", VT: "America/New_York",
+  VA: "America/New_York", WV: "America/New_York",
+  AL: "America/Chicago", AR: "America/Chicago", IL: "America/Chicago", IA: "America/Chicago",
+  LA: "America/Chicago", MN: "America/Chicago", MS: "America/Chicago", MO: "America/Chicago",
+  OK: "America/Chicago", WI: "America/Chicago",
+  CO: "America/Denver", MT: "America/Denver", NM: "America/Denver", UT: "America/Denver",
+  WY: "America/Denver", AZ: "America/Phoenix",
+  CA: "America/Los_Angeles", NV: "America/Los_Angeles", WA: "America/Los_Angeles",
+  HI: "Pacific/Honolulu",
+};
+
+/** IANA timezone for a US state that's entirely in one zone, else null. */
+export function timezoneForState(state: string | null | undefined): string | null {
+  const resolved = state ? resolveUsState(state) : null;
+  return resolved ? SINGLE_TIMEZONE_STATES[resolved.abbr] ?? null : null;
+}

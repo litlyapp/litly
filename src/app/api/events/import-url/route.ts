@@ -6,6 +6,7 @@ import { isSafeUrl, safeFetch } from "@/lib/safeUrl";
 import { CURATED_ORG_ID } from "@/lib/curatedOrg";
 import { stripRichText } from "@/lib/richText";
 import { stripTracking } from "@/lib/cleanUrl";
+import { timezoneForState } from "@/lib/usStates";
 import type { Genre } from "@/types/database";
 
 const anthropic = new Anthropic();
@@ -225,7 +226,12 @@ ${html}`,
   }
 
   const dateStr = extracted.date as string | null;
-  const tz = (extracted.timezone as string | null) || "America/New_York";
+  // A state that's entirely in one timezone beats the model's guess (it has
+  // labeled Louisiana events Eastern); otherwise use its guess, then Eastern
+  const tz =
+    (extracted.event_type !== "virtual" ? timezoneForState(extracted.state as string | null) : null) ||
+    (extracted.timezone as string | null) ||
+    "America/New_York";
   // If we have a date but the start time won't parse (e.g. "noon"), still import
   // at midnight for review rather than dropping the whole event over a time quirk.
   const naiveStart = buildNaive(dateStr, extracted.start_time_display as string | null)
@@ -420,7 +426,9 @@ ${html}`,
       genre: mappedGenres,
       event_type: ((extracted.event_type as string) === "virtual" ? "virtual" : "in_person"),
       date_time: isoDateTime,
-      timezone: (extracted.timezone as string) ?? null,
+      // Store the zone the times were actually converted in, so the edit form
+      // shows the same wall-clock times the page listed
+      timezone: tz,
       end_time: isoEndTime,
       location_name: (extracted.location_name as string) ?? null,
       address: cleanedAddress,
