@@ -5,7 +5,7 @@ sent by Supabase, NOT by `src/lib/sendEmail.ts` — that file only handles trans
 mail like RSVPs, support replies, invites, and batch sends).
 
 **Styling (hybrid brand):** navy `#1B2A3E`, cream `#F2E8D5`, orange `#E8622A`, logo from
-`https://thelitlyapp.com/logo.png`. Matches the site's hybrid font scheme: **headings use
+`https://thelitlyapp.com/email-logo.png`. Matches the site's hybrid font scheme: **headings use
 Georgia `Georgia,'Times New Roman',Times,serif`** (serif), **body uses Libre Franklin
 `'Libre Franklin',Helvetica,Arial,sans-serif`** (sans).
 
@@ -26,7 +26,7 @@ exactly as written; Supabase fills them in.
 <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1B2A3E"><tr><td align="center" style="padding:0">
   <table width="520" cellpadding="0" cellspacing="0" border="0" bgcolor="#F2E8D5" style="max-width:520px;width:100%">
     <tr><td bgcolor="#1B2A3E" align="center" style="padding:24px 32px">
-      <img src="https://thelitlyapp.com/logo.png" alt="litly" width="80" height="80" style="display:block;border:0" />
+      <img src="https://thelitlyapp.com/email-logo.png" alt="litly" width="80" height="80" style="display:block;border:0" />
     </td></tr>
     <tr><td bgcolor="#F2E8D5" style="padding:32px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;color:#1B2A3E">
       <h1 style="margin:0 0 8px;font-family:Georgia,'Times New Roman',Times,serif;font-size:22px;color:#1B2A3E">Welcome to litly</h1>
@@ -47,7 +47,7 @@ exactly as written; Supabase fills them in.
 <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1B2A3E"><tr><td align="center" style="padding:0">
   <table width="520" cellpadding="0" cellspacing="0" border="0" bgcolor="#F2E8D5" style="max-width:520px;width:100%">
     <tr><td bgcolor="#1B2A3E" align="center" style="padding:24px 32px">
-      <img src="https://thelitlyapp.com/logo.png" alt="litly" width="80" height="80" style="display:block;border:0" />
+      <img src="https://thelitlyapp.com/email-logo.png" alt="litly" width="80" height="80" style="display:block;border:0" />
     </td></tr>
     <tr><td bgcolor="#F2E8D5" style="padding:32px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;color:#1B2A3E">
       <h1 style="margin:0 0 8px;font-family:Georgia,'Times New Roman',Times,serif;font-size:22px;color:#1B2A3E">Reset your password</h1>
@@ -68,7 +68,7 @@ exactly as written; Supabase fills them in.
 <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1B2A3E"><tr><td align="center" style="padding:0">
   <table width="520" cellpadding="0" cellspacing="0" border="0" bgcolor="#F2E8D5" style="max-width:520px;width:100%">
     <tr><td bgcolor="#1B2A3E" align="center" style="padding:24px 32px">
-      <img src="https://thelitlyapp.com/logo.png" alt="litly" width="80" height="80" style="display:block;border:0" />
+      <img src="https://thelitlyapp.com/email-logo.png" alt="litly" width="80" height="80" style="display:block;border:0" />
     </td></tr>
     <tr><td bgcolor="#F2E8D5" style="padding:32px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;color:#1B2A3E">
       <h1 style="margin:0 0 8px;font-family:Georgia,'Times New Roman',Times,serif;font-size:22px;color:#1B2A3E">Log in to litly</h1>
@@ -89,7 +89,7 @@ exactly as written; Supabase fills them in.
 <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1B2A3E"><tr><td align="center" style="padding:0">
   <table width="520" cellpadding="0" cellspacing="0" border="0" bgcolor="#F2E8D5" style="max-width:520px;width:100%">
     <tr><td bgcolor="#1B2A3E" align="center" style="padding:24px 32px">
-      <img src="https://thelitlyapp.com/logo.png" alt="litly" width="80" height="80" style="display:block;border:0" />
+      <img src="https://thelitlyapp.com/email-logo.png" alt="litly" width="80" height="80" style="display:block;border:0" />
     </td></tr>
     <tr><td bgcolor="#F2E8D5" style="padding:32px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;color:#1B2A3E">
       <h1 style="margin:0 0 8px;font-family:Georgia,'Times New Roman',Times,serif;font-size:22px;color:#1B2A3E">Confirm your new email</h1>
@@ -110,7 +110,7 @@ exactly as written; Supabase fills them in.
 <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1B2A3E"><tr><td align="center" style="padding:0">
   <table width="520" cellpadding="0" cellspacing="0" border="0" bgcolor="#F2E8D5" style="max-width:520px;width:100%">
     <tr><td bgcolor="#1B2A3E" align="center" style="padding:24px 32px">
-      <img src="https://thelitlyapp.com/logo.png" alt="litly" width="80" height="80" style="display:block;border:0" />
+      <img src="https://thelitlyapp.com/email-logo.png" alt="litly" width="80" height="80" style="display:block;border:0" />
     </td></tr>
     <tr><td bgcolor="#F2E8D5" style="padding:32px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;color:#1B2A3E">
       <h1 style="margin:0 0 8px;font-family:Georgia,'Times New Roman',Times,serif;font-size:22px;color:#1B2A3E">You've been invited</h1>
@@ -131,7 +131,7 @@ exactly as written; Supabase fills them in.
 <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1B2A3E"><tr><td align="center" style="padding:0">
   <table width="520" cellpadding="0" cellspacing="0" border="0" bgcolor="#F2E8D5" style="max-width:520px;width:100%">
     <tr><td bgcolor="#1B2A3E" align="center" style="padding:24px 32px">
-      <img src="https://thelitlyapp.com/logo.png" alt="litly" width="80" height="80" style="display:block;border:0" />
+      <img src="https://thelitlyapp.com/email-logo.png" alt="litly" width="80" height="80" style="display:block;border:0" />
     </td></tr>
     <tr><td bgcolor="#F2E8D5" style="padding:32px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;color:#1B2A3E">
       <h1 style="margin:0 0 8px;font-family:Georgia,'Times New Roman',Times,serif;font-size:22px;color:#1B2A3E">Your verification code</h1>
@@ -155,7 +155,7 @@ address when the account email changes.
 <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1B2A3E"><tr><td align="center" style="padding:0">
   <table width="520" cellpadding="0" cellspacing="0" border="0" bgcolor="#F2E8D5" style="max-width:520px;width:100%">
     <tr><td bgcolor="#1B2A3E" align="center" style="padding:24px 32px">
-      <img src="https://thelitlyapp.com/logo.png" alt="litly" width="80" height="80" style="display:block;border:0" />
+      <img src="https://thelitlyapp.com/email-logo.png" alt="litly" width="80" height="80" style="display:block;border:0" />
     </td></tr>
     <tr><td bgcolor="#F2E8D5" style="padding:32px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;color:#1B2A3E">
       <h1 style="margin:0 0 8px;font-family:Georgia,'Times New Roman',Times,serif;font-size:22px;color:#1B2A3E">Your email address was changed</h1>
@@ -178,7 +178,7 @@ password is updated.
 <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1B2A3E"><tr><td align="center" style="padding:0">
   <table width="520" cellpadding="0" cellspacing="0" border="0" bgcolor="#F2E8D5" style="max-width:520px;width:100%">
     <tr><td bgcolor="#1B2A3E" align="center" style="padding:24px 32px">
-      <img src="https://thelitlyapp.com/logo.png" alt="litly" width="80" height="80" style="display:block;border:0" />
+      <img src="https://thelitlyapp.com/email-logo.png" alt="litly" width="80" height="80" style="display:block;border:0" />
     </td></tr>
     <tr><td bgcolor="#F2E8D5" style="padding:32px;font-family:'Libre Franklin',Helvetica,Arial,sans-serif;color:#1B2A3E">
       <h1 style="margin:0 0 8px;font-family:Georgia,'Times New Roman',Times,serif;font-size:22px;color:#1B2A3E">Your password was changed</h1>

@@ -2,7 +2,8 @@
 -- LIVE SCHEMA SNAPSHOT — source of truth for the production database.
 -- Captured 2026-09-29 from the live Supabase project (pg_catalog +
 -- PostgREST), reflecting migrations/schema_fixes_2026_09_29.sql and
--- migrations/privacy_hardening_2026_09_30.sql.
+-- migrations/privacy_hardening_2026_09_30.sql and
+-- migrations/drop_retired_import_queue.sql (pending_imports + import_status gone).
 --
 -- schema.sql and migrations/ are the historical record of how the DB got
 -- here (several changes were made directly in the dashboard and never
@@ -17,7 +18,6 @@ create type public.org_type      as enum ('individual', 'organization');
 -- essay, hybrid_experimental: retired (display labels only; Postgres can't drop enum values)
 create type public.genre         as enum ('poetry', 'fiction', 'nonfiction', 'essay', 'hybrid_experimental',
   'translation', 'ya', 'craft_talk', 'open_mic', 'workshop', 'in_conversation', 'slam', 'other');
-create type public.import_status as enum ('pending', 'approved', 'rejected'); -- retired pipeline
 
 -- ---------- Tables ----------
 create table public.users (
@@ -148,17 +148,6 @@ create table public.org_import_usage (
   primary key (org_id, month)
 );
 
--- Retired newsletter-import queue (pipeline removed 2026-09-08). Unused; safe to drop.
-create table public.pending_imports (
-  id             uuid primary key default gen_random_uuid(),
-  source_email   text,
-  source_subject text,
-  raw_body       text not null,
-  parsed_data    jsonb,
-  status         public.import_status not null default 'pending',
-  created_at     timestamptz not null default now()
-);
-
 -- ---------- Indexes (beyond PK / unique constraints) ----------
 create index events_date_time_idx                on public.events (date_time);
 create index events_organizer_id_idx             on public.events (organizer_id);
@@ -277,8 +266,6 @@ create policy "Users can unfollow organizers"    on public.follows for delete us
 create policy "Users can view own memberships" on public.org_members for select using (user_id = auth.uid());
 
 -- org_invites, org_import_usage: RLS on, no policies — service role / security-definer RPC only
--- pending_imports
-create policy "No public access to pending imports" on public.pending_imports for all using (false);
 
 -- ---------- Storage ----------
 -- Buckets: event-banners (public, 5 MB), profile-avatars (public, 3 MB); both

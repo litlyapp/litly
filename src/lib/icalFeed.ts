@@ -33,7 +33,7 @@ const MEETING_LINK_PATTERNS = [
   /youtube\.com\/watch/i,
 ];
 
-export function isMeetingLink(url: string): boolean {
+function isMeetingLink(url: string): boolean {
   return MEETING_LINK_PATTERNS.some((p) => p.test(url));
 }
 

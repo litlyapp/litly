@@ -84,7 +84,7 @@ interface FilterableQuery<Q> {
 }
 
 /** Normalize the `genre` search param (string | string[] | undefined) to an array. */
-export function parseGenres(genre?: string | string[]): string[] {
+function parseGenres(genre?: string | string[]): string[] {
   if (!genre) return [];
   return Array.isArray(genre) ? genre : [genre];
 }

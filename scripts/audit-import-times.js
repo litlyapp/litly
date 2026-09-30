@@ -1,8 +1,7 @@
-// One-off audit: flag imported events whose date/time is suspect —
-// either an odd-hour start (likely a timezone-offset shift or an
-// unstated time defaulted to midnight) or parsed from a bare URL
-// (pre-fix parse-event never fetched pages, so details were guessed).
-// Read-only: prints a review list for /admin/events; changes nothing.
+// Spot-check: flag upcoming imported events whose start time is suspect —
+// an odd-hour start usually means a timezone-offset shift or an unstated
+// time defaulted to midnight. Worth re-running after importer time-parsing
+// changes. Read-only: prints a review list; changes nothing.
 // Usage: node --env-file=.env.local scripts/audit-import-times.js
 const { createClient } = require("@supabase/supabase-js");
 
@@ -37,7 +36,7 @@ function localHourMin(isoUtc, timezone) {
 async function main() {
   const { data: events, error } = await supabase
     .from("events")
-    .select("id, title, date_time, timezone, source_name, source_url, city, state, is_imported, is_cancelled")
+    .select("id, title, date_time, timezone, source_name, source_url, city, state")
     .eq("is_imported", true)
     .eq("is_cancelled", false)
     .gte("date_time", new Date().toISOString())
@@ -54,9 +53,6 @@ async function main() {
       reasons.push(
         `starts at ${String(h).padStart(2, "0")}:${min} local${e.timezone ? ` (${e.timezone})` : " (no timezone — displays stored hour as-is)"} — likely unstated time or offset shift`
       );
-    }
-    if (e.source_url && !e.source_name) {
-      reasons.push("URL-only import — details may be hallucinated (pre-fix parser never fetched pages)");
     }
     if (reasons.length) suspects.push({ ...e, reasons });
   }

@@ -1,5 +1,6 @@
-// One-off backfill: re-geocode events using full address context and fix
-// pins that are far from where the address actually resolves.
+// Maintenance: re-geocode events using full address context and fix pins
+// that are far from where the address actually resolves. The daily
+// health-check cron points here when it detects geocode drift.
 // Usage: node --env-file=.env.local scripts/regeocode.js [--apply]
 const { createClient } = require("@supabase/supabase-js");
 

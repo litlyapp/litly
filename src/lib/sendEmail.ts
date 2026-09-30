@@ -1,5 +1,6 @@
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://thelitlyapp.com";
-const LOGO_URL = `${APP_URL}/logo.png`;
+// 160px (2x the 80px display size) — the full logo.png is 1.2 MB, too heavy for email
+const LOGO_URL = `${APP_URL}/email-logo.png`;
 
 // Escape user-controlled content before inserting into HTML email bodies
 export function escapeHtml(str: string): string {

@@ -16,7 +16,7 @@ import { deleteEvent } from "@/lib/events/deleteEvent";
 import { dateToWallClock, zonedToUtcIso, utcIsoToZoned } from "@/lib/timezone";
 
 // Common time zones for the picker, grouped by region
-export const TIME_ZONE_GROUPS: { region: string; zones: { value: string; label: string }[] }[] = [
+const TIME_ZONE_GROUPS: { region: string; zones: { value: string; label: string }[] }[] = [
   {
     region: "Americas",
     zones: [
@@ -87,7 +87,7 @@ export const TIME_ZONE_GROUPS: { region: string; zones: { value: string; label: 
   },
 ];
 
-export const TIME_ZONES: { value: string; label: string }[] = TIME_ZONE_GROUPS.flatMap(
+const TIME_ZONES: { value: string; label: string }[] = TIME_ZONE_GROUPS.flatMap(
   (g) => g.zones
 );
 
