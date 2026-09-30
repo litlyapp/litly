@@ -45,30 +45,10 @@ export default async function HomePage() {
   if (user) {
     const [savedResult, profileResult] = await Promise.all([
       supabase.from("saved_events").select("event_id").eq("user_id", user.id),
-      supabase.from("organizer_profiles").select("id").eq("user_id", user.id).maybeSingle(),
+      supabase.from("org_members").select("org_id").eq("user_id", user.id).limit(1).maybeSingle(),
     ]);
     savedEventIds = new Set((savedResult.data ?? []).map((s) => s.event_id));
     isOrganizer = !!profileResult.data;
-  }
-
-  // Total upcoming event count for the tagline.
-  // Match the events page: fetch upcoming non-cancelled events (including
-  // recurring children), then dedupe by series so each series counts once.
-  const { data: countRows } = await supabase
-    .from("events")
-    .select("id, parent_event_id")
-    .eq("is_cancelled", false)
-    .neq("is_published", false)
-    .gte("date_time", new Date().toISOString())
-    .order("date_time", { ascending: true });
-
-  const seenSeries = new Set<string>();
-  let count = 0;
-  for (const row of countRows ?? []) {
-    const seriesKey = (row as { parent_event_id?: string | null }).parent_event_id ?? row.id;
-    if (seenSeries.has(seriesKey)) continue;
-    seenSeries.add(seriesKey);
-    count++;
   }
 
   return (
@@ -113,11 +93,6 @@ export default async function HomePage() {
           <div className="flex items-baseline justify-between mb-6">
             <h2 className="font-serif text-2xl text-cream">
               Upcoming events
-              {count != null && count > 0 && (
-                <span className="ml-2 font-sans text-base text-cream-muted font-normal">
-                  ({count})
-                </span>
-              )}
             </h2>
             <Link
               href="/events"

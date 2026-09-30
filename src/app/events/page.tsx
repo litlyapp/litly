@@ -111,7 +111,7 @@ export default async function EventsPage({
   if (user) {
     const [savedResult, profileResult, followsResult] = await Promise.all([
       supabase.from("saved_events").select("event_id").eq("user_id", user.id),
-      supabase.from("organizer_profiles").select("id").eq("user_id", user.id).maybeSingle(),
+      supabase.from("org_members").select("org_id").eq("user_id", user.id).limit(1).maybeSingle(),
       supabase.from("follows").select("organizer_id").eq("patron_id", user.id),
     ]);
     savedEventIds = new Set((savedResult.data ?? []).map((s) => s.event_id));
@@ -160,8 +160,11 @@ export default async function EventsPage({
         <div>
           <h1 className="font-serif text-4xl text-cream mb-1">Events</h1>
           <p className="text-cream-muted mb-3">
-            {events?.length ?? 0} upcoming{" "}
-            {events?.length === 1 ? "event" : "events"}
+            {/* Only show a count for searches/filters — the unfiltered total
+                would publicly expose our overall event count. */}
+            {hasActiveFilters
+              ? `${events.length} ${events.length === 1 ? "event" : "events"} found`
+              : "Upcoming literary events"}
           </p>
           <Suspense fallback={null}>
             <ViewToggle active="list" />
