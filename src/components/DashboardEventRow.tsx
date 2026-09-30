@@ -46,7 +46,6 @@ export default function DashboardEventRow({ event, divider, isPast, isDraft, rsv
   const [, startTransition] = useTransition();
   const router = useRouter();
   const isRecurring = !!(event.parent_event_id || event.recurrence_rule);
-  const parentId = event.parent_event_id ?? event.id;
 
   async function handleDelete() {
     setDeleting(true);

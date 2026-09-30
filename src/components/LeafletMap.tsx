@@ -154,7 +154,7 @@ export default function LeafletMap({
 
     // Show "no nearby events" message if filtered is empty
     if (filtered.length === 0 && userLoc && radius !== null) {
-      const msg = L.popup({ closeButton: true, className: "litly-popup" })
+      L.popup({ closeButton: true, className: "litly-popup" })
         .setLatLng([userLoc.lat, userLoc.lng])
         .setContent(`
           <div style="font-family:'Libre Franklin',system-ui,sans-serif;background:#1B2A3E;border-radius:12px;padding:12px;min-width:180px;text-align:center;">

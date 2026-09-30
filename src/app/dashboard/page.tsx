@@ -84,7 +84,7 @@ export default async function DashboardPage({
   }));
 
   const now = new Date().toISOString();
-  const nowMs = Date.now();
+  const nowMs = new Date().getTime();
   const isFuture = (iso: string, endIso?: string | null) =>
     new Date(endIso ?? iso).getTime() >= nowMs;
 
@@ -194,7 +194,7 @@ export default async function DashboardPage({
       {/* Joined banner */}
       {justJoined && (
         <div className="bg-orange/10 border border-orange/30 rounded-2xl px-5 py-4 mb-6 text-cream text-sm">
-          Welcome to the team! You now have access to this organization's dashboard.
+          Welcome to the team! You now have access to this organization&apos;s dashboard.
         </div>
       )}
 

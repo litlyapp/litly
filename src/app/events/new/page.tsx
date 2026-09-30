@@ -38,8 +38,7 @@ export default async function NewEventPage({
   if (!orgProfile) redirect("/become-organizer");
 
   // Fetch banner defaults separately so a missing column (pre-migration) doesn't break the page
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: bannerDefaults } = await (supabase as any)
+  const { data: bannerDefaults } = await supabase
     .from("organizer_profiles")
     .select("default_banner_url, default_banner_for_all_events")
     .eq("id", activeOrgId)

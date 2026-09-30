@@ -106,6 +106,7 @@ export default function AdminRoundupClient({ initialEvents }: { initialEvents: R
   const [selected, setSelected] = useState<string>("");
   const [days, setDays] = useState(7);
   const [copied, setCopied] = useState(false);
+  const [loadedAt] = useState(() => Date.now());
 
   const cities = useMemo(() => {
     const counts = new Map<string, number>();
@@ -135,7 +136,7 @@ export default function AdminRoundupClient({ initialEvents }: { initialEvents: R
     [events]
   );
 
-  const cutoff = Date.now() + days * 86400_000;
+  const cutoff = loadedAt + days * 86400_000;
   const matching = events.filter((event) => {
     if (new Date(event.date_time).getTime() > cutoff) return false;
     if (selected === VIRTUAL) return event.event_type === "virtual";

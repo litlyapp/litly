@@ -13,8 +13,7 @@ export default function EventViewTracker({ eventId }: { eventId: string }) {
     const supabase = createClient();
     // The Supabase query builder is lazy — the request only fires when the
     // builder is awaited or .then() is called, so fire-and-forget needs .then()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .rpc("increment_event_view", { event_id: eventId })
       .then(({ error }: { error: unknown }) => {
         if (error) console.error("[EventViewTracker] increment failed:", error);

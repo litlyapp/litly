@@ -18,8 +18,7 @@ export async function POST(req: Request) {
     .maybeSingle();
   if (!membership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = supabase as any;
+  const db = supabase;
 
   // Fetch org defaults (default_banner_url added via migration)
   const { data: org } = await db

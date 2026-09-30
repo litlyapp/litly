@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 interface Props {
   eventId: string;
@@ -14,7 +13,6 @@ export default function CancelEventButton({ eventId, isRecurring, isDraft }: Pro
   const [scope, setScope] = useState<"this" | "series">("this");
   const [cancelling, setCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
 
   async function handleCancel() {
     setCancelling(true);

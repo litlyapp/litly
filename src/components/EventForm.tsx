@@ -660,8 +660,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
     }
 
     if (isEditing) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: updateError } = await (supabase as any)
+      const { error: updateError } = await supabase
         .from("events")
         .update({ ...sharedFields, ...(isDraft ? { is_published: publishIntent } : {}) })
         .eq("id", eventId);
@@ -675,8 +674,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       // Publishing (or re-saving) a draft series parent carries its publish
       // state to every occurrence, so the series goes live all at once
       if (isDraft && isParentEvent) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error: publishError } = await (supabase as any)
+        const { error: publishError } = await supabase
           .from("events")
           .update({ is_published: publishIntent })
           .eq("parent_event_id", eventId);
@@ -712,8 +710,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
           banner_url: sharedFields.banner_url,
         };
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let siblingsQuery = (supabase as any)
+        let siblingsQuery = supabase
           .from("events")
           .update(nonDateFields)
           .eq("parent_event_id", seriesContext.parentId)
@@ -733,8 +730,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
 
       // If editing the parent event, also persist series settings
       if (isParentEvent && eventId) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error: seriesSettingsError } = await (supabase as any)
+        const { error: seriesSettingsError } = await supabase
           .from("events")
           .update({
             is_ongoing: seriesOngoing,
@@ -798,8 +794,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
             (c) => c.date_time > nowIso && !keptTimes.has(new Date(c.date_time).getTime())
           );
           if (children.length > 0) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const { error: reseedError } = await (supabase as any).from("events").insert(children);
+            const { error: reseedError } = await supabase.from("events").insert(children);
             if (reseedError) {
               setError(`Series schedule saved but new occurrences failed: ${reseedError.message}`);
               setLoading(false);
@@ -812,8 +807,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       // Convert a standalone event into a recurring series: this event becomes
       // the parent, future occurrences are seeded as children
       if (isStandaloneEdit && recurrenceRule && eventId) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error: convertError } = await (supabase as any)
+        const { error: convertError } = await supabase
           .from("events")
           .update({
             recurrence_rule: recurrenceRule,
@@ -829,8 +823,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
 
         const children = buildChildOccurrences(eventId);
         if (children.length > 0) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { error: childError } = await (supabase as any).from("events").insert(children);
+          const { error: childError } = await supabase.from("events").insert(children);
           if (childError) {
             setError(`Series started but some occurrences failed: ${childError.message}`);
             setLoading(false);
@@ -847,8 +840,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       router.push(`/events/${eventId}`);
     } else {
       // Insert parent event (first occurrence)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error: insertError } = await (supabase as any)
+      const { data, error: insertError } = await supabase
         .from("events")
         .insert({
           organizer_id: organizerId,
@@ -869,8 +861,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       // Seed future occurrences as children of the new parent
       const children = buildChildOccurrences(data.id);
       if (children.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error: childError } = await (supabase as any).from("events").insert(children);
+        const { error: childError } = await supabase.from("events").insert(children);
         if (childError) {
           setError(`Event created but some occurrences failed: ${childError.message}`);
           setLoading(false);
@@ -1138,8 +1129,8 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
             </div>
             {geocoded === null && form.address.trim() && !geocoding && (
               <p className="text-cream-muted/60 text-xs mt-1">
-                Leave the address field and we'll try to locate it. The event
-                will still be saved if it can't be found.
+                Leave the address field and we&apos;ll try to locate it. The event
+                will still be saved if it can&apos;t be found.
               </p>
             )}
           </div>

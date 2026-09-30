@@ -265,7 +265,7 @@ export default function TeamClient({
             <p className="text-green-400 text-sm mt-3">Invitation sent!</p>
           )}
           <p className="text-cream-muted text-xs mt-3">
-            They'll receive an email with a link to join your team. Invites expire after 7 days.
+            They&apos;ll receive an email with a link to join your team. Invites expire after 7 days.
           </p>
         </div>
       </section>

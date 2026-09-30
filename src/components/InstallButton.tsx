@@ -1,41 +1,44 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 type Mode = "android" | "ios" | "hidden";
 
+// Device facts that never change while the page is open — read them as an
+// external store so the server render (false) and client value reconcile
+// without a setState-in-effect.
+const noSubscribe = () => () => {};
+const readIsIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+const readIsStandalone = () => window.matchMedia("(display-mode: standalone)").matches;
+
 export default function InstallButton({ variant = "hero" }: { variant?: "hero" | "footer" }) {
-  const [mode, setMode] = useState<Mode>("hidden");
+  const isIos = useSyncExternalStore(noSubscribe, readIsIos, () => false);
+  const isStandalone = useSyncExternalStore(noSubscribe, readIsStandalone, () => false);
   const [deferredPrompt, setDeferredPrompt] = useState<Event & { prompt: () => void } | null>(null);
+  const [installed, setInstalled] = useState(false);
   const [showIosHint, setShowIosHint] = useState(false);
 
   useEffect(() => {
-    // Already installed
-    if (window.matchMedia("(display-mode: standalone)").matches) return;
-
-    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
-
-    if (isIos) {
-      setMode("ios");
-      return;
-    }
-
+    if (isStandalone || isIos) return;
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as Event & { prompt: () => void });
-      setMode("android");
     };
-
     window.addEventListener("beforeinstallprompt", handler);
     return () => window.removeEventListener("beforeinstallprompt", handler);
-  }, []);
+  }, [isStandalone, isIos]);
+
+  // Already installed → hidden; iOS has no install prompt, so show a hint;
+  // elsewhere only once the browser offers an install prompt.
+  const mode: Mode =
+    isStandalone || installed ? "hidden" : isIos ? "ios" : deferredPrompt ? "android" : "hidden";
 
   if (mode === "hidden") return null;
 
   async function handleInstall() {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
-    setMode("hidden");
+    setInstalled(true);
   }
 
   const baseClass = variant === "hero"

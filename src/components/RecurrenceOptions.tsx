@@ -88,11 +88,12 @@ export default function RecurrenceOptions({ startDateIso, value, onChange, ongoi
   }
 
   const preview = useMemo(() => {
-    if (!value || !startDate) return null;
-    const dates = generateOccurrenceDates(startDate, value);
-    const description = describeRule(startDate, value);
+    if (!value || !startDateIso) return null;
+    const start = new Date(startDateIso);
+    const dates = generateOccurrenceDates(start, value);
+    const description = describeRule(start, value);
     return { description, count: dates.length };
-  }, [value, startDate]);
+  }, [value, startDateIso]);
 
   const labelClass = "block text-cream-muted text-xs uppercase tracking-wider mb-1.5";
   const pillBase = "px-3 py-1 rounded-full text-sm border transition";

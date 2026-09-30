@@ -44,8 +44,7 @@ export default async function EditEventPage({
   if (isRecurring) {
     const parentId = ev.parent_event_id ?? ev.id;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { count } = await (supabase as any)
+    const { count } = await supabase
       .from("events")
       .select("id", { count: "exact", head: true })
       .eq("parent_event_id", parentId)

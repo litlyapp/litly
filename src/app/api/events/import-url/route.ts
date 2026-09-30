@@ -4,6 +4,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { isSafeUrl } from "@/lib/safeUrl";
 import { CURATED_ORG_ID } from "@/lib/curatedOrg";
 import { stripRichText } from "@/lib/richText";
+import type { Genre } from "@/types/database";
 
 const anthropic = new Anthropic();
 
@@ -251,7 +252,7 @@ ${html}`,
   }
 
   // Map extracted genre keywords to litly's fixed genre list
-  const GENRE_MAP: Record<string, string> = {
+  const GENRE_MAP: Record<string, Genre> = {
     poetry: "poetry",
     fiction: "fiction",
     nonfiction: "nonfiction", "non-fiction": "nonfiction", "non fiction": "nonfiction",
@@ -408,8 +409,7 @@ ${html}`,
   }
 
   // Insert as unpublished draft
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: inserted, error: insertError } = await (supabase as any)
+  const { data: inserted, error: insertError } = await supabase
     .from("events")
     .insert({
       organizer_id: organizerId,

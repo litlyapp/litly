@@ -88,7 +88,7 @@ export default function EventCard({
         )}
         {isRsvp && (
           <span className="px-2.5 py-0.5 rounded-full bg-orange/30 text-orange text-xs font-medium">
-            RSVP'd
+            RSVP&apos;d
           </span>
         )}
       </div>

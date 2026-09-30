@@ -6,7 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import PasswordInput from "@/components/PasswordInput";
 import type { UserRole, OrgType } from "@/types/database";
-import { checkContent, checkContentRelaxed } from "@/lib/moderation";
+import { checkContent } from "@/lib/moderation";
 
 interface Props {
   invite?: { token: string; orgName: string } | null;

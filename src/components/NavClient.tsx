@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 
@@ -14,7 +14,6 @@ interface Props {
 
 export default function NavClient({ user, role, postEventHref }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
 
@@ -23,10 +22,14 @@ export default function NavClient({ user, role, postEventHref }: Props) {
     setMenuOpen(false);
   }
 
-  // Also close whenever the route changes (catches programmatic navigation)
-  useEffect(() => {
+  // Also close whenever the route changes (catches programmatic navigation).
+  // Adjusting state during render is React's recommended alternative to a
+  // setState-in-effect for syncing to a changed prop.
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
     setMenuOpen(false);
-  }, [pathname]);
+  }
 
   async function signOut() {
     await supabase.auth.signOut();

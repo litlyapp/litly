@@ -28,6 +28,7 @@ export interface RecurrenceRule {
   frequency: RecurrenceFrequency;
   day_of_week?: number;
   week_of_month?: number;
+  weeks_of_month?: number[];
   until: string; // "YYYY-MM-DD"
 }
 

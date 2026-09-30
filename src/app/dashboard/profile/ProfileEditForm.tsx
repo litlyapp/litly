@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { checkContent, checkContentRelaxed } from "@/lib/moderation";
-import Link from "next/link";
+import { checkContent } from "@/lib/moderation";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import AvatarUpload from "@/components/AvatarUpload";
@@ -85,8 +84,7 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
     if (instagram) social_links.instagram = instagram;
     if (twitter) social_links.twitter = twitter;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = supabase as any;
+    const db = supabase;
     const { data: updated, error: updateError } = await db
       .from("organizer_profiles")
       .update({

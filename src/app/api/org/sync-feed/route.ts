@@ -47,8 +47,7 @@ export async function POST(request: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: org, error: orgError } = await (service as any)
+  const { data: org, error: orgError } = await service
     .from("organizer_profiles")
     .select("id, name, calendar_feed_url, calendar_feed_default_genre, website, default_banner_url")
     .eq("id", orgId)
@@ -97,8 +96,7 @@ export async function POST(request: Request) {
       const isNew = !existingUidToId.has(item.uid);
 
       if (isNew) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (service as any).from("events").insert({ ...row, is_published: false });
+        const { error } = await service.from("events").insert({ ...row, is_published: false });
         if (error) {
           console.error(`sync-feed: insert failed for org ${orgId} uid ${item.uid}:`, error.message);
           continue;
@@ -106,8 +104,7 @@ export async function POST(request: Request) {
         newCount++;
       } else {
         const existingId = existingUidToId.get(item.uid)!;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (service as any).from("events").update(row).eq("id", existingId);
+        const { error } = await service.from("events").update(row).eq("id", existingId);
         if (error) {
           console.error(`sync-feed: update failed for org ${orgId} uid ${item.uid}:`, error.message);
           continue;

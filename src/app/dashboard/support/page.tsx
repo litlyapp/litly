@@ -39,14 +39,14 @@ export default function SupportPage() {
         </Link>
         <h1 className="font-serif text-4xl text-cream mt-4 mb-1">Contact Support</h1>
         <p className="text-cream-muted text-sm">
-          Having trouble posting or editing an event? Send us a message and we'll get back to you.
+          Having trouble posting or editing an event? Send us a message and we&apos;ll get back to you.
         </p>
       </div>
 
       {status === "sent" ? (
         <div className="bg-navy-light border border-cream/10 rounded-2xl p-8 text-center">
           <p className="font-serif text-2xl text-cream mb-2">Message sent</p>
-          <p className="text-cream-muted text-sm mb-6">We'll follow up at your account email.</p>
+          <p className="text-cream-muted text-sm mb-6">We&apos;ll follow up at your account email.</p>
           <button
             onClick={() => setStatus("idle")}
             className="px-5 py-2 rounded-full bg-orange text-cream text-sm font-medium hover:bg-orange/90 transition"
