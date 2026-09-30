@@ -7,7 +7,8 @@ const PRIVATE_IP = [
   /^192\.168\./,                    // RFC 1918
   /^169\.254\./,                    // link-local (AWS metadata, etc.)
   /^0\./,                           // "this" network
-  /^::1$/,                          // IPv6 loopback
+  /^100\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\./, // carrier-grade NAT (RFC 6598)
+  /^::1?$/,                         // IPv6 loopback / unspecified
   /^::ffff:/i,                      // IPv4-mapped IPv6 (e.g. ::ffff:192.168.1.1)
   /^fc[0-9a-f]{2}:/i,               // IPv6 unique local
   /^fd[0-9a-f]{2}:/i,               // IPv6 unique local
@@ -47,4 +48,24 @@ export async function isSafeUrl(urlStr: string): Promise<boolean> {
   } catch {
     return false; // unresolvable hostname = reject
   }
+}
+
+const MAX_REDIRECTS = 5;
+
+/**
+ * fetch() that re-runs isSafeUrl on every redirect hop. A plain fetch follows
+ * redirects automatically, so a public URL that 302s to an internal address
+ * would slip past a check done only on the first URL.
+ * Throws if any hop is unsafe or there are too many redirects.
+ */
+export async function safeFetch(urlStr: string, init: RequestInit = {}): Promise<Response> {
+  let current = urlStr;
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    if (!(await isSafeUrl(current))) throw new Error("URL is not reachable");
+    const res = await fetch(current, { ...init, redirect: "manual" });
+    const location = res.headers.get("location");
+    if (res.status < 300 || res.status >= 400 || !location) return res;
+    current = new URL(location, current).toString();
+  }
+  throw new Error("Too many redirects");
 }

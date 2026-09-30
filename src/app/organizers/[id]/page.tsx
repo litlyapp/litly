@@ -15,7 +15,7 @@ export default async function OrganizerProfilePage({
 
   const { data: organizerRaw } = await supabase
     .from("organizer_profiles")
-    .select("id, user_id, name, org_type, bio, website, social_links, avatar_url")
+    .select("id, name, org_type, bio, website, social_links, avatar_url")
     .eq("id", id)
     .single();
 
@@ -89,15 +89,25 @@ export default async function OrganizerProfilePage({
   } = await supabase.auth.getUser();
 
   let isFollowing = false;
+  let isMember = false;
 
   if (user) {
-    const { data: followResult } = await supabase
-      .from("follows")
-      .select("id")
-      .eq("patron_id", user.id)
-      .eq("organizer_id", id)
-      .maybeSingle();
+    const [{ data: followResult }, { data: memberResult }] = await Promise.all([
+      supabase
+        .from("follows")
+        .select("id")
+        .eq("patron_id", user.id)
+        .eq("organizer_id", id)
+        .maybeSingle(),
+      supabase
+        .from("org_members")
+        .select("org_id")
+        .eq("org_id", id)
+        .eq("user_id", user.id)
+        .maybeSingle(),
+    ]);
     isFollowing = !!followResult;
+    isMember = !!memberResult;
   }
 
   const socialLinks = organizer.social_links as Record<string, string> | null;
@@ -134,9 +144,9 @@ export default async function OrganizerProfilePage({
             </div>
           </div>
 
-          {/* Follow button — hidden only on your own org profile. Logged-out
+          {/* Follow button — hidden on orgs you're a member of. Logged-out
               visitors see it too; clicking it sends them to /login */}
-          {(!user || user.id !== organizer.user_id) && (
+          {!isMember && (
             <FollowButton
               organizerId={id}
               initialFollowing={isFollowing}

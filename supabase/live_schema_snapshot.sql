@@ -1,7 +1,8 @@
 -- ============================================================
 -- LIVE SCHEMA SNAPSHOT — source of truth for the production database.
 -- Captured 2026-09-29 from the live Supabase project (pg_catalog +
--- PostgREST), reflecting migrations/schema_fixes_2026_09_29.sql.
+-- PostgREST), reflecting migrations/schema_fixes_2026_09_29.sql and
+-- migrations/privacy_hardening_2026_09_30.sql.
 --
 -- schema.sql and migrations/ are the historical record of how the DB got
 -- here (several changes were made directly in the dashboard and never
@@ -192,21 +193,28 @@ begin new.updated_at = now(); return new; end; $$;
 create trigger events_set_updated_at before update on public.events
   for each row execute function public.set_updated_at();
 
+-- Counters are anon-callable; they only count published events.
 create or replace function public.increment_event_view(event_id uuid) returns void
-language sql security definer as $$
-  update events set view_count = view_count + 1 where id = event_id; $$;
+language sql security definer set search_path to 'public' as $$
+  update public.events set view_count = view_count + 1
+  where id = event_id and is_published; $$;
 
 create or replace function public.increment_ticket_click(event_id uuid) returns void
-language sql security definer as $$
-  update events set ticket_click_count = ticket_click_count + 1 where id = event_id; $$;
+language sql security definer set search_path to 'public' as $$
+  update public.events set ticket_click_count = ticket_click_count + 1
+  where id = event_id and is_published; $$;
 
--- Returns the new monthly count, or -1 once p_limit is exceeded.
+-- Returns the new monthly count, or -1 once p_limit is exceeded. Caller must
+-- be a member of the org; EXECUTE granted to authenticated only.
 create or replace function public.increment_import_usage(p_org_id uuid, p_limit integer) returns integer
 language plpgsql security definer set search_path to 'public' as $$
 declare
   v_month date := date_trunc('month', now())::date;
   v_count int;
 begin
+  if not exists (select 1 from public.org_members where org_id = p_org_id and user_id = auth.uid()) then
+    raise exception 'not a member of this organization' using errcode = '42501';
+  end if;
   insert into public.org_import_usage (org_id, month, count) values (p_org_id, v_month, 1)
   on conflict (org_id, month) do update set count = org_import_usage.count + 1
   returning count into v_count;
@@ -219,7 +227,13 @@ end; $$;
 create policy "Users can view their own record"   on public.users for select using (auth.uid() = id);
 create policy "Users can update their own record" on public.users for update using (auth.uid() = id);
 
--- organizer_profiles
+-- organizer_profiles — rows are public, but only these COLUMNS are readable by
+-- anon/authenticated (user_id and calendar_feed_* are service-role only).
+-- A new column is unreadable to the API until added to this grant.
+revoke select on public.organizer_profiles from anon, authenticated;
+grant select (id, org_type, name, bio, website, social_links, avatar_url,
+              default_banner_url, default_banner_for_all_events)
+  on public.organizer_profiles to anon, authenticated;
 create policy "Organizer profiles are publicly readable" on public.organizer_profiles for select using (true);
 create policy "Organizers can insert their own profile"  on public.organizer_profiles for insert with check (auth.uid() = user_id);
 create policy "Org admins can update org profiles" on public.organizer_profiles for update using (
@@ -253,10 +267,6 @@ create policy "Users can cancel their RSVP" on public.rsvps for delete using (au
 create policy "Org members can view RSVPs for their events" on public.rsvps for select using (
   exists (select 1 from events e join org_members m on m.org_id = e.organizer_id
           where e.id = rsvps.event_id and m.user_id = auth.uid()));
--- legacy duplicate (owner-only subset of the above; harmless)
-create policy "Organizers can view RSVPs for their events" on public.rsvps for select using (
-  exists (select 1 from events e join organizer_profiles op on op.id = e.organizer_id
-          where e.id = rsvps.event_id and op.user_id = auth.uid()));
 
 -- follows
 create policy "Users can view their own follows" on public.follows for select using (auth.uid() = patron_id);
@@ -271,14 +281,18 @@ create policy "Users can view own memberships" on public.org_members for select 
 create policy "No public access to pending imports" on public.pending_imports for all using (false);
 
 -- ---------- Storage ----------
--- Buckets: event-banners (public, 5 MB limit), profile-avatars (public, no limit).
--- Uploads go to {auth.uid()}/{file}; only the uploader can write/delete.
-create policy "Public can view banners" on storage.objects for select using (bucket_id = 'event-banners');
+-- Buckets: event-banners (public, 5 MB), profile-avatars (public, 3 MB); both
+-- jpeg/png/webp/gif/avif only. Public buckets serve files by URL with no
+-- SELECT policy, so there is none for the public (that would allow listing).
+-- Uploads go to {auth.uid()}/{file}; only the uploader can see/write/delete.
+create policy "Users can view their own banners" on storage.objects for select to authenticated using (
+  bucket_id = 'event-banners' and auth.uid()::text = (storage.foldername(name))[1]);
 create policy "Users can upload their own banners" on storage.objects for insert to authenticated with check (
   bucket_id = 'event-banners' and auth.uid()::text = (storage.foldername(name))[1]);
 create policy "Users can delete their own banners" on storage.objects for delete to authenticated using (
   bucket_id = 'event-banners' and auth.uid()::text = (storage.foldername(name))[1]);
-create policy "Public can view avatars" on storage.objects for select using (bucket_id = 'profile-avatars');
+create policy "Users can view their own avatars" on storage.objects for select to authenticated using (
+  bucket_id = 'profile-avatars' and auth.uid()::text = (storage.foldername(name))[1]);
 create policy "Users can upload their own avatar" on storage.objects for insert to authenticated with check (
   bucket_id = 'profile-avatars' and auth.uid()::text = (storage.foldername(name))[1]);
 create policy "Users can delete their own avatar" on storage.objects for delete to authenticated using (

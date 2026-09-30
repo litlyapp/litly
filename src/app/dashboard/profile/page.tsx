@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { getActiveOrgId } from "@/lib/activeOrg";
 import ProfileEditForm from "./ProfileEditForm";
+import type { Database } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +28,13 @@ export default async function ProfilePage() {
 
   if (activeMembership?.role !== "admin") redirect("/dashboard");
 
-  const { data: profileRaw } = await supabase
+  // Service role: the calendar-feed columns aren't readable by signed-in
+  // users (a private feed URL is a secret) — admin membership is verified above
+  const svc = createServiceClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+  const { data: profileRaw } = await svc
     .from("organizer_profiles")
     .select("*")
     .eq("id", activeOrgId!)

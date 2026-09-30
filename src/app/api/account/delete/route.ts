@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { listUserUploadUrls, orgImageUrls, removeUnreferencedUploads } from "@/lib/storageCleanup";
 
 export async function POST() {
   const supabase = await createClient();
@@ -22,6 +23,9 @@ export async function POST() {
     .select("org_id")
     .eq("user_id", user.id);
 
+  // Images of deleted orgs, whoever uploaded them
+  const orphanCandidates: string[] = [];
+
   for (const { org_id } of memberships ?? []) {
     const { count: otherMembers } = await serviceClient
       .from("org_members")
@@ -31,9 +35,15 @@ export async function POST() {
 
     if ((otherMembers ?? 0) > 0) continue;
 
+    orphanCandidates.push(...(await orgImageUrls(serviceClient, org_id)));
     await serviceClient.from("events").delete().eq("organizer_id", org_id);
     await serviceClient.from("organizer_profiles").delete().eq("id", org_id);
   }
+
+  // Remove the user's uploaded images (and deleted orgs' images) unless a
+  // surviving org or event still uses them, per the privacy policy
+  orphanCandidates.push(...(await listUserUploadUrls(serviceClient, user.id)));
+  await removeUnreferencedUploads(serviceClient, orphanCandidates);
 
   const { error } = await serviceClient.auth.admin.deleteUser(user.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

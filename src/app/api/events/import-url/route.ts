@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { isSafeUrl } from "@/lib/safeUrl";
+import { isSafeUrl, safeFetch } from "@/lib/safeUrl";
 import { CURATED_ORG_ID } from "@/lib/curatedOrg";
 import { stripRichText } from "@/lib/richText";
 import type { Genre } from "@/types/database";
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
   const BROWSER_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
   let html: string;
   try {
-    let res = await fetch(url, {
+    let res = await safeFetch(url, {
       headers: { "User-Agent": BROWSER_UA, "Accept": "text/html,application/xhtml+xml,*/*" },
       signal: AbortSignal.timeout(10000),
     });
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
       throw new Error(`HTTP ${res.status}`);
     }
     if (!res.ok) {
-      res = await fetch(url, {
+      res = await safeFetch(url, {
         headers: { "User-Agent": "litly/1.0 (thelitlyapp.com)" },
         signal: AbortSignal.timeout(10000),
       });

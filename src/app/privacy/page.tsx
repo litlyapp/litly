@@ -10,7 +10,7 @@ export default function PrivacyPage() {
     <LegalShell
       title="Privacy Policy"
       subtitle="How litly collects, uses, and shares information."
-      effectiveDate="June 18, 2026"
+      effectiveDate="September 30, 2026"
     >
       <Section n={1} title="Overview">
         <p>
@@ -26,7 +26,6 @@ export default function PrivacyPage() {
           items={[
             "Name, email address, and password.",
             "Organizer or organization profile details, logo or banner images, and links.",
-            "If you sign in with Google, basic Google account profile information.",
           ]}
         />
         <SubHead>B. Content you provide</SubHead>
@@ -42,7 +41,8 @@ export default function PrivacyPage() {
             "Event addresses you enter, which we convert to map coordinates (geocoding) via OpenStreetMap / Nominatim.",
             <>
               If you use &ldquo;near me,&rdquo; your device&rsquo;s approximate location (with your
-              browser&rsquo;s permission) to show nearby events. We do not store your personal location.
+              browser&rsquo;s permission) to show nearby events. A rounded, approximate version is sent to
+              OpenStreetMap / Nominatim to look up your city. We do not store your personal location.
             </>,
           ]}
         />
@@ -86,7 +86,8 @@ export default function PrivacyPage() {
             <><strong className="text-cream">Hosting and database providers</strong> &mdash; to run the website, store data, host images, and provide cookieless usage analytics.</>,
             <><strong className="text-cream">Stripe</strong> &mdash; to process donations. Stripe receives payment details; litly does not store your card information.</>,
             <><strong className="text-cream">An email delivery provider</strong> &mdash; to send email and receive the newsletters litly subscribes to.</>,
-            <><strong className="text-cream">OpenStreetMap / Nominatim</strong> &mdash; to display maps and convert addresses to coordinates.</>,
+            <><strong className="text-cream">OpenStreetMap / Nominatim</strong> &mdash; to display maps, convert addresses to coordinates, and find your city for &ldquo;near me.&rdquo;</>,
+            <><strong className="text-cream">A content-processing provider</strong> &mdash; to read and format event details from web pages organizers ask us to import.</>,
             <><strong className="text-cream">Law enforcement or authorities</strong> &mdash; if legally required.</>,
           ]}
         />

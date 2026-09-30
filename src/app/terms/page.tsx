@@ -10,7 +10,7 @@ export default function TermsPage() {
     <LegalShell
       title="Terms & Conditions"
       subtitle="These terms govern your use of litly. Please read them carefully."
-      effectiveDate="June 18, 2026"
+      effectiveDate="September 30, 2026"
     >
       <Section n={1} title="Introduction">
         <p>
@@ -55,8 +55,7 @@ export default function TermsPage() {
               <strong className="text-cream">Email verification.</strong> You must verify your email
               address before accessing account features such as saving events, RSVPing, following
               organizers, or posting events. A verification link is sent at registration and expires
-              after 24 hours; it can be resent from the verification screen. Users who sign in with
-              Google are automatically verified.
+              after 24 hours; it can be resent from the verification screen.
             </>,
             "We may suspend or terminate accounts for policy violations, fraudulent activity, or misuse.",
           ]}

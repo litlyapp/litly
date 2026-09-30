@@ -1,6 +1,6 @@
 import type ical from "node-ical";
 import type { Genre, EventType } from "@/types/database";
-import { isSafeUrl } from "@/lib/safeUrl";
+import { isSafeUrl, safeFetch } from "@/lib/safeUrl";
 
 export interface ParsedFeedEvent {
   uid: string;
@@ -103,9 +103,8 @@ function orgHostname(website: string | null): string | null {
 async function testUrl(url: string): Promise<boolean> {
   if (!(await isSafeUrl(url))) return false;
   try {
-    const res = await fetch(url, {
+    const res = await safeFetch(url, {
       method: "HEAD",
-      redirect: "follow",
       signal: AbortSignal.timeout(4000),
     });
     return res.ok || (res.status >= 300 && res.status < 400);
@@ -171,7 +170,7 @@ function startToFields(
 
 export async function parseFeed(url: string, orgWebsite?: string | null): Promise<ParsedFeedEvent[]> {
   if (!(await isSafeUrl(url))) throw new Error("Feed URL is not reachable");
-  const res = await fetch(url, {
+  const res = await safeFetch(url, {
     headers: {
       "User-Agent": "litlybot/1.0 (+https://thelitlyapp.com; calendar sync; contact: support@thelitlyapp.com)",
     },

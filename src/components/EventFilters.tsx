@@ -84,8 +84,10 @@ export default function EventFilters({
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         try {
+          // Only the city is needed — send ~1 km-precision coordinates, not the
+          // device's exact position, to the third-party geocoder
           const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`,
+            `https://nominatim.openstreetmap.org/reverse?format=json&zoom=10&lat=${pos.coords.latitude.toFixed(2)}&lon=${pos.coords.longitude.toFixed(2)}`,
             { headers: { "Accept-Language": "en" } }
           );
           const data = await res.json();

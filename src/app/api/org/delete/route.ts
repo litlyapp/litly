@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { orgImageUrls, removeUnreferencedUploads } from "@/lib/storageCleanup";
 
 function serviceClient() {
   return createServiceClient(
@@ -31,11 +32,15 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
   }
 
+  const imageUrls = await orgImageUrls(svc, orgId);
+
   const { error: eventsError } = await svc.from("events").delete().eq("organizer_id", orgId);
   if (eventsError) return NextResponse.json({ error: eventsError.message }, { status: 500 });
 
   const { error: orgError } = await svc.from("organizer_profiles").delete().eq("id", orgId);
   if (orgError) return NextResponse.json({ error: orgError.message }, { status: 500 });
+
+  await removeUnreferencedUploads(svc, imageUrls);
 
   return NextResponse.json({ ok: true });
 }
