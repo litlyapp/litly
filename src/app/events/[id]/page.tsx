@@ -300,7 +300,9 @@ export default async function EventDetailPage({
     <div className="max-w-3xl mx-auto px-4 py-10">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        // Escape "<" so user-controlled fields (title, venue, org name) can't
+        // close the script tag and inject markup
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
       />
       <EventViewTracker eventId={event.id} />
 
@@ -578,20 +580,16 @@ export default async function EventDetailPage({
                 </div>
               )}
             </div>
-            <div>
-              <div className="text-cream font-medium group-hover:text-orange transition">
-                {organizer.name}
-              </div>
-              <div className="text-cream-muted text-sm capitalize">
-                {organizer.org_type}
-              </div>
+            <div className="text-cream font-medium group-hover:text-orange transition">
+              {organizer.name}
             </div>
           </Link>
         </div>
       )}
 
-      {/* Imported event: source attribution + claim link */}
-      {ev.is_imported && (
+      {/* Curated (litly admin) event: source attribution + claim link.
+          Orgs importing their own events already own the page. */}
+      {ev.is_imported && organizer?.id === CURATED_ORG_ID && (
         <div className="bg-navy-light border border-cream/10 rounded-2xl p-6 mb-6 text-sm">
           {ev.source_name && (
             <p className="text-cream-muted mb-2">
