@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Genre, EventType } from "@/types/database";
 import { GENRE_LABELS } from "@/lib/genres";
 
-interface AdminEvent {
+export interface AdminEvent {
   id: string;
   title: string;
   genre: Genre | Genre[];
@@ -25,30 +25,13 @@ function formatDate(iso: string) {
   });
 }
 
-export default function AdminEventsClient() {
-  const [authed, setAuthed] = useState(false);
-  const [password, setPassword] = useState("");
-  const [events, setEvents] = useState<AdminEvent[]>([]);
-  const [loadingData, setLoadingData] = useState(false);
+export default function AdminEventsClient({ initialEvents }: { initialEvents: AdminEvent[] }) {
+  const [events, setEvents] = useState<AdminEvent[]>(initialEvents);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const router = useRouter();
   const supabase = createClient();
-
-  async function handlePasswordSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!password.trim()) return;
-    setLoadingData(true);
-    const { data } = await supabase
-      .from("events")
-      .select(`id, title, genre, event_type, date_time, is_imported, source_name, banner_url,
-               organizer:organizer_profiles!events_organizer_id_fkey(id, name)`)
-      .order("date_time", { ascending: false });
-    setEvents(data ?? []);
-    setLoadingData(false);
-    setAuthed(true);
-  }
 
   async function handleDelete(id: string) {
     setDeleting(id);
@@ -79,31 +62,6 @@ export default function AdminEventsClient() {
   );
 
   const inputClass = "bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange";
-
-  if (!authed) {
-    return (
-      <div className="max-w-sm mx-auto px-4 py-32">
-        <h1 className="font-serif text-3xl text-cream mb-8 text-center">Admin</h1>
-        <form onSubmit={handlePasswordSubmit} className="space-y-4">
-          <input
-            type="password"
-            placeholder="Admin password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={`w-full ${inputClass}`}
-            autoFocus
-          />
-          <button
-            type="submit"
-            disabled={loadingData}
-            className="w-full bg-orange text-cream font-semibold rounded-full py-3 hover:bg-orange/90 transition disabled:opacity-60"
-          >
-            {loadingData ? "Loading…" : "Enter"}
-          </button>
-        </form>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">

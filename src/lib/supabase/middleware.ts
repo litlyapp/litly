@@ -44,7 +44,7 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  const protectedRoutes = ["/saved", "/following", "/dashboard", "/events/new", "/become-organizer", "/account"];
+  const protectedRoutes = ["/saved", "/following", "/dashboard", "/events/new", "/become-organizer", "/account", "/admin"];
   const organizerRoutes = ["/dashboard", "/events/new"];
   const pathname = request.nextUrl.pathname;
 

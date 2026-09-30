@@ -1,11 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import type { Genre, EventType } from "@/types/database";
 import { STATE_ABBREVIATIONS } from "@/lib/usStates";
 
-interface RoundupEvent {
+export interface RoundupEvent {
   id: string;
   title: string;
   genre: Genre | Genre[];
@@ -102,34 +101,11 @@ function buildCaption(
   ].join("\n\n");
 }
 
-export default function AdminRoundupClient() {
-  const [authed, setAuthed] = useState(false);
-  const [password, setPassword] = useState("");
-  const [events, setEvents] = useState<RoundupEvent[]>([]);
-  const [loadingData, setLoadingData] = useState(false);
+export default function AdminRoundupClient({ initialEvents }: { initialEvents: RoundupEvent[] }) {
+  const events = initialEvents;
   const [selected, setSelected] = useState<string>("");
   const [days, setDays] = useState(7);
   const [copied, setCopied] = useState(false);
-
-  const supabase = createClient();
-
-  async function handlePasswordSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!password.trim()) return;
-    setLoadingData(true);
-    const { data } = await supabase
-      .from("events")
-      .select(`id, title, genre, event_type, date_time, timezone, location_name,
-               city, state, is_imported, source_name,
-               organizer:organizer_profiles!events_organizer_id_fkey(name)`)
-      .eq("is_cancelled", false)
-      .gte("date_time", new Date().toISOString())
-      .lte("date_time", new Date(Date.now() + 30 * 86400_000).toISOString())
-      .order("date_time", { ascending: true });
-    setEvents(data ?? []);
-    setLoadingData(false);
-    setAuthed(true);
-  }
 
   const cities = useMemo(() => {
     const counts = new Map<string, number>();
@@ -189,31 +165,6 @@ export default function AdminRoundupClient() {
 
   const inputClass =
     "bg-navy-light border border-cream/20 text-cream placeholder-cream-muted rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange";
-
-  if (!authed) {
-    return (
-      <div className="max-w-sm mx-auto px-4 py-32">
-        <h1 className="font-serif text-3xl text-cream mb-8 text-center">Admin</h1>
-        <form onSubmit={handlePasswordSubmit} className="space-y-4">
-          <input
-            type="password"
-            placeholder="Admin password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={`w-full ${inputClass}`}
-            autoFocus
-          />
-          <button
-            type="submit"
-            disabled={loadingData}
-            className="w-full bg-orange text-cream font-semibold rounded-full py-3 hover:bg-orange/90 transition disabled:opacity-60"
-          >
-            {loadingData ? "Loading…" : "Enter"}
-          </button>
-        </form>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
