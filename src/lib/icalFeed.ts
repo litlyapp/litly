@@ -214,7 +214,6 @@ export async function parseFeed(url: string, orgWebsite?: string | null): Promis
 export interface MapToEventRowOptions {
   organizerId: string;
   defaultGenre: Genre[];
-  defaultBannerUrl: string | null;
   coords: { lat: number; lng: number } | null;
 }
 

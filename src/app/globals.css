@@ -1,7 +1,5 @@
-/* Classic fonts (Playfair Display + Inter) loaded from Google.
-   NOTE: Tailwind v4's bundler strips remote @import at build time, so any font
+/* NOTE: Tailwind v4's bundler strips remote @import at build time, so any font
    used in production must be self-hosted via @font-face below — not imported. */
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600&display=swap");
 @import "tailwindcss";
 
 /* Libre Franklin — self-hosted (remote @import gets stripped at build).
@@ -60,7 +58,8 @@
    FONT TOGGLE
    Flip the whole site between font sets by changing the single `data-font`
    value on <html> in src/app/layout.tsx:
-     data-font="classic"  → original Playfair Display + Inter
+     data-font="classic"  → original Playfair Display + Inter (not self-hosted —
+                            falls back to Georgia/system unless installed locally)
      data-font="libre"    → Libre Franklin everywhere
      data-font="hybrid"   → Georgia headings + Libre Franklin body (current)
    Both stacks are defined here; the attribute just selects which wins.

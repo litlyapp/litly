@@ -80,7 +80,6 @@ export default async function EditEventPage({
         initialData={event}
         eventId={id}
         seriesContext={seriesContext}
-        allowSourceAttribution={user.email === "admin@thelitlyapp.com"}
         highlightMissingFields={
           ev.event_type === "in_person"
             ? (ev.ticket_type as string | null) !== "none" && !ev.ticket_url

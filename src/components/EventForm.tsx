@@ -13,6 +13,7 @@ import { GENRES } from "@/lib/genres";
 import { type RecurrenceRule, generateOccurrenceDates, generateNextOccurrence } from "@/lib/recurrence";
 import { formatEventDate } from "@/lib/formatDate";
 import { deleteEvent } from "@/lib/events/deleteEvent";
+import { dateToWallClock, zonedToUtcIso, utcIsoToZoned } from "@/lib/timezone";
 
 // Common time zones for the picker, grouped by region
 export const TIME_ZONE_GROUPS: { region: string; zones: { value: string; label: string }[] }[] = [
@@ -95,67 +96,6 @@ const DEFAULT_TIMEZONE =
     ? Intl.DateTimeFormat().resolvedOptions().timeZone
     : "America/New_York";
 
-// Offset (ms) to add to a UTC instant to get the wall-clock time in `timeZone`
-function tzOffsetMs(date: Date, timeZone: string): number {
-  const dtf = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    hourCycle: "h23",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-  const parts = dtf.formatToParts(date).reduce<Record<string, string>>((acc, p) => {
-    acc[p.type] = p.value;
-    return acc;
-  }, {});
-  const asUTC = Date.UTC(
-    Number(parts.year),
-    Number(parts.month) - 1,
-    Number(parts.day),
-    Number(parts.hour),
-    Number(parts.minute),
-    Number(parts.second)
-  );
-  return asUTC - date.getTime();
-}
-
-// Extract the wall-clock "YYYY-MM-DDTHH:MM" components from a Date object (browser-local interpretation)
-function dateToWallClock(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-// Convert a "YYYY-MM-DDTHH:MM" wall-clock string in `timeZone` to a UTC ISO string
-function zonedToUtcIso(local: string, timeZone: string): string {
-  if (!local) return "";
-  const naive = new Date(`${local}:00Z`); // treat the wall-clock as if it were UTC
-  const offset = tzOffsetMs(naive, timeZone);
-  return new Date(naive.getTime() - offset).toISOString();
-}
-
-// Convert a UTC ISO string to a "YYYY-MM-DDTHH:MM" wall-clock string in `timeZone`
-function utcIsoToZoned(iso: string | null | undefined, timeZone: string): string {
-  if (!iso) return "";
-  const date = new Date(iso);
-  const dtf = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    hourCycle: "h23",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  const parts = dtf.formatToParts(date).reduce<Record<string, string>>((acc, p) => {
-    acc[p.type] = p.value;
-    return acc;
-  }, {});
-  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
-}
-
 interface EventData {
   title: string;
   description: string | null;
@@ -199,8 +139,6 @@ interface Props {
   initialData?: EventData & { id?: string; is_published?: boolean; is_cancelled?: boolean };
   eventId?: string;
   seriesContext?: SeriesContext;
-  /** Admin-only: expose "via [org]" source attribution fields */
-  allowSourceAttribution?: boolean;
   /** Flag incomplete fields that triggered the "Needs details" tag */
   highlightMissingFields?: boolean;
 }
@@ -293,7 +231,7 @@ async function resolveZip(
   return null;
 }
 
-export default function EventForm({ organizerId, initialData, eventId, seriesContext, allowSourceAttribution, highlightMissingFields }: Props) {
+export default function EventForm({ organizerId, initialData, eventId, seriesContext, highlightMissingFields }: Props) {
   const router = useRouter();
   const supabase = createClient();
   const isEditing = !!eventId;
@@ -673,6 +611,13 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       is_imported: !!form.source_name.trim(),
     };
 
+    // Publish state the parent ends up with after this save. Child occurrences
+    // must match it — a draft series must not have live occurrences.
+    // Duplicates always start as drafts regardless of which button was clicked.
+    const parentPublished = isEditing
+      ? (isDraft ? publishIntent : true)
+      : (initialData?.title ? false : publishIntent);
+
     // Future occurrences for a recurring series (parent = first occurrence).
     // Ongoing series seed 9 children (10 total incl. parent); fixed series
     // generate every occurrence up front.
@@ -707,6 +652,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
           ...sharedFields,
           recurrence_rule: null,
           is_ongoing: false,
+          is_published: parentPublished,
           date_time: new Date(utcMs).toISOString(),
           end_time: durationMs !== null ? new Date(utcMs + durationMs).toISOString() : null,
         };
@@ -724,6 +670,21 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         setError(updateError.message);
         setLoading(false);
         return;
+      }
+
+      // Publishing (or re-saving) a draft series parent carries its publish
+      // state to every occurrence, so the series goes live all at once
+      if (isDraft && isParentEvent) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: publishError } = await (supabase as any)
+          .from("events")
+          .update({ is_published: publishIntent })
+          .eq("parent_event_id", eventId);
+        if (publishError) {
+          setError(`Event saved but its occurrences couldn't be updated: ${publishError.message}`);
+          setLoading(false);
+          return;
+        }
       }
 
       // Propagate non-date fields to series siblings if needed
@@ -894,8 +855,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
           ...sharedFields,
           recurrence_rule: recurrenceRule ?? null,
           is_ongoing: recurrenceRule ? newEventOngoing : false,
-          // Duplicates always start as drafts regardless of which button was clicked
-          is_published: initialData?.title ? false : publishIntent,
+          is_published: parentPublished,
         })
         .select("id")
         .single();

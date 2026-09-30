@@ -42,7 +42,7 @@ export default async function TeamPage() {
       .order("created_at", { ascending: true }),
     svc
       .from("org_invites")
-      .select("id, email, expires_at, created_at")
+      .select("id, email, expires_at, created_at, invited_role")
       .eq("org_id", adminOrgId)
       .is("accepted_at", null)
       .gt("expires_at", new Date().toISOString())

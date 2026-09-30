@@ -15,6 +15,7 @@ interface Invite {
   email: string;
   expires_at: string;
   created_at: string;
+  invited_role: "admin" | "editor";
 }
 
 export default function TeamClient({
@@ -61,7 +62,9 @@ export default function TeamClient({
     }
   }
 
-  async function resendInvite(email: string) {
+  // Resend keeps the invite's original role — the invite route defaults a
+  // missing role to editor, which would silently downgrade an admin invite
+  async function resendInvite(email: string, role: "admin" | "editor") {
     setInviting(true);
     setInviteError(null);
     setInviteSuccess(false);
@@ -69,7 +72,7 @@ export default function TeamClient({
       const res = await fetch("/api/org/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, orgId }),
+        body: JSON.stringify({ email, orgId, role }),
       });
       const data = await res.json();
       if (!res.ok) { setInviteError(data.error); return; }
@@ -204,12 +207,12 @@ export default function TeamClient({
                 <div>
                   <p className="text-cream text-sm">{inv.email}</p>
                   <p className="text-cream-muted text-xs mt-0.5">
-                    Expires {new Date(inv.expires_at).toLocaleDateString()}
+                    {inv.invited_role === "admin" ? "Admin" : "Editor"} · Expires {new Date(inv.expires_at).toLocaleDateString()}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
                   <button
-                    onClick={() => resendInvite(inv.email)}
+                    onClick={() => resendInvite(inv.email, inv.invited_role)}
                     disabled={inviting}
                     className="text-cream-muted hover:text-orange text-xs transition disabled:opacity-60"
                   >

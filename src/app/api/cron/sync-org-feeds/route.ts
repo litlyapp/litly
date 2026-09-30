@@ -169,7 +169,7 @@ export async function GET(req: Request) {
           coords = await geocode(item.location_name);
         }
 
-        const row = mapToEventRow(item, { organizerId: org.id, defaultGenre, defaultBannerUrl: org.default_banner_url as string | null, coords });
+        const row = mapToEventRow(item, { organizerId: org.id, defaultGenre, coords });
         const isNew = !existingUidToId.has(item.uid);
 
         let opError: { message: string } | null = null;

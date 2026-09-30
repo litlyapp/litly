@@ -18,7 +18,7 @@ export async function acceptPendingInvites(user: User): Promise<number> {
 
   const { data: invites } = await svc
     .from("org_invites")
-    .select("id, org_id, expires_at")
+    .select("id, org_id, expires_at, invited_role")
     .eq("email", user.email.toLowerCase())
     .is("accepted_at", null)
     .gt("expires_at", new Date().toISOString());
@@ -28,7 +28,7 @@ export async function acceptPendingInvites(user: User): Promise<number> {
   let accepted = 0;
   for (const invite of invites) {
     const { error: memberError } = await svc.from("org_members").upsert(
-      { org_id: invite.org_id, user_id: user.id, role: "editor" },
+      { org_id: invite.org_id, user_id: user.id, role: invite.invited_role === "admin" ? "admin" : "editor" },
       { onConflict: "org_id,user_id", ignoreDuplicates: true }
     );
     if (memberError) {

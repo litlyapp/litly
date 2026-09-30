@@ -91,7 +91,6 @@ export async function POST(request: Request) {
       const row = mapToEventRow(item, {
         organizerId: orgId,
         defaultGenre,
-        defaultBannerUrl: org.default_banner_url as string | null,
         coords,
       });
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { generateNextOccurrence } from "@/lib/recurrence";
+import { generateOccurrenceDates } from "@/lib/recurrence";
+import { dateToWallClock, zonedToUtcIso, utcIsoToZoned } from "@/lib/timezone";
 import type { RecurrenceRule } from "@/types/database";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +19,16 @@ async function withRetry<T extends { error: { message: string } | null }>(
     return fn();
   }
   return result;
+}
+
+// "YYYY-MM-DDTHH:MM" → a runtime-local Date with those same wall-clock fields,
+// so the recurrence helpers (which use local getters) do their day/week math
+// in the event's own timezone rather than in UTC.
+function wallClockToLocalDate(wall: string): Date {
+  const [datePart, timePart] = wall.split("T");
+  const [y, mo, d] = datePart.split("-").map(Number);
+  const [h, mi] = timePart.split(":").map(Number);
+  return new Date(y, mo - 1, d, h, mi);
 }
 
 export async function GET(req: Request) {
@@ -80,7 +91,7 @@ export async function GET(req: Request) {
   const { data: parents, error } = await withRetry(() =>
     supabase
       .from("events")
-      .select("id, organizer_id, date_time, end_time, recurrence_rule, series_end_date, is_cancelled, title, description, genre, event_type, location_name, address, city, state, country, lat, lng, virtual_url, open_mic, featured_readers, rsvp_enabled, banner_url, ticket_url, ticket_type, is_imported, source_url, source_name")
+      .select("id, organizer_id, date_time, end_time, timezone, recurrence_rule, series_end_date, is_cancelled, is_published, title, description, genre, event_type, location_name, address, address2, city, state, zip_code, country, lat, lng, virtual_url, open_mic, featured_readers, rsvp_enabled, banner_url, ticket_url, ticket_type, is_imported, source_url, source_name")
       .eq("is_ongoing", true)
       .not("recurrence_rule", "is", null)
   );
@@ -130,21 +141,44 @@ export async function GET(req: Request) {
       .maybeSingle();
 
     const parentStart = new Date(parent.date_time);
-    const lastDate = lastChild ? new Date(lastChild.date_time) : parentStart;
 
     const durationMs =
       parent.end_time
         ? new Date(parent.end_time).getTime() - parentStart.getTime()
         : null;
 
-    // Generate up to `needed` new occurrences
-    let cursor = lastDate;
+    // Recurrence math runs on wall-clock time in the event's own timezone, so
+    // a 7 PM Eastern series stays at 7 PM across DST changes and "2nd Friday"
+    // means the 2nd Friday in Eastern time — not in UTC. Legacy events with no
+    // timezone stored their wall-clock digits as UTC, so "UTC" reproduces that.
+    //
+    // Occurrences are always derived from the PARENT (the rule's anchor), never
+    // from the last existing child — so a child with a drifted hour or day
+    // can't propagate into every future occurrence. Only calendar days after
+    // the last existing occurrence are filled, and never days in the past.
+    const tz = parent.timezone || "UTC";
+    const parentLocal = wallClockToLocalDate(utcIsoToZoned(parent.date_time, tz));
+    const lastLocal = lastChild
+      ? wallClockToLocalDate(utcIsoToZoned(lastChild.date_time, tz))
+      : parentLocal;
+    const lastDay = dateToWallClock(lastLocal).slice(0, 10);
+    const horizon = new Date(Math.max(lastLocal.getTime(), Date.now()));
+    horizon.setFullYear(horizon.getFullYear() + 5);
+    const candidates = generateOccurrenceDates(parentLocal, {
+      ...rule,
+      until: dateToWallClock(horizon).slice(0, 10),
+    }).filter((d) => dateToWallClock(d).slice(0, 10) > lastDay);
+
     let added = 0;
 
-    while (added < needed) {
-      const next = generateNextOccurrence(cursor, rule);
-      if (!next) break;
+    // Generate up to `needed` new occurrences
+    for (const next of candidates) {
+      if (added >= needed) break;
       if (seriesEndDate && next > seriesEndDate) break;
+
+      const startIso = zonedToUtcIso(dateToWallClock(next), tz);
+      if (startIso < now) continue;
+      const startMs = new Date(startIso).getTime();
 
       const { error: insertError } = await supabase.from("events").insert({
         organizer_id: parent.organizer_id,
@@ -153,12 +187,15 @@ export async function GET(req: Request) {
         description: parent.description,
         genre: parent.genre,
         event_type: parent.event_type,
-        date_time: next.toISOString(),
-        end_time: durationMs !== null ? new Date(next.getTime() + durationMs).toISOString() : null,
+        date_time: startIso,
+        end_time: durationMs !== null ? new Date(startMs + durationMs).toISOString() : null,
+        timezone: parent.timezone,
         location_name: parent.location_name,
         address: parent.address,
+        address2: parent.address2,
         city: parent.city,
         state: parent.state,
+        zip_code: parent.zip_code,
         country: parent.country,
         lat: parent.lat,
         lng: parent.lng,
@@ -174,6 +211,8 @@ export async function GET(req: Request) {
         source_name: parent.source_name,
         recurrence_rule: null,
         is_ongoing: false,
+        // A draft series must not gain live occurrences
+        is_published: parent.is_published,
       });
 
       if (insertError) {
@@ -181,7 +220,6 @@ export async function GET(req: Request) {
         break;
       }
 
-      cursor = next;
       added++;
     }
 

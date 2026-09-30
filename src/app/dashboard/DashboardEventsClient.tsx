@@ -33,8 +33,6 @@ interface Props {
   clickCounts: Record<string, number>;
   upcomingChildCounts: Record<string, number>;
   needsDetailsIds: Set<string>;
-  incompleteCount: number;
-  orgId: string;
 }
 
 export default function DashboardEventsClient({

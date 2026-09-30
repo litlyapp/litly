@@ -162,7 +162,6 @@ export default async function DashboardPage({
   pastEvents.splice(55); // cap past list (query was ordered date desc)
 
   const totalUpcoming = upcomingEvents.length;
-  const incompleteCount = upcomingEvents.filter(isIncomplete).length;
 
   const rsvpCounts: Record<string, number> = {};
   const saveCounts: Record<string, number> = {};
@@ -250,8 +249,6 @@ export default async function DashboardPage({
         clickCounts={clickCounts}
         upcomingChildCounts={upcomingChildCounts}
         needsDetailsIds={new Set(upcomingEvents.filter(isIncomplete).map((e) => e.id))}
-        incompleteCount={incompleteCount}
-        orgId={activeOrgId!}
       />
 
       <div className="mt-10 pt-6 border-t border-cream/10 text-center">
