@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/apiError";
 import { createClient } from "@/lib/supabase/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { isSafeUrl, safeFetch } from "@/lib/safeUrl";
@@ -446,7 +447,7 @@ ${html}`,
     .single();
 
   if (insertError) {
-    return NextResponse.json({ error: insertError.message }, { status: 500 });
+    return serverError("import-url", insertError);
   }
 
   return NextResponse.json({ id: inserted.id });

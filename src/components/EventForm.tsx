@@ -431,7 +431,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
       setDeleteConfirm(false);
       return;
     }
-    window.location.href = "/dashboard";
+    router.push("/dashboard");
   }
 
   async function handleCancel() {
@@ -446,7 +446,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
         setCancelConfirm(false);
         return;
       }
-      window.location.href = "/dashboard";
+      router.push("/dashboard");
     } catch {
       setError("Network error. Please try again.");
       setCancelling(false);

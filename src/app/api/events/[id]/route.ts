@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/apiError";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 
@@ -55,18 +56,15 @@ export async function DELETE(
     await svc.from("saved_events").delete().in("event_id", ids);
     if (ids.length > 1) {
       const { error: childError } = await svc.from("events").delete().eq("parent_event_id", id);
-      if (childError) return NextResponse.json({ error: childError.message }, { status: 500 });
+      if (childError) return serverError("events/delete", childError);
     }
 
     const { error, count } = await svc.from("events").delete({ count: "exact" }).eq("id", id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return serverError("events/delete", error);
     if (!count) return NextResponse.json({ error: "Delete affected no rows" }, { status: 500 });
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Unexpected server error" },
-      { status: 500 }
-    );
+    return serverError("events/delete", err);
   }
 }

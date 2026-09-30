@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/apiError";
 import { createClient } from "@/lib/supabase/server";
 import { sendEmail, emailWrapper, escapeHtml } from "@/lib/sendEmail";
 import { formatEventDate, formatEventTime } from "@/lib/formatDate";
@@ -32,7 +33,16 @@ export async function POST(req: Request) {
     .from("rsvps")
     .insert({ user_id: user.id, event_id: eventId });
 
-  if (rsvpError) return NextResponse.json({ error: rsvpError.message }, { status: 500 });
+  // Already RSVPd (e.g. a double-click) is success, not an error — and the
+  // first request already handled the confirmation email
+  if (rsvpError?.code === "23505") return NextResponse.json({ ok: true });
+  if (rsvpError) {
+    // Insert policy rejects events that don't take RSVPs (or aren't visible)
+    if (rsvpError.code === "42501") {
+      return NextResponse.json({ error: "RSVPs aren't open for this event." }, { status: 403 });
+    }
+    return serverError("rsvp", rsvpError);
+  }
 
   // Re-check cancellation after insert to close the race window
   const { data: recheck } = await supabase.from("events").select("is_cancelled").eq("id", eventId).single();
@@ -111,7 +121,7 @@ export async function DELETE(req: Request) {
     .eq("user_id", user.id)
     .eq("event_id", eventId);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError("rsvp", error);
 
   return NextResponse.json({ ok: true });
 }

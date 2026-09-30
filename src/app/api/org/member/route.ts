@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/apiError";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 
@@ -43,7 +44,7 @@ export async function PUT(request: Request) {
 
   const svc = serviceClient();
   const { error } = await svc.from("org_members").update({ role }).eq("org_id", orgId).eq("user_id", targetUserId);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError("org/member", error);
 
   return NextResponse.json({ ok: true });
 }
@@ -73,7 +74,7 @@ export async function DELETE(request: Request) {
 
   const svc = serviceClient();
   const { error } = await svc.from("org_members").delete().eq("org_id", orgId).eq("user_id", targetUserId);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError("org/member", error);
 
   return NextResponse.json({ ok: true });
 }

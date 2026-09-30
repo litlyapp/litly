@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 interface Props {
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function CancelEventButton({ eventId, isRecurring, isDraft }: Props) {
+  const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [scope, setScope] = useState<"this" | "series">("this");
   const [cancelling, setCancelling] = useState(false);
@@ -26,7 +28,7 @@ export default function CancelEventButton({ eventId, isRecurring, isDraft }: Pro
     try {
       const res = await fetch(endpoint, { method });
       if (res.ok) {
-        window.location.href = "/dashboard";
+        router.push("/dashboard");
       } else {
         const body = await res.json();
         if (res.status === 403) {

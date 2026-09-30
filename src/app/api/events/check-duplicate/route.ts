@@ -103,7 +103,11 @@ export async function POST(request: Request) {
   if (excludeEventId) query = query.neq("id", excludeEventId);
 
   const { data, error } = await query;
-  if (error) return NextResponse.json({ matches: [], error: error.message });
+  if (error) {
+    // Advisory check — fail open with no matches rather than exposing the error
+    console.error("[check-duplicate]", error);
+    return NextResponse.json({ matches: [] });
+  }
 
   const targetDay = dayKey(date_time);
   const matches: Match[] = [];

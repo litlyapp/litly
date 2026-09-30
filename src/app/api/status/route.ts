@@ -27,8 +27,10 @@ export async function GET() {
     .gte("date_time", now);
 
   if (error) {
+    // Public endpoint — log the details, don't publish them
+    console.error("[status]", error);
     return NextResponse.json(
-      { ok: false, error: error.message, upcoming_events: null },
+      { ok: false, error: "database unavailable", upcoming_events: null },
       { status: 503 }
     );
   }

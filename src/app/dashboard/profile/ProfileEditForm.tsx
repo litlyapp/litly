@@ -164,7 +164,7 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
       });
 
       if (res.ok) {
-        window.location.href = "/dashboard";
+        router.push("/dashboard");
       } else {
         const body = await res.json();
         setDeleteError(body.error ?? "Failed to delete org.");

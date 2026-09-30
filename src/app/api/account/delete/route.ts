@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/apiError";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { listUserUploadUrls, orgImageUrls, removeUnreferencedUploads } from "@/lib/storageCleanup";
@@ -33,7 +34,34 @@ export async function POST() {
       .eq("org_id", org_id)
       .neq("user_id", user.id);
 
-    if ((otherMembers ?? 0) > 0) continue;
+    if ((otherMembers ?? 0) > 0) {
+      // The org survives — make sure it isn't left without an admin. Promote
+      // the longest-standing remaining member if this user was the only one.
+      const { count: otherAdmins } = await serviceClient
+        .from("org_members")
+        .select("id", { count: "exact", head: true })
+        .eq("org_id", org_id)
+        .eq("role", "admin")
+        .neq("user_id", user.id);
+      if ((otherAdmins ?? 0) === 0) {
+        const { data: successor } = await serviceClient
+          .from("org_members")
+          .select("user_id")
+          .eq("org_id", org_id)
+          .neq("user_id", user.id)
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if (successor) {
+          await serviceClient
+            .from("org_members")
+            .update({ role: "admin" })
+            .eq("org_id", org_id)
+            .eq("user_id", successor.user_id);
+        }
+      }
+      continue;
+    }
 
     orphanCandidates.push(...(await orgImageUrls(serviceClient, org_id)));
     await serviceClient.from("events").delete().eq("organizer_id", org_id);
@@ -46,7 +74,7 @@ export async function POST() {
   await removeUnreferencedUploads(serviceClient, orphanCandidates);
 
   const { error } = await serviceClient.auth.admin.deleteUser(user.id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError("account/delete", error);
 
   await supabase.auth.signOut();
 

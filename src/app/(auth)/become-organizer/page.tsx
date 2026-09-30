@@ -20,7 +20,7 @@ export default function BecomeOrganizerPage() {
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) { window.location.href = "/login?next=/become-organizer"; return; }
+      if (!user) { router.replace("/login?next=/become-organizer"); return; }
       const meta = user.user_metadata;
       setForm((prev) => ({
         ...prev,
@@ -30,7 +30,7 @@ export default function BecomeOrganizerPage() {
         website: meta?.website ?? prev.website,
       }));
     });
-  }, []);
+  }, [router]);
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -57,6 +57,9 @@ export default function BecomeOrganizerPage() {
         return;
       }
 
+      // Full reload (not router.push): the role just changed to organizer, and
+      // the nav is rendered in the shared layout, which a soft navigation keeps stale
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.href = "/dashboard";
     } catch {
       setError("Network error. Please try again.");

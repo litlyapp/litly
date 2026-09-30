@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import type { EmailOtpType, User } from "@supabase/supabase-js";
 import { acceptPendingInvites } from "@/lib/acceptInvites";
+import { checkContent } from "@/lib/moderation";
 
 async function maybeCreateOrganizerProfile(user: User) {
   const svc = createServiceClient(
@@ -36,12 +37,26 @@ async function maybeCreateOrganizerProfile(user: User) {
   let profileId: string | undefined = existing?.id;
 
   if (!existing) {
+    // Signup metadata is client-supplied (anyone can call signUp directly), so
+    // apply the same limits as /api/account/become-organizer
+    const str = (v: unknown, max: number) =>
+      typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null;
+    let name = str(meta?.org_name, 100) ?? str(meta?.display_name, 100) ?? "Organizer";
+    let bio = str(meta?.bio, 1000);
+    // Add a missing scheme ("mysite.org"); anything else non-http is dropped
+    const rawSite = str(meta?.website, 300);
+    const website = rawSite && !/^[a-z][a-z0-9+.-]*:/i.test(rawSite) ? `https://${rawSite}` : rawSite;
+    if (checkContent(name, bio).blocked) {
+      name = "Organizer";
+      bio = null;
+    }
+
     const { data: newProfile, error } = await svc.from("organizer_profiles").insert({
       user_id: user.id,
-      org_type: meta?.org_type ?? "individual",
-      name: meta?.org_name ?? meta?.display_name ?? "Organizer",
-      bio: meta?.bio ?? null,
-      website: meta?.website ?? null,
+      org_type: meta?.org_type === "organization" ? "organization" : "individual",
+      name,
+      bio,
+      website: website && /^https?:\/\//i.test(website) ? website : null,
     }).select("id").single();
 
     if (error) { console.error("[auth/callback] organizer_profiles insert failed:", error); return; }

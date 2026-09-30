@@ -33,6 +33,9 @@ export default function NavClient({ user, role, postEventHref }: Props) {
 
   async function signOut() {
     await supabase.auth.signOut();
+    // Full reload (not router.push): the session is gone, and this nav lives in
+    // the shared layout, which a soft navigation keeps stale
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = "/";
   }
 

@@ -116,6 +116,8 @@ export default function LeafletMap({
 
     init();
     return () => { map?.remove(); mapRef.current = null; markerLayerRef.current = null; LRef.current = null; setMapReady(false); };
+    // Create the map once; initialUserLoc only sets the starting view
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Re-draw markers whenever events, userLoc, or radius changes

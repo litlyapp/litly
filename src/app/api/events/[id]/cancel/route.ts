@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/apiError";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { sendBatchEmail, emailWrapper, escapeHtml } from "@/lib/sendEmail";
@@ -44,7 +45,7 @@ export async function POST(
     .update({ is_cancelled: true })
     .eq("id", id);
 
-  if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
+  if (updateError) return serverError("events/cancel", updateError);
 
   // Use service role to fetch RSVPd patron emails
   const serviceClient = createServiceClient(

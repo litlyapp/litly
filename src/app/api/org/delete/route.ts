@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/apiError";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { orgImageUrls, removeUnreferencedUploads } from "@/lib/storageCleanup";
@@ -35,10 +36,10 @@ export async function DELETE(request: Request) {
   const imageUrls = await orgImageUrls(svc, orgId);
 
   const { error: eventsError } = await svc.from("events").delete().eq("organizer_id", orgId);
-  if (eventsError) return NextResponse.json({ error: eventsError.message }, { status: 500 });
+  if (eventsError) return serverError("org/delete", eventsError);
 
   const { error: orgError } = await svc.from("organizer_profiles").delete().eq("id", orgId);
-  if (orgError) return NextResponse.json({ error: orgError.message }, { status: 500 });
+  if (orgError) return serverError("org/delete", orgError);
 
   await removeUnreferencedUploads(svc, imageUrls);
 

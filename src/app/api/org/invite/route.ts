@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/apiError";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { sendEmail, emailWrapper, escapeHtml } from "@/lib/sendEmail";
@@ -75,7 +76,7 @@ export async function POST(request: Request) {
       { onConflict: "org_id,email", ignoreDuplicates: false }
     );
 
-  if (inviteError) return NextResponse.json({ error: inviteError.message }, { status: 500 });
+  if (inviteError) return serverError("org/invite", inviteError);
 
   const orgName = orgProfile?.name ?? "a litly organization";
   const joinUrl = `https://thelitlyapp.com/join?invite=${newToken}`;
@@ -142,7 +143,7 @@ export async function DELETE(request: Request) {
     .eq("id", inviteId)
     .eq("org_id", orgId);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return serverError("org/invite", error);
 
   return NextResponse.json({ ok: true });
 }

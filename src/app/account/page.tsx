@@ -40,7 +40,7 @@ export default function AccountPage() {
       setDisplayName(data?.display_name ?? "");
     }
     load();
-  }, []);
+  }, [router, supabase]);
 
   async function handleSaveName(e: React.FormEvent) {
     e.preventDefault();
@@ -109,6 +109,9 @@ export default function AccountPage() {
     try {
       const res = await fetch("/api/account/delete", { method: "POST" });
       if (res.ok) {
+        // Full reload (not router.push): the session is gone, and the nav is
+        // rendered in the shared layout, which a soft navigation keeps stale
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
         window.location.href = "/";
       } else {
         const body = await res.json();

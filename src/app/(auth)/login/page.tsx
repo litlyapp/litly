@@ -62,6 +62,9 @@ function LoginForm() {
       if (userRow?.role === "organizer") destination = "/dashboard";
     }
 
+    // Full reload (not router.push): the session just changed, and the nav is
+    // rendered in the shared layout, which a soft navigation keeps stale
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = destination;
   }
 

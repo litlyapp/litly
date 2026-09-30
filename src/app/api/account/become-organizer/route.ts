@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serverError } from "@/lib/apiError";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { checkContent } from "@/lib/moderation";
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
     .from("users")
     .update({ role: "organizer" })
     .eq("id", user.id);
-  if (roleError) return NextResponse.json({ error: roleError.message }, { status: 500 });
+  if (roleError) return serverError("become-organizer", roleError);
 
   // Check if the user already owns an org (has a profile with their user_id).
   // If so, additional orgs are created without user_id to avoid the unique constraint —
@@ -75,13 +76,13 @@ export async function POST(request: Request) {
     })
     .select("id")
     .single();
-  if (profileError) return NextResponse.json({ error: profileError.message }, { status: 500 });
+  if (profileError) return serverError("become-organizer", profileError);
 
   // Make them the admin of their new org
   const { error: memberError } = await serviceClient
     .from("org_members")
     .upsert({ org_id: newProfile.id, user_id: user.id, role: "admin" }, { onConflict: "org_id,user_id", ignoreDuplicates: false });
-  if (memberError) return NextResponse.json({ error: memberError.message }, { status: 500 });
+  if (memberError) return serverError("become-organizer", memberError);
 
   // Update auth metadata so future sessions reflect the new role
   await serviceClient.auth.admin.updateUserById(user.id, {
