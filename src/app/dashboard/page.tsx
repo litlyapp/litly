@@ -212,24 +212,30 @@ export default async function DashboardPage({
             + New event
           </Link>
         </div>
-        {isAdmin && (
-          <div className="flex items-center gap-3 mt-4 flex-wrap">
-            {adminOrgId && (
-              <Link
-                href="/dashboard/team"
-                className="border border-cream/20 text-cream-muted font-medium px-4 py-2 rounded-full hover:border-cream/40 hover:text-cream transition text-sm"
-              >
-                Org team
-              </Link>
-            )}
+        <div className="flex items-center gap-3 mt-4 flex-wrap">
+          {isAdmin && adminOrgId && (
+            <Link
+              href="/dashboard/team"
+              className="border border-cream/20 text-cream-muted font-medium px-4 py-2 rounded-full hover:border-cream/40 hover:text-cream transition text-sm"
+            >
+              Manage org team
+            </Link>
+          )}
+          {isAdmin && (
             <Link
               href="/dashboard/profile"
               className="border border-cream/20 text-cream-muted font-medium px-4 py-2 rounded-full hover:border-cream/40 hover:text-cream transition text-sm"
             >
               Edit org profile
             </Link>
-          </div>
-        )}
+          )}
+          <Link
+            href={`/organizers/${activeOrgId}`}
+            className="border border-cream/20 text-cream-muted font-medium px-4 py-2 rounded-full hover:border-cream/40 hover:text-cream transition text-sm"
+          >
+            View org profile
+          </Link>
+        </div>
       </div>
 
       {/* Stats strip */}
