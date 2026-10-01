@@ -9,6 +9,9 @@ import BannerUpload from "@/components/BannerUpload";
 import { GENRES } from "@/lib/genres";
 import type { Genre } from "@/types/database";
 
+// Calendar feed sync UI is hidden for now; flip to true to bring it back.
+const SHOW_CALENDAR_FEED = false;
+
 interface Profile {
   id: string;
   name: string;
@@ -258,6 +261,7 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
       </div>
 
       {/* Calendar feed sync */}
+      {SHOW_CALENDAR_FEED && (
       <div className="bg-navy-light border border-cream/10 rounded-2xl p-6 space-y-4">
         <div>
           <label className="text-cream-muted text-xs uppercase tracking-wider mb-1.5 block">
@@ -342,6 +346,7 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
           </div>
         )}
       </div>
+      )}
 
       {/* Default event banner */}
       <div className="bg-navy-light border border-cream/10 rounded-2xl p-6 space-y-4">
