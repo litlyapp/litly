@@ -5,6 +5,7 @@ import { GENRE_LABELS } from "@/lib/genres";
 import { formatEventDate, formatEventTime } from "@/lib/formatDate";
 import SaveButton from "./SaveButton";
 import ShareButton from "./ShareButton";
+import { CURATED_ORG_ID } from "@/lib/curatedOrg";
 
 interface EventCardProps {
   event: {
@@ -126,18 +127,17 @@ export default function EventCard({
         )}
       </div>
 
-      {/* Organizer or imported source */}
-      {(organizer || event.is_imported) && (
+      {/* Organizer, plus source attribution for curated-account imports only
+          (a real org importing from another site is itself the poster) */}
+      {organizer && (
         <div className="mt-auto pt-2 border-t border-cream/10 flex items-center justify-between gap-2">
-          {organizer && (
-            <Link
-              href={`/organizers/${organizer.id}`}
-              className="text-cream-muted text-xs hover:text-cream transition truncate"
-            >
-              {organizer.name}
-            </Link>
-          )}
-          {event.is_imported && event.source_name && (
+          <Link
+            href={`/organizers/${organizer.id}`}
+            className="text-cream-muted text-xs hover:text-cream transition truncate"
+          >
+            {organizer.name}
+          </Link>
+          {organizer.id === CURATED_ORG_ID && event.is_imported && event.source_name && (
             <span className="text-cream-muted/50 text-xs shrink-0">
               via {event.source_url && /^https?:\/\//i.test(event.source_url) ? (
                 <a href={event.source_url} target="_blank" rel="noopener noreferrer" className="hover:text-cream-muted transition">
