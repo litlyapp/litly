@@ -355,7 +355,9 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
             Default event banner (optional)
           </label>
           <p className="text-cream-muted text-xs mb-4">
-            This banner is applied automatically to iCal-synced events that don&apos;t have their own image.
+            {SHOW_CALENDAR_FEED
+              ? "This banner is applied automatically to iCal-synced events that don\u2019t have their own image."
+              : "Upload a go-to banner for your events."}{" "}
             Individual events can still have their own banner set from the edit page.
           </p>
         </div>
@@ -380,7 +382,7 @@ export default function ProfileEditForm({ profile }: { profile: Profile }) {
             <div>
               <span className="text-cream text-sm font-medium">Apply to all new events</span>
               <p className="text-cream-muted text-xs">
-                Pre-fill this banner on every new event you post, not just iCal imports. You can still swap it out per event.
+                Pre-fill this banner on every new event you post{SHOW_CALENDAR_FEED ? ", not just iCal imports" : ""}. You can still swap it out per event.
               </p>
             </div>
           </label>
