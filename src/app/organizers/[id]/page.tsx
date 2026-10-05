@@ -138,7 +138,7 @@ export default async function OrganizerProfilePage({
               </h1>
               <p className="text-cream-muted text-sm sm:text-base capitalize mt-0.5 sm:mt-1">
                 {organizer.org_type === "organization"
-                  ? "Organization / Series"
+                  ? "Organization"
                   : "Individual organizer"}
               </p>
             </div>
