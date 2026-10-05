@@ -115,10 +115,10 @@ export default async function OrganizerProfilePage({
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
       {/* Profile header */}
-      <div className="bg-navy-light border border-cream/10 rounded-2xl p-5 sm:p-8 mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-6">
-          <div className="flex items-center gap-4 sm:gap-5 min-w-0">
-            <div className="relative w-16 h-16 shrink-0">
+      <div className="bg-navy-light border border-cream/10 rounded-2xl p-5 sm:px-10 sm:py-9 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6">
+          <div className="flex items-center gap-4 sm:gap-6 min-w-0">
+            <div className="relative w-16 h-16 sm:w-20 sm:h-20 shrink-0">
               {organizer.avatar_url ? (
                 <Image
                   src={organizer.avatar_url}
@@ -127,16 +127,16 @@ export default async function OrganizerProfilePage({
                   className="rounded-full object-cover"
                 />
               ) : (
-                <div className="w-16 h-16 rounded-full bg-orange/20 flex items-center justify-center text-orange font-sans text-3xl">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-orange/20 flex items-center justify-center text-orange font-sans text-3xl sm:text-4xl">
                   {organizer.name[0]}
                 </div>
               )}
             </div>
             <div className="min-w-0">
-              <h1 className="font-serif text-2xl sm:text-3xl text-cream leading-tight break-words">
+              <h1 className="font-serif text-2xl sm:text-4xl text-cream leading-tight break-words">
                 {organizer.name}
               </h1>
-              <p className="text-cream-muted text-sm capitalize mt-0.5">
+              <p className="text-cream-muted text-sm sm:text-base capitalize mt-0.5 sm:mt-1">
                 {organizer.org_type === "organization"
                   ? "Organization / Series"
                   : "Individual organizer"}

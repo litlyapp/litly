@@ -50,7 +50,7 @@ export default function FollowButton({
       <button
         onClick={toggle}
         disabled={loading}
-        className="shrink-0 px-5 py-2 rounded-full border border-cream/20 text-cream-muted text-sm hover:border-orange hover:text-orange transition disabled:opacity-60"
+        className="shrink-0 px-5 py-2 sm:px-7 sm:py-2.5 rounded-full border border-cream/20 text-cream-muted text-sm sm:text-base hover:border-orange hover:text-orange transition disabled:opacity-60"
       >
         Following
       </button>
@@ -61,7 +61,7 @@ export default function FollowButton({
     <button
       onClick={toggle}
       disabled={loading}
-      className="shrink-0 px-5 py-2 rounded-full bg-orange text-cream text-sm font-medium hover:bg-orange/90 transition disabled:opacity-60"
+      className="shrink-0 px-5 py-2 sm:px-7 sm:py-2.5 rounded-full bg-orange text-cream text-sm sm:text-base font-medium hover:bg-orange/90 transition disabled:opacity-60"
     >
       Follow
     </button>
