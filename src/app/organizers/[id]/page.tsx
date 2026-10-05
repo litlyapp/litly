@@ -115,9 +115,9 @@ export default async function OrganizerProfilePage({
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
       {/* Profile header */}
-      <div className="bg-navy-light border border-cream/10 rounded-2xl p-8 mb-8">
-        <div className="flex items-start justify-between gap-6">
-          <div className="flex items-center gap-5">
+      <div className="bg-navy-light border border-cream/10 rounded-2xl p-5 sm:p-8 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-6">
+          <div className="flex items-center gap-4 sm:gap-5 min-w-0">
             <div className="relative w-16 h-16 shrink-0">
               {organizer.avatar_url ? (
                 <Image
@@ -132,8 +132,8 @@ export default async function OrganizerProfilePage({
                 </div>
               )}
             </div>
-            <div>
-              <h1 className="font-serif text-3xl text-cream leading-tight">
+            <div className="min-w-0">
+              <h1 className="font-serif text-2xl sm:text-3xl text-cream leading-tight break-words">
                 {organizer.name}
               </h1>
               <p className="text-cream-muted text-sm capitalize mt-0.5">
