@@ -1,10 +1,13 @@
 // Maintenance: re-geocode events using full address context and fix pins
 // that are far from where the address actually resolves. The daily
 // health-check cron points here when it detects geocode drift.
-// Usage: node --env-file=.env.local scripts/regeocode.js [--apply]
+// With --missing, instead fills in coordinates for upcoming in-person events
+// that have none (the health check's "no map coordinates" alert).
+// Usage: node --env-file=.env.local scripts/regeocode.js [--missing] [--apply]
 const { createClient } = require("@supabase/supabase-js");
 
 const APPLY = process.argv.includes("--apply");
+const MISSING = process.argv.includes("--missing");
 const THRESHOLD_MILES = 10;
 
 const supabase = createClient(
@@ -27,14 +30,72 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function geocode(query) {
   const res = await fetch(
     `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`,
-    { headers: { "Accept-Language": "en", "User-Agent": "litly/1.0 (thelitlyapp.com)" } }
+    { headers: { "Accept-Language": "en", "User-Agent": "litly-importer/1.0 (+https://thelitlyapp.com/importer)" } }
   );
   if (!res.ok) throw new Error(`Nominatim ${res.status}`);
   const data = await res.json();
   return data[0] ? { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) } : null;
 }
 
+// Same query shape as src/lib/geocode.ts: Nominatim returns nothing when the
+// venue name or a suite number is mixed into the street query.
+function streetForGeocode(address) {
+  return address
+    .replace(/[,\s]+(suite|ste|apt|apartment|unit|bldg|building|fl|floor|rm|room|#)\.?\s*[\w-]+\s*$/i, "")
+    .replace(/[,\s]+\d+(st|nd|rd|th)\s+(fl|floor)\.?\s*$/i, "")
+    .replace(/\bMLK\b/gi, "Martin Luther King")
+    .replace(/\./g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+async function fillMissing() {
+  const { data: events, error } = await supabase
+    .from("events")
+    .select("id, title, address, location_name, city, state, zip_code, country")
+    .eq("is_cancelled", false)
+    .eq("event_type", "in_person")
+    .gte("date_time", new Date().toISOString())
+    .is("lat", null)
+    .or("address.not.is.null,city.not.is.null");
+  if (error) throw error;
+
+  console.log(`${events.length} upcoming in-person event(s) without coordinates…\n`);
+  const join = (...parts) => parts.map((p) => (p ?? "").trim()).filter(Boolean).join(", ");
+  for (const e of events) {
+    const queries = [
+      e.address && join(streetForGeocode(e.address), e.city, e.state, e.zip_code, e.country),
+      e.location_name && e.city && join(e.location_name, e.city, e.state),
+      e.zip_code && join(e.city, e.zip_code, e.country),
+      e.city && join(e.city, e.state, e.country),
+    ].filter(Boolean);
+    let resolved = null;
+    let used = null;
+    for (const q of [...new Set(queries)]) {
+      try {
+        resolved = await geocode(q);
+      } catch (err) {
+        console.log(`! ${e.title}: geocode failed (${err.message})`);
+      }
+      await sleep(1100);
+      if (resolved) { used = q; break; }
+    }
+    if (!resolved) {
+      console.log(`? ${e.title}: no result`);
+      continue;
+    }
+    console.log(`✓ ${e.title}\n    "${used}" → (${resolved.lat}, ${resolved.lng})`);
+    if (APPLY) {
+      const { error: updErr } = await supabase.from("events").update(resolved).eq("id", e.id);
+      if (updErr) console.log(`! update failed for ${e.title}: ${updErr.message}`);
+    }
+  }
+  if (!APPLY && events.length) console.log("\nRe-run with --apply to save these.");
+}
+
 async function main() {
+  if (MISSING) return fillMissing();
+
   const { data: events, error } = await supabase
     .from("events")
     .select("id, title, address, location_name, city, state, country, lat, lng")

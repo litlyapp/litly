@@ -2,23 +2,15 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { parseFeed, mapToEventRow } from "@/lib/icalFeed";
+import { nominatimSearch } from "@/lib/geocode";
 import type { Genre } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 async function geocode(query: string): Promise<{ lat: number; lng: number } | null> {
-  try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`,
-      { headers: { "Accept-Language": "en", "User-Agent": "litly/1.0 (thelitlyapp.com)" } }
-    );
-    const data = await res.json();
-    if (data[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-  } catch {
-    // best-effort
-  }
-  return null;
+  const hit = await nominatimSearch(query);
+  return hit ? { lat: hit.lat, lng: hit.lng } : null;
 }
 
 export async function POST(request: Request) {

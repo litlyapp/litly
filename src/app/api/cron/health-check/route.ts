@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendEmail, emailWrapper, escapeHtml } from "@/lib/sendEmail";
 import { STRIPE_LINKS } from "@/lib/stripeLinks";
+import { nominatimSearch } from "@/lib/geocode";
 
 export const dynamic = "force-dynamic";
 
@@ -146,24 +147,40 @@ export async function GET(req: Request) {
       .filter(Boolean)
       .join(", ");
     if (!query) continue;
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`,
-        { headers: { "Accept-Language": "en", "User-Agent": "litly/1.0 (thelitlyapp.com)" } }
-      );
-      const data = await res.json();
-      if (data[0]) {
-        const milesOff = distanceMiles(e.lat, e.lng, parseFloat(data[0].lat), parseFloat(data[0].lon));
-        if (milesOff > 10) {
-          issues.push(
-            `Event "${e.title}" pin is ~${Math.round(milesOff)} miles from its address ("${query}") — run scripts/regeocode.js`
-          );
-        }
+    const hit = await nominatimSearch(query);
+    if (hit) {
+      const milesOff = distanceMiles(e.lat, e.lng, hit.lat, hit.lng);
+      if (milesOff > 10) {
+        issues.push(
+          `Event "${e.title}" pin is ~${Math.round(milesOff)} miles from its address ("${query}") — run scripts/regeocode.js`
+        );
       }
-    } catch {
-      // geocode check is best-effort; skip on network errors
     }
     await new Promise((r) => setTimeout(r, 1100));
+  }
+
+  // 6b. Missing coordinates: the drift check above only sees pinned events,
+  // so an importer that silently stops geocoding never trips it. Upcoming
+  // in-person events (drafts included — curated drafts get published in bulk)
+  // with a location but no lat/lng won't appear on the map.
+  const { data: unpinned, count: unpinnedCount, error: unpinnedError } = await withRetry(() =>
+    supabase
+      .from("events")
+      .select("title", { count: "exact" })
+      .eq("is_cancelled", false)
+      .eq("event_type", "in_person")
+      .gte("date_time", new Date().toISOString())
+      .is("lat", null)
+      .or("address.not.is.null,city.not.is.null")
+      .limit(5)
+  );
+  if (unpinnedError) {
+    issues.push(`Failed to check for events missing coordinates: ${unpinnedError.message}`);
+  } else if ((unpinnedCount ?? 0) > 0) {
+    const examples = (unpinned ?? []).map((e) => `"${e.title}"`).join(", ");
+    issues.push(
+      `${unpinnedCount} upcoming in-person event(s) have no map coordinates (e.g. ${examples}) — they won't show on the map; run scripts/regeocode.js --missing`
+    );
   }
 
   // 7. Upcoming published event count — the most critical check. Zero means

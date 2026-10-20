@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { parseFeed, mapToEventRow } from "@/lib/icalFeed";
+import { nominatimSearch } from "@/lib/geocode";
 import { sendEmail, emailWrapper, escapeHtml } from "@/lib/sendEmail";
 import type { Genre } from "@/types/database";
 
@@ -9,17 +10,8 @@ export const maxDuration = 300;
 
 // Best-effort server-side geocode so feed-synced events get a map pin
 async function geocode(query: string): Promise<{ lat: number; lng: number } | null> {
-  try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`,
-      { headers: { "Accept-Language": "en", "User-Agent": "litly/1.0 (thelitlyapp.com)" } }
-    );
-    const data = await res.json();
-    if (data[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-  } catch {
-    // geocoding is best-effort
-  }
-  return null;
+  const hit = await nominatimSearch(query);
+  return hit ? { lat: hit.lat, lng: hit.lng } : null;
 }
 
 // Resolve the org's owner email the same way weekly-digest does: prefer the

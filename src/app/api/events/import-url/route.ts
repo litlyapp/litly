@@ -9,6 +9,7 @@ import { stripTracking } from "@/lib/cleanUrl";
 import { timezoneForState } from "@/lib/usStates";
 import { importerRequestHeaders } from "@/lib/webBotAuth";
 import { importerAllowedByRobots } from "@/lib/robots";
+import { geocodeLocation } from "@/lib/geocode";
 import type { Genre } from "@/types/database";
 
 const anthropic = new Anthropic();
@@ -18,20 +19,6 @@ const anthropic = new Anthropic();
 const MONTHLY_IMPORT_LIMIT = 50;
 // Pasted page text beyond this is rejected; what's sent to the model is trimmed to 50k like fetched HTML
 const MAX_PASTED_CHARS = 200_000;
-
-async function geocode(query: string): Promise<{ lat: number; lng: number } | null> {
-  try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`,
-      { headers: { "Accept-Language": "en", "User-Agent": "litly/1.0 (thelitlyapp.com)" } }
-    );
-    const data = await res.json();
-    if (data[0]) return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-  } catch {
-    // best-effort
-  }
-  return null;
-}
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -334,11 +321,19 @@ ${html}`,
 
   // Geocode if in-person
   let coords: { lat: number; lng: number } | null = null;
+  // Venue name stays out of the street query — Nominatim returns nothing for
+  // "55 Haywood St, Malaprop's Bookstore/Cafe, Asheville, …"; it's only tried
+  // on its own as a fallback.
   if (extracted.event_type !== "virtual") {
-    const query = [cleanedAddress, extracted.location_name, extracted.city, extracted.state, zipCode, country]
-      .filter(Boolean)
-      .join(", ");
-    if (query) coords = await geocode(query);
+    coords = await geocodeLocation({
+      address: cleanedAddress,
+      locationName: extracted.location_name as string | null,
+      city: extracted.city as string | null,
+      state: extracted.state as string | null,
+      zip: zipCode,
+      country,
+    });
+    if (!coords) console.warn(`[import-url] no coordinates for ${url}`);
   }
 
   // Normalize extracted readers into the FeaturedReader shape, dropping any
