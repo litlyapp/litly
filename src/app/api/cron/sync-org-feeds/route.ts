@@ -1,18 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { parseFeed, mapToEventRow } from "@/lib/icalFeed";
-import { nominatimSearch } from "@/lib/geocode";
+import { geocodeFreeform } from "@/lib/geocode";
 import { sendEmail, emailWrapper, escapeHtml } from "@/lib/sendEmail";
 import type { Genre } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
-
-// Best-effort server-side geocode so feed-synced events get a map pin
-async function geocode(query: string): Promise<{ lat: number; lng: number } | null> {
-  const hit = await nominatimSearch(query);
-  return hit ? { lat: hit.lat, lng: hit.lng } : null;
-}
 
 // Resolve the org's owner email the same way weekly-digest does: prefer the
 // organizer_profiles.user_id, fall back to an org_members admin for shared orgs.
@@ -158,7 +152,7 @@ export async function GET(req: Request) {
       for (const item of parsed) {
         let coords: { lat: number; lng: number } | null = null;
         if (item.location_name) {
-          coords = await geocode(item.location_name);
+          coords = await geocodeFreeform(item.location_name);
         }
 
         const row = mapToEventRow(item, { organizerId: org.id, defaultGenre, coords });

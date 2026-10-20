@@ -9,7 +9,7 @@ import { stripTracking } from "@/lib/cleanUrl";
 import { timezoneForState } from "@/lib/usStates";
 import { importerRequestHeaders } from "@/lib/webBotAuth";
 import { importerAllowedByRobots } from "@/lib/robots";
-import { geocodeLocation } from "@/lib/geocode";
+import { geocodeLocation, type GeocodeResult } from "@/lib/geocode";
 import type { Genre } from "@/types/database";
 
 const anthropic = new Anthropic();
@@ -320,7 +320,7 @@ ${html}`,
     : rawCountry;
 
   // Geocode if in-person
-  let coords: { lat: number; lng: number } | null = null;
+  let coords: GeocodeResult | null = null;
   // Venue name stays out of the street query — Nominatim returns nothing for
   // "55 Haywood St, Malaprop's Bookstore/Cafe, Asheville, …"; it's only tried
   // on its own as a fallback.
@@ -468,5 +468,6 @@ ${html}`,
     return serverError("import-url", insertError);
   }
 
-  return NextResponse.json({ id: inserted.id });
+  // Lets the edit page flag a zip/city-centroid pin for the organizer to check
+  return NextResponse.json({ id: inserted.id, approximatePin: !!coords?.approximate });
 }

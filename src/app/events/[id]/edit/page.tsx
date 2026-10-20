@@ -4,10 +4,13 @@ import EventForm from "@/components/EventForm";
 
 export default async function EditEventPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ pin?: string }>;
 }) {
   const { id } = await params;
+  const { pin } = await searchParams;
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -79,6 +82,8 @@ export default async function EditEventPage({
         initialData={event}
         eventId={id}
         seriesContext={seriesContext}
+        // Set by the URL importer when it could only place the event by zip/city
+        approximatePin={pin === "approximate"}
         highlightMissingFields={
           ev.event_type === "in_person"
             ? (ev.ticket_type as string | null) !== "none" && !ev.ticket_url

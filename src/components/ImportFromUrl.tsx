@@ -35,7 +35,7 @@ export default function ImportFromUrl({ organizerId }: { organizerId: string }) 
         }
         throw new Error(data.error ?? "Import failed");
       }
-      router.push(`/events/${data.id}/edit`);
+      router.push(`/events/${data.id}/edit${data.approximatePin ? "?pin=approximate" : ""}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setLoading(false);

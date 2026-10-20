@@ -8,7 +8,7 @@ import { IMPORTER_USER_AGENT } from "@/lib/webBotAuth";
 export interface GeocodeResult {
   lat: number;
   lng: number;
-  /** Pin is a venue-name, zip, or city match rather than the street address */
+  /** Pin is a zip or city centroid, not the venue itself */
   approximate: boolean;
 }
 
@@ -92,7 +92,8 @@ export function streetForGeocode(address: string): string {
 
 /**
  * Best-effort pin for an in-person event: the street address first, then the
- * venue name in its city, then the zip centroid, then the city. A pin that's
+ * venue name in its city (OSM often has the venue as a place), then the zip
+ * centroid, then the city. A pin that's
  * a little off beats no pin — events without coordinates never show on the map.
  */
 export async function geocodeLocation(loc: GeocodeLocation): Promise<GeocodeResult | null> {
@@ -107,7 +108,7 @@ export async function geocodeLocation(loc: GeocodeLocation): Promise<GeocodeResu
 
   const candidates: Array<{ query: string; approximate: boolean }> = [];
   if (street) candidates.push({ query: join(street, city, state, zip, country), approximate: false });
-  if (venue && city) candidates.push({ query: join(venue, city, state), approximate: true });
+  if (venue && city) candidates.push({ query: join(venue, city, state), approximate: false });
   if (zip) candidates.push({ query: join(city, zip, country), approximate: true });
   if (city) candidates.push({ query: join(city, state, country), approximate: true });
 
@@ -131,4 +132,24 @@ export async function geocodeLocation(loc: GeocodeLocation): Promise<GeocodeResu
     return { lat: hit.lat, lng: hit.lng, approximate };
   }
   return null;
+}
+
+/**
+ * Pin for a single free-text location (an iCal LOCATION, usually
+ * "Venue, 123 Main St, City, ST 12345"). Venue-first strings mostly resolve
+ * as-is; when the venue isn't in OSM, retry with that leading segment dropped.
+ */
+export async function geocodeFreeform(text: string): Promise<{ lat: number; lng: number } | null> {
+  const full = text.replace(/\s+/g, " ").trim();
+  if (!full) return null;
+  const hit = await nominatimSearch(full);
+  if (hit) return { lat: hit.lat, lng: hit.lng };
+
+  const parts = full.split(",").map((p) => p.trim()).filter(Boolean);
+  if (parts.length < 3) return null;
+  const rest = parts.slice(1);
+  rest[0] = streetForGeocode(rest[0]);
+  await sleep(NOMINATIM_INTERVAL_MS);
+  const retry = await nominatimSearch(rest.join(", "));
+  return retry ? { lat: retry.lat, lng: retry.lng } : null;
 }

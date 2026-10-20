@@ -2,16 +2,11 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { parseFeed, mapToEventRow } from "@/lib/icalFeed";
-import { nominatimSearch } from "@/lib/geocode";
+import { geocodeFreeform } from "@/lib/geocode";
 import type { Genre } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
-
-async function geocode(query: string): Promise<{ lat: number; lng: number } | null> {
-  const hit = await nominatimSearch(query);
-  return hit ? { lat: hit.lat, lng: hit.lng } : null;
-}
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -76,7 +71,7 @@ export async function POST(request: Request) {
     for (const item of parsed) {
       let coords: { lat: number; lng: number } | null = null;
       if (item.location_name) {
-        coords = await geocode(item.location_name);
+        coords = await geocodeFreeform(item.location_name);
       }
 
       const row = mapToEventRow(item, {

@@ -142,6 +142,8 @@ interface Props {
   seriesContext?: SeriesContext;
   /** Flag incomplete fields that triggered the "Needs details" tag */
   highlightMissingFields?: boolean;
+  /** Saved pin is only a zip/city centroid (URL importer couldn't find the street) */
+  approximatePin?: boolean;
 }
 
 // Strip suite/apt/unit suffixes before geocoding — Nominatim returns nothing
@@ -232,7 +234,7 @@ async function resolveZip(
   return null;
 }
 
-export default function EventForm({ organizerId, initialData, eventId, seriesContext, highlightMissingFields }: Props) {
+export default function EventForm({ organizerId, initialData, eventId, seriesContext, highlightMissingFields, approximatePin }: Props) {
   const router = useRouter();
   const supabase = createClient();
   const isEditing = !!eventId;
@@ -282,7 +284,7 @@ export default function EventForm({ organizerId, initialData, eventId, seriesCon
   const [geocoding, setGeocoding] = useState(false);
   const [geocoded, setGeocoded] = useState<GeocodeResult | null>(
     initialData?.lat != null && initialData?.lng != null
-      ? { lat: initialData.lat, lng: initialData.lng }
+      ? { lat: initialData.lat, lng: initialData.lng, approximate: approximatePin }
       : null
   );
 
