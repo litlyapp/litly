@@ -72,7 +72,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly",
       priority: 0.4,
     },
-    ...["privacy", "terms"].map((page) => ({
+    ...["privacy", "terms", "importer"].map((page) => ({
       url: `https://thelitlyapp.com/${page}`,
       lastModified: new Date("2026-09-30"), // effective date on the page
       changeFrequency: "yearly" as const,

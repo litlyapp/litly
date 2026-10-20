@@ -7,6 +7,8 @@ import { CURATED_ORG_ID } from "@/lib/curatedOrg";
 import { stripRichText } from "@/lib/richText";
 import { stripTracking } from "@/lib/cleanUrl";
 import { timezoneForState } from "@/lib/usStates";
+import { importerRequestHeaders } from "@/lib/webBotAuth";
+import { importerAllowedByRobots } from "@/lib/robots";
 import type { Genre } from "@/types/database";
 
 const anthropic = new Anthropic();
@@ -95,29 +97,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "URL is not reachable" }, { status: 422 });
   }
 
-  // Fetch the page — try with a browser-like UA first; some sites block bots
-  const BROWSER_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
+  // Fetch the page as a declared agent: one honest UA, signed with Web Bot Auth
+  // when a key is configured, and only where the site's robots.txt allows it
   let html: string;
   if (pageText) {
     // Pasted from the user's browser — plain text, no markup to strip
     html = pageText.slice(0, 50000);
   } else {
     try {
-      let res = await safeFetch(url, {
-        headers: { "User-Agent": BROWSER_UA, "Accept": "text/html,application/xhtml+xml,*/*" },
-        signal: AbortSignal.timeout(10000),
-      });
-      // Fall back to our own UA if the browser UA still fails
-      if (!res.ok && res.status !== 403 && res.status !== 401) {
-        throw new Error(`HTTP ${res.status}`);
-      }
-      if (!res.ok) {
-        res = await safeFetch(url, {
-          headers: { "User-Agent": "litly/1.0 (thelitlyapp.com)" },
-          signal: AbortSignal.timeout(10000),
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      }
+      // A robots.txt opt-out gets the same paste-the-details path as a block
+      if (!(await importerAllowedByRobots(url))) throw new Error("HTTP 403");
+      const res = await safeFetch(
+        url,
+        { headers: { Accept: "text/html,application/xhtml+xml,*/*" }, signal: AbortSignal.timeout(10000) },
+        importerRequestHeaders,
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       html = await res.text();
       // A bot challenge served with a 200 is still a block, not the event page
       if (/<title>\s*Just a moment\.\.\.\s*<\/title>/i.test(html)) throw new Error("HTTP 403");

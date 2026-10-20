@@ -58,11 +58,19 @@ const MAX_REDIRECTS = 5;
  * would slip past a check done only on the first URL.
  * Throws if any hop is unsafe or there are too many redirects.
  */
-export async function safeFetch(urlStr: string, init: RequestInit = {}): Promise<Response> {
+export async function safeFetch(
+  urlStr: string,
+  init: RequestInit = {},
+  // Per-hop headers, merged over init.headers — for signatures bound to each hop's host
+  headersFor?: (url: string) => Record<string, string>,
+): Promise<Response> {
   let current = urlStr;
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     if (!(await isSafeUrl(current))) throw new Error("URL is not reachable");
-    const res = await fetch(current, { ...init, redirect: "manual" });
+    const headers = headersFor
+      ? { ...Object.fromEntries(new Headers(init.headers)), ...headersFor(current) }
+      : init.headers;
+    const res = await fetch(current, { ...init, headers, redirect: "manual" });
     const location = res.headers.get("location");
     if (res.status < 300 || res.status >= 400 || !location) return res;
     current = new URL(location, current).toString();
