@@ -14,6 +14,8 @@ const anthropic = new Anthropic();
 // Orgs can always add events manually for free — this cap only limits the
 // URL-import convenience feature. litly's own curated-listings org is exempt.
 const MONTHLY_IMPORT_LIMIT = 50;
+// Pasted page text beyond this is rejected; what's sent to the model is trimmed to 50k like fetched HTML
+const MAX_PASTED_CHARS = 200_000;
 
 async function geocode(query: string): Promise<{ lat: number; lng: number } | null> {
   try {
@@ -34,9 +36,19 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
-  const { url, organizerId } = await request.json();
+  const { url, organizerId, pageText: rawPageText } = await request.json();
   if (!url || !organizerId) {
     return NextResponse.json({ error: "Missing url or organizerId" }, { status: 400 });
+  }
+  // Fallback for sites that block our server (e.g. Cloudflare bot challenges):
+  // the user copies the page text from their own browser and pastes it in.
+  // The URL is still required — it drives attribution and the "More info" link.
+  const pageText = typeof rawPageText === "string" ? rawPageText.trim() : "";
+  if (pageText.length > MAX_PASTED_CHARS) {
+    return NextResponse.json(
+      { error: "That's more text than an event page should have. Copy just the event page and try again." },
+      { status: 413 }
+    );
   }
 
   // Verify user is a member of the org and fetch org website for source-domain check
@@ -86,59 +98,66 @@ export async function POST(request: Request) {
   // Fetch the page — try with a browser-like UA first; some sites block bots
   const BROWSER_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
   let html: string;
-  try {
-    let res = await safeFetch(url, {
-      headers: { "User-Agent": BROWSER_UA, "Accept": "text/html,application/xhtml+xml,*/*" },
-      signal: AbortSignal.timeout(10000),
-    });
-    // Fall back to our own UA if the browser UA still fails
-    if (!res.ok && res.status !== 403 && res.status !== 401) {
-      throw new Error(`HTTP ${res.status}`);
-    }
-    if (!res.ok) {
-      res = await safeFetch(url, {
-        headers: { "User-Agent": "litly/1.0 (thelitlyapp.com)" },
+  if (pageText) {
+    // Pasted from the user's browser — plain text, no markup to strip
+    html = pageText.slice(0, 50000);
+  } else {
+    try {
+      let res = await safeFetch(url, {
+        headers: { "User-Agent": BROWSER_UA, "Accept": "text/html,application/xhtml+xml,*/*" },
         signal: AbortSignal.timeout(10000),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    }
-    html = await res.text();
-    // Strip <head>, <script>, <style> blocks to save token budget for actual content
-    html = html
-      .replace(/<head[\s\S]*?<\/head>/gi, "")
-      .replace(/<script[\s\S]*?<\/script>/gi, "")
-      .replace(/<style[\s\S]*?<\/style>/gi, "")
-      // Strip machine-encoded timestamps so Claude reads only the visible display time.
-      // Root cause: Claude sees offset-aware datetimes and subtracts the offset (e.g. 19:00-04:00 → 3 PM).
-      // Dashed ISO with offset/Z: "2026-06-30T19:00:00-04:00"
-      .replace(/\b20\d\d-\d\d-\d\dT\d\d:\d\d:\d\d(?:[+-]\d\d:\d\d|Z)\b/g, "")
-      // Compact ISO with offset/Z (The Events Calendar iCal format): "20260630T190000-0400"
-      .replace(/\b20\d{6}T\d{6}(?:[+-]\d{4}|Z)\b/g, "")
-      // abbr title="..." (The Events Calendar puts compact ISO timestamps here)
-      .replace(/(<abbr\b[^>]*?)\stitle="[^"]*"/gi, "$1")
-      // datetime="..." attributes on <time> elements
-      .replace(/\bdatetime="[^"]*"/gi, "")
-      // <meta content="..."> carrying ISO timestamps
-      .replace(/(<meta\b[^>]*?)\scontent="20\d\d-\d\d-\d\dT[^"]*"/gi, "$1")
-      // data-* attributes whose names suggest timestamps
-      .replace(/\sdata-[a-z-]*(?:date|time|start|end|unix|utc|ts)[a-z-]*="[^"]*"/gi, "");
-    // Trim to 50k chars — Claude doesn't need the full DOM
-    html = html.slice(0, 50000);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    // Some sites (often behind Cloudflare) block our server's datacenter IP with
-    // a 403/401 — nothing the organizer can fix, so point them to manual entry
-    // rather than showing a raw HTTP error.
-    if (/HTTP 40(1|3)/.test(msg)) {
+      // Fall back to our own UA if the browser UA still fails
+      if (!res.ok && res.status !== 403 && res.status !== 401) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      if (!res.ok) {
+        res = await safeFetch(url, {
+          headers: { "User-Agent": "litly/1.0 (thelitlyapp.com)" },
+          signal: AbortSignal.timeout(10000),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      }
+      html = await res.text();
+      // A bot challenge served with a 200 is still a block, not the event page
+      if (/<title>\s*Just a moment\.\.\.\s*<\/title>/i.test(html)) throw new Error("HTTP 403");
+      // Strip <head>, <script>, <style> blocks to save token budget for actual content
+      html = html
+        .replace(/<head[\s\S]*?<\/head>/gi, "")
+        .replace(/<script[\s\S]*?<\/script>/gi, "")
+        .replace(/<style[\s\S]*?<\/style>/gi, "")
+        // Strip machine-encoded timestamps so Claude reads only the visible display time.
+        // Root cause: Claude sees offset-aware datetimes and subtracts the offset (e.g. 19:00-04:00 → 3 PM).
+        // Dashed ISO with offset/Z: "2026-06-30T19:00:00-04:00"
+        .replace(/\b20\d\d-\d\d-\d\dT\d\d:\d\d:\d\d(?:[+-]\d\d:\d\d|Z)\b/g, "")
+        // Compact ISO with offset/Z (The Events Calendar iCal format): "20260630T190000-0400"
+        .replace(/\b20\d{6}T\d{6}(?:[+-]\d{4}|Z)\b/g, "")
+        // abbr title="..." (The Events Calendar puts compact ISO timestamps here)
+        .replace(/(<abbr\b[^>]*?)\stitle="[^"]*"/gi, "$1")
+        // datetime="..." attributes on <time> elements
+        .replace(/\bdatetime="[^"]*"/gi, "")
+        // <meta content="..."> carrying ISO timestamps
+        .replace(/(<meta\b[^>]*?)\scontent="20\d\d-\d\d-\d\dT[^"]*"/gi, "$1")
+        // data-* attributes whose names suggest timestamps
+        .replace(/\sdata-[a-z-]*(?:date|time|start|end|unix|utc|ts)[a-z-]*="[^"]*"/gi, "");
+      // Trim to 50k chars — Claude doesn't need the full DOM
+      html = html.slice(0, 50000);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      // Some sites (often behind Cloudflare) block our server's datacenter IP with
+      // a 403/401 — nothing the organizer can fix, so point them to manual entry
+      // rather than showing a raw HTTP error.
+      if (/HTTP 40(1|3)/.test(msg)) {
+        return NextResponse.json(
+          { error: "This site blocked our server from reading the page (403). Please enter the event details manually below.", blocked: true },
+          { status: 422 }
+        );
+      }
       return NextResponse.json(
-        { error: "This site blocked our server from reading the page (403). Please enter the event details manually below." },
+        { error: "Couldn't reach that page. Double-check the link, or enter the event details manually below." },
         { status: 422 }
       );
     }
-    return NextResponse.json(
-      { error: "Couldn't reach that page. Double-check the link, or enter the event details manually below." },
-      { status: 422 }
-    );
   }
 
   // Extract event data via Claude Haiku
@@ -148,7 +167,7 @@ export async function POST(request: Request) {
     messages: [
       {
         role: "user",
-        content: `Extract event information from this HTML and return a JSON object with these exact fields. Use null for any field you cannot determine with confidence.
+        content: `Extract event information from this ${pageText ? "event page text (copied from a browser)" : "HTML"} and return a JSON object with these exact fields. Use null for any field you cannot determine with confidence.
 
 Fields:
 - title: string (event name; if the event centers on a specific book, wrap that book's title in quotation marks the way a reader would expect to see it in print, e.g. Jane Doe Presents "My New Book" — do not quote anything that isn't a book title)
@@ -172,7 +191,7 @@ Fields:
 
 Return ONLY the JSON object, no explanation.
 
-HTML:
+${pageText ? "PAGE TEXT" : "HTML"}:
 ${html}`,
       },
     ],
