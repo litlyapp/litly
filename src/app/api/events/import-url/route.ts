@@ -142,14 +142,11 @@ export async function POST(request: Request) {
     }
   }
 
-  // Extract event data via Claude Haiku
-  const message = await anthropic.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 1024,
-    messages: [
-      {
-        role: "user",
-        content: `Extract event information from this ${pageText ? "event page text (copied from a browser)" : "HTML"} and return a JSON object with these exact fields. Use null for any field you cannot determine with confidence.
+  // Extract event data via Claude Haiku. Pages with long descriptions plus
+  // several reader bios used to overrun a 1024-token cap, truncating the JSON
+  // mid-string so the parse failed. If even the larger cap is hit, retry once
+  // asking for condensed text rather than failing the import.
+  const extractionPrompt = (condensed: boolean) => `Extract event information from this ${pageText ? "event page text (copied from a browser)" : "HTML"} and return a JSON object with these exact fields. Use null for any field you cannot determine with confidence.
 
 Fields:
 - title: string (event name; if the event centers on a specific book, wrap that book's title in quotation marks the way a reader would expect to see it in print, e.g. Jane Doe Presents "My New Book" — do not quote anything that isn't a book title)
@@ -171,23 +168,50 @@ Fields:
 - source_name: string | null (the name of the organization, bookstore, or venue that publishes this page — read it from a logo, header, footer, or copyright line, e.g. "Malaprop's Bookstore/Cafe"; do NOT just return the domain name)
 - featured_readers: [{ name: string, url: string | null, bio: string | null }] (ONLY the author(s), poet(s), or reader(s) whose own book or work is being presented at this event. Do NOT include a moderator, interviewer, host, or "in conversation with" partner who is only there to discuss someone else's book — include them only if they are also presenting their own book/work at this same event. For each included person: "url" is a link to their personal site, publisher page, or social media if the page links one, otherwise null. "bio" is their bio/description as plain text if one is shown near their name (strip any bold/italic/markdown/HTML styling from it), otherwise null. Return [] if no qualifying readers are named.)
 
+${condensed ? `
+Keep the output compact: summarize "description" in at most 150 words and each reader "bio" in at most 60 words.
+` : ""}
 Return ONLY the JSON object, no explanation.
 
 ${pageText ? "PAGE TEXT" : "HTML"}:
-${html}`,
-      },
-    ],
-  });
+${html}`;
 
-  let extracted: Record<string, unknown>;
-  try {
-    const raw = message.content[0].type === "text" ? message.content[0].text : "";
+  async function extractEvent(condensed: boolean): Promise<{ data: Record<string, unknown> | null; truncated: boolean }> {
+    const message = await anthropic.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 4096,
+      messages: [{ role: "user", content: extractionPrompt(condensed) }],
+    });
+    const raw = message.content[0]?.type === "text" ? message.content[0].text : "";
+    const truncated = message.stop_reason === "max_tokens";
     const text = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-    extracted = JSON.parse(text);
-    console.log("[import-url] extracted:", JSON.stringify({ date: extracted.date, start_time_display: extracted.start_time_display, end_time_display: extracted.end_time_display, timezone: extracted.timezone }));
-  } catch {
-    return NextResponse.json({ error: "Failed to parse extracted event data" }, { status: 500 });
+    try {
+      return { data: JSON.parse(text), truncated };
+    } catch {
+      console.error(
+        `[import-url] unparseable extraction for ${url}:`,
+        JSON.stringify({ stop_reason: message.stop_reason, output_tokens: message.usage.output_tokens, condensed, tail: raw.slice(-200) })
+      );
+      return { data: null, truncated };
+    }
   }
+
+  let result: Awaited<ReturnType<typeof extractEvent>> | null;
+  try {
+    result = await extractEvent(false);
+    if (!result.data && result.truncated) result = await extractEvent(true);
+  } catch (err) {
+    console.error("[import-url] extraction request failed:", err);
+    result = null;
+  }
+  if (!result?.data) {
+    return NextResponse.json(
+      { error: "Couldn't read that page. Try again, or enter the event details manually below." },
+      { status: 502 }
+    );
+  }
+  const extracted = result.data;
+  console.log("[import-url] extracted:", JSON.stringify({ date: extracted.date, start_time_display: extracted.start_time_display, end_time_display: extracted.end_time_display, timezone: extracted.timezone }));
 
   // Convert a wall-clock "YYYY-MM-DDTHH:MM:SS" string in `timeZone` to a UTC ISO string.
   // Supabase's timestamptz column treats naive strings as UTC, so we must convert first.
