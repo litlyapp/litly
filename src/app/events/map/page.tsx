@@ -75,7 +75,7 @@ export default async function EventMapPage({
           {mappedCount} in-person {mappedCount === 1 ? "event" : "events"} shown
           {virtualCount > 0 && (
             <span className="text-cream-muted/70">
-              {" "}· {virtualCount} virtual {virtualCount === 1 ? "event" : "events"} hidden
+              {" "}· virtual events hidden
             </span>
           )}
           {ungeocodedCount > 0 && (
