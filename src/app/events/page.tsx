@@ -53,7 +53,7 @@ export default async function EventsPage({
   );
 
   // Organizer + imported-source options for the dropdown/filter
-  const organizers = await getOrganizerFilterOptions(supabase);
+  const organizers = await getOrganizerFilterOptions();
 
   // A single-day view (calendar day-click) needs to match the calendar grid's
   // own per-event-timezone day bucketing, not a UTC day boundary — an evening

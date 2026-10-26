@@ -1,5 +1,6 @@
 import type { Genre, EventType } from "@/types/database";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { unstable_cache } from "next/cache";
 import type { Database } from "@/types/database";
 import { resolveUsState } from "@/lib/usStates";
 
@@ -43,9 +44,27 @@ export const SOURCE_ORGANIZER_PREFIX = "source:";
  * profiles plus a pseudo-entry for each distinct imported `source_name` among
  * upcoming, visible events.
  */
-export async function getOrganizerFilterOptions(
-  supabase: SupabaseClient<Database>
-): Promise<OrganizerLite[]> {
+// The list is identical for every visitor, but it was fetched fresh on every
+// /events, /events/map and /events/calendar render — crawlers walking filter
+// URLs turned that into ~20k Supabase requests a day. Cached for a few
+// minutes, so a new organizer or imported source can take that long to appear
+// in the typeahead.
+const ORGANIZER_OPTIONS_TTL_SECONDS = 300;
+
+export const getOrganizerFilterOptions = unstable_cache(
+  loadOrganizerFilterOptions,
+  ["organizer-filter-options"],
+  { revalidate: ORGANIZER_OPTIONS_TTL_SECONDS }
+);
+
+async function loadOrganizerFilterOptions(): Promise<OrganizerLite[]> {
+  // Anon client, no cookies: unstable_cache can't read request data, and the
+  // list is public anyway (drafts are excluded by the filters below).
+  const supabase = createSupabaseClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { persistSession: false } }
+  );
   const [{ data: organizers }, { data: sourceRows }] = await Promise.all([
     supabase.from("organizer_profiles").select("id, name, avatar_url").order("name"),
     supabase

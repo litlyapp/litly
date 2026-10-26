@@ -21,7 +21,7 @@ export default function CalendarGrid({
 }: {
   monthLabel: string;
   prevHref: string | null;
-  nextHref: string;
+  nextHref: string | null;
   cells: CalendarCell[];
   maxCount: number;
 }) {
@@ -32,6 +32,7 @@ export default function CalendarGrid({
         {prevHref ? (
           <Link
             href={prevHref}
+            rel="nofollow"
             aria-label="Previous month"
             className="text-cream-muted hover:text-orange px-3 py-1.5 rounded-full hover:bg-navy-light transition text-lg"
           >
@@ -41,13 +42,18 @@ export default function CalendarGrid({
           <span className="px-3 py-1.5 text-cream-muted/25 text-lg select-none">‹</span>
         )}
         <h2 className="font-serif text-2xl text-cream">{monthLabel}</h2>
-        <Link
-          href={nextHref}
-          aria-label="Next month"
-          className="text-cream-muted hover:text-orange px-3 py-1.5 rounded-full hover:bg-navy-light transition text-lg"
-        >
-          ›
-        </Link>
+        {nextHref ? (
+          <Link
+            href={nextHref}
+            rel="nofollow"
+            aria-label="Next month"
+            className="text-cream-muted hover:text-orange px-3 py-1.5 rounded-full hover:bg-navy-light transition text-lg"
+          >
+            ›
+          </Link>
+        ) : (
+          <span className="px-3 py-1.5 text-cream-muted/25 text-lg select-none">›</span>
+        )}
       </div>
 
       {/* Weekday header */}
@@ -107,7 +113,7 @@ function CalendarDay({ cell, maxCount }: { cell: CalendarCell; maxCount: number 
 
   if (href) {
     return (
-      <Link href={href} style={style} className={`${base} hover:border-orange/60 transition`}>
+      <Link href={href} rel="nofollow" style={style} className={`${base} hover:border-orange/60 transition`}>
         {inner}
       </Link>
     );

@@ -1,4 +1,6 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import FiltersSidebar from "@/components/FiltersSidebar";
 import ViewToggle from "@/components/ViewToggle";
@@ -10,6 +12,16 @@ import {
 } from "@/lib/events/filterQuery";
 
 export const dynamic = "force-dynamic";
+
+// Every filter × month combination is its own URL; keep them out of search
+// indexes (robots.ts also disallows the path for well-behaved crawlers).
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
+
+// How far ahead the calendar can be paged. Events past this are still on
+// /events; the month grid just stops offering a "next" link.
+const MAX_MONTHS_AHEAD = 12;
 
 // Anchor "today" and the default month in a consistent US timezone (litly is
 // US-focused). Individual events are still bucketed in their own timezone.
@@ -30,9 +42,6 @@ export default async function CalendarPage({
   searchParams: Promise<SearchParams>;
 }) {
   const params = await searchParams;
-  const supabase = await createClient();
-
-  const organizers = await getOrganizerFilterOptions(supabase);
 
   // Which month to display. "today" is anchored in APP_TZ.
   const todayKey = new Date().toLocaleDateString("en-CA", { timeZone: APP_TZ });
@@ -44,6 +53,18 @@ export default async function CalendarPage({
     year = py;
     month0 = pm - 1;
   }
+
+  // Only the current month through MAX_MONTHS_AHEAD exist. Anything else 404s
+  // before touching the database — the open-ended "next month" link let
+  // crawlers walk out to the year 2249, a few Supabase queries per page.
+  const curYM = ty * 12 + (tm - 1);
+  const thisYM = year * 12 + month0;
+  if (month0 < 0 || month0 > 11 || thisYM < curYM || thisYM > curYM + MAX_MONTHS_AHEAD) {
+    notFound();
+  }
+
+  const supabase = await createClient();
+  const organizers = await getOrganizerFilterOptions();
 
   // Build the grid starting on the Sunday on/before the 1st.
   const first = new Date(Date.UTC(year, month0, 1));
@@ -150,8 +171,6 @@ export default async function CalendarPage({
     year: "numeric",
     timeZone: "UTC",
   });
-  const curYM = ty * 12 + (tm - 1);
-  const thisYM = year * 12 + month0;
   const monthParam = (ym: number) =>
     `${Math.floor(ym / 12)}-${String((ym % 12) + 1).padStart(2, "0")}`;
   const monthHref = (ym: number) => {
@@ -160,7 +179,7 @@ export default async function CalendarPage({
     return `/events/calendar?${p.toString()}`;
   };
   const prevHref = thisYM > curYM ? monthHref(thisYM - 1) : null;
-  const nextHref = monthHref(thisYM + 1);
+  const nextHref = thisYM < curYM + MAX_MONTHS_AHEAD ? monthHref(thisYM + 1) : null;
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-10">

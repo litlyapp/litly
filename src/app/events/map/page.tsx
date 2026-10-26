@@ -25,7 +25,7 @@ export default async function EventMapPage({
   const supabase = await createClient();
 
   // Organizer list powers both the filter sidebar and the keyword search
-  const organizers = await getOrganizerFilterOptions(supabase);
+  const organizers = await getOrganizerFilterOptions();
 
   // Fetch the full filtered set (both in-person and virtual) so we can report
   // how many matching events exist vs. how many can actually be plotted.
