@@ -242,9 +242,13 @@ ${html}`;
     if (!timeDisplay) return `${date}T00:00:00`;
     // Normalize AP-style "7 p.m." / "7 A.M." (periods) → "7 pm" so the patterns below match
     const t = timeDisplay.trim().toLowerCase().replace(/\./g, "");
-    const already = t.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+    if (/^noon\b/.test(t)) return `${date}T12:00:00`;
+    const already = t.match(/^(\d{1,2}):(\d{2})(?::\d{2})?(?!\d|\s*(?:am|pm)\b)/);
     if (already) return `${date}T${already[1].padStart(2,"0")}:${already[2]}:00`;
-    const twelve = t.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/);
+    // Take the first "7 pm" / "7:00pm" anywhere in the string, so a zone label
+    // ("7:00 pm PST" — City Lights) or a range ("7:00pm - 9:00pm") still parses
+    // instead of falling back to midnight.
+    const twelve = t.match(/(?:^|[^\d:])(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/) ?? t.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)/);
     if (twelve) {
       let h = parseInt(twelve[1], 10);
       const m = parseInt(twelve[2] ?? "0", 10);
@@ -305,14 +309,29 @@ ${html}`;
   };
   const rawGenres = Array.isArray(extracted.genres) ? (extracted.genres as string[]) : [];
   const titleStr = (extracted.title as string) ?? "";
-  const mappedGenres = [...new Set(
-    [...rawGenres, titleStr].flatMap((g) => {
+  // Whole-word matching: a plain substring check tagged events YA because
+  // "ya" sits inside "Dryads", "Voyages", "Saturday", "Samiya", "Arya"…
+  const matchGenres = (texts: string[], map: Record<string, Genre>): Genre[] => [...new Set(
+    texts.filter((g) => typeof g === "string").flatMap((g) => {
       const lower = g.toLowerCase();
-      return Object.entries(GENRE_MAP)
-        .filter(([key]) => lower.includes(key))
+      return Object.entries(map)
+        // Hyphen counts as part of a word so "non-fiction" doesn't also tag Fiction
+        .filter(([key]) => new RegExp(`(^|[^a-z-])${key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^a-z-]|$)`).test(lower))
         .map(([, val]) => val);
     })
   )];
+  // Neither the page's own tags nor the title named a genre (typical for book
+  // clubs and signings) → fall back to clear cues in the description, then
+  // "Other". The edit form refuses to save an event with no genre.
+  const DESCRIPTION_GENRE_CUES: Record<string, Genre> = {
+    poetry: "poetry", poems: "poetry", poet: "poetry", poets: "poetry",
+    novel: "fiction", fiction: "fiction", "short stories": "fiction",
+    memoir: "nonfiction", nonfiction: "nonfiction", "non-fiction": "nonfiction", biography: "nonfiction", "true story": "nonfiction",
+    "open mic": "open_mic", "in conversation": "in_conversation", workshop: "workshop",
+  };
+  let mappedGenres = matchGenres([...rawGenres, titleStr], GENRE_MAP);
+  if (!mappedGenres.length) mappedGenres = matchGenres([(extracted.description as string) ?? ""], DESCRIPTION_GENRE_CUES);
+  if (!mappedGenres.length) mappedGenres = ["other"];
 
   // Claude sometimes ignores the "street only" instruction and folds city/state/zip
   // into the address field too, duplicating what's already in their own columns.
@@ -375,13 +394,36 @@ ${html}`;
   // that's something people add deliberately when editing, not something
   // scraped content should bring with it. Strip defensively in case Claude
   // ignores the plain-text instruction above.
+  // The edit form won't save a reader bio over 75 words, so cap it here —
+  // cut at the last full sentence inside the limit when there is one.
+  function capBio(bio: string): string {
+    const words = bio.split(/\s+/).filter(Boolean);
+    if (words.length <= 75) return bio;
+    const clipped = words.slice(0, 75).join(" ");
+    const lastStop = Math.max(clipped.lastIndexOf(". "), clipped.endsWith(".") ? clipped.length - 1 : -1);
+    return lastStop > clipped.length / 3 ? clipped.slice(0, lastStop + 1) : `${clipped}…`;
+  }
   const featuredReaders = rawReaders
     .filter((r) => r?.name?.trim())
     .map((r) => ({
       name: r.name!.trim(),
       url: stripTracking(r.url?.trim() || ""),
-      bio: stripRichText(r.bio?.trim() || ""),
+      bio: capBio(stripRichText(r.bio?.trim() || "")),
     }));
+
+  // The model sometimes returns a placeholder ("#") or a relative path for the
+  // ticket link; the edit form then refuses to save ("Ticket URL must start
+  // with http"). Resolve relative links against the page, drop the rest.
+  function cleanTicketUrl(raw: unknown): string | null {
+    const s = typeof raw === "string" ? raw.trim() : "";
+    if (!s || s.startsWith("#") || /^(javascript|mailto|tel):/i.test(s)) return null;
+    try {
+      const resolved = new URL(s, url);
+      return /^https?:$/.test(resolved.protocol) ? resolved.toString() : null;
+    } catch {
+      return null;
+    }
+  }
 
   // Some sources' page branding differs from how litly's curated account
   // should credit them (venue/location_name is untouched either way).
@@ -488,7 +530,7 @@ ${html}`;
       lat: coords?.lat ?? null,
       lng: coords?.lng ?? null,
       virtual_url: stripTracking((extracted.virtual_url as string) || url),
-      ticket_url: stripTracking((extracted.ticket_url as string) ?? null),
+      ticket_url: stripTracking(cleanTicketUrl(extracted.ticket_url)),
       source_url: sourceUrl,
       source_name: sourceName,
       featured_readers: featuredReaders.length ? featuredReaders : null,

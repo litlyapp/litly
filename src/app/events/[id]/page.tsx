@@ -38,7 +38,7 @@ export async function generateMetadata({
   const supabase = await createClient();
   const { data: event } = await supabase
     .from("events")
-    .select("title, description, banner_url, location_name, city, state, date_time")
+    .select("title, description, banner_url, location_name, city, state, date_time, timezone")
     .eq("id", id)
     .single();
 
@@ -56,7 +56,9 @@ export async function generateMetadata({
     : [{ url: "https://thelitlyapp.com/icons/icon-192x192.png", width: 192, height: 192, alt: "litly" }];
 
   const datePart = event.date_time
-    ? new Date(event.date_time).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    // In the event's own zone — the server runs in UTC, so a 7 PM ET event
+    // otherwise shows the next day's date in the tab title and link previews
+    ? new Date(event.date_time).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: event.timezone || "America/New_York" })
     : null;
   const titleSuffix = [event.city, datePart].filter(Boolean).join(" · ");
   const pageTitle = titleSuffix ? `${event.title} · ${titleSuffix} — litly` : `${event.title} — litly`;
