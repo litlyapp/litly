@@ -10,6 +10,7 @@ import { timezoneForState } from "@/lib/usStates";
 import { importerRequestHeaders } from "@/lib/webBotAuth";
 import { importerAllowedByRobots } from "@/lib/robots";
 import { geocodeLocation, type GeocodeResult } from "@/lib/geocode";
+import { importBanner, type BookHint } from "@/lib/importBanner";
 import type { Genre } from "@/types/database";
 
 const anthropic = new Anthropic();
@@ -87,6 +88,8 @@ export async function POST(request: Request) {
   // Fetch the page as a declared agent: one honest UA, signed with Web Bot Auth
   // when a key is configured, and only where the site's robots.txt allows it
   let html: string;
+  // Unstripped page, kept for its <head> share image and Event markup
+  let rawHtml: string | null = null;
   if (pageText) {
     // Pasted from the user's browser — plain text, no markup to strip
     html = pageText.slice(0, 50000);
@@ -101,6 +104,7 @@ export async function POST(request: Request) {
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       html = await res.text();
+      rawHtml = html.slice(0, 500_000);
       // A bot challenge served with a 200 is still a block, not the event page
       if (/<title>\s*Just a moment\.\.\.\s*<\/title>/i.test(html)) throw new Error("HTTP 403");
       // Strip <head>, <script>, <style> blocks to save token budget for actual content
@@ -166,6 +170,8 @@ Fields:
 - virtual_url: string | null (URL to join virtual event)
 - genres: string[] (list of genre/category keywords found anywhere on the page — extract every relevant word or phrase verbatim, e.g. ["Poetry", "Fiction", "Workshop", "Craft Talk", "Open Mic"])
 - source_name: string | null (the name of the organization, bookstore, or venue that publishes this page — read it from a logo, header, footer, or copyright line, e.g. "Malaprop's Bookstore/Cafe"; do NOT just return the domain name)
+- image_url: string | null (src of the main promotional image in the page body for THIS event — a flyer, poster, author photo, or book cover. Never a site logo, icon, social-media button, ad, or an image for a different event. Copy the src exactly as written.)
+- book: { title: string, author: string | null, isbn: string | null } | null (the one book this event centers on, if any — title without quotation marks; isbn only if printed on the page. null if the event isn't about a specific book.)
 - featured_readers: [{ name: string, url: string | null, bio: string | null }] (ONLY the author(s), poet(s), or reader(s) whose own book or work is being presented at this event. Do NOT include a moderator, interviewer, host, or "in conversation with" partner who is only there to discuss someone else's book — include them only if they are also presenting their own book/work at this same event. For each included person: "url" is a link to their personal site, publisher page, or social media if the page links one, otherwise null. "bio" is their bio/description as plain text if one is shown near their name (strip any bold/italic/markdown/HTML styling from it), otherwise null. Return [] if no qualifying readers are named.)
 
 ${condensed ? `
@@ -449,6 +455,16 @@ ${html}`;
     }
   }
 
+  // Banner: the page's own image first, else the featured book's cover.
+  // Never blocks the import — no usable image just means no banner.
+  const book = extracted.book && typeof extracted.book === "object" ? (extracted.book as BookHint) : null;
+  const banner = await importBanner(supabase, user.id, {
+    rawHtml,
+    pageUrl: url,
+    modelPick: typeof extracted.image_url === "string" ? extracted.image_url : null,
+    book,
+  });
+
   // Insert as unpublished draft
   const { data: inserted, error: insertError } = await supabase
     .from("events")
@@ -477,10 +493,8 @@ ${html}`;
       source_name: sourceName,
       featured_readers: featuredReaders.length ? featuredReaders : null,
       is_imported: true,
-      // Imported pages' images are external hotlinks that next/image can't
-      // serve (only Supabase storage is in remotePatterns) — the organizer
-      // uploads a banner manually instead, so don't attempt to set one here.
-      banner_url: null,
+      // Re-hosted in our storage — next/image only serves Supabase URLs
+      banner_url: banner?.url ?? null,
       open_mic: false,
       rsvp_enabled: true,
       is_published: false,
@@ -489,9 +503,13 @@ ${html}`;
     .single();
 
   if (insertError) {
+    if (banner) {
+      const path = banner.url.split("/event-banners/")[1];
+      if (path) await supabase.storage.from("event-banners").remove([path]);
+    }
     return serverError("import-url", insertError);
   }
 
   // Lets the edit page flag a zip/city-centroid pin for the organizer to check
-  return NextResponse.json({ id: inserted.id, approximatePin: !!coords?.approximate });
+  return NextResponse.json({ id: inserted.id, approximatePin: !!coords?.approximate, bannerSource: banner?.source ?? null });
 }
